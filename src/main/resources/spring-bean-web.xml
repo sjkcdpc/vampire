@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="characterEncodingFilter" class="org.springframework.web.filter.CharacterEncodingFilter">
+        <property name="encoding" value="utf-8"/>
+        <property name="forceEncoding" value="true"/>
+    </bean>
+    <bean id="exceptionFilter" class="com.aixuexi.thor.except.ExceptionFilter">
+        <property name="defaultHandler" ref="defaultExceptionHandler"/>
+        <property name="exceptionHandlers">
+            <list>
+                <ref bean="nestedServletExceptionHandler"/>
+                <!--<ref bean="gaosiDetailExceptionHandler"/>-->
+                <ref bean="baseExceptionHandler"/>
+            </list>
+        </property>
+    </bean>
+    <bean id="defaultExceptionHandler" class="com.aixuexi.thor.except.handler.DefaultExceptionHandler"/>
+
+    <!--<bean id="gaosiDetailExceptionHandler" class="com.aixuexi.common.filter.handler.GaosiDetailExceptionHandler"/>-->
+    <bean id="baseExceptionHandler" class="com.aixuexi.thor.except.handler.BaseExceptionHandler"/>
+    <bean id="nestedServletExceptionHandler" class="com.aixuexi.thor.except.handler.NestedServletExceptionHandler">
+        <property name="exceptionHandlers">
+            <list>
+                <!--<ref bean="nestedServletExceptionHandler"/>-->
+                <!--<ref bean="gaosiDetailExceptionHandler"/>-->
+                <ref bean="baseExceptionHandler"/>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="accessAuthorityFilter" class="com.gaosi.api.davincicode.common.filter.AccessAuthorityFilter">
+        <property name="ignoreUrlRegex" value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
+        <property name="cookieDomain" value="${cookie_domain}"/>
+    </bean>
+
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"/>
+        <property name="maxUploadSize" value="52428800"/>
+        <property name="resolveLazily" value="true"/>
+    </bean>
+
+</beans>
