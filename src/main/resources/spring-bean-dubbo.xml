@@ -27,7 +27,8 @@
     <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
     <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
     <dubbo:reference interface="com.aixuexi.ordernew.facade.OrderServiceFacade" id="orderServiceFacade"/>
-    <dubbo:reference interface="com.aixuexi.account.api.GoodsRestService" id="goodsRestService"/>
+    <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.GoodsService" id="vGoodsService"/>
 
 </beans>

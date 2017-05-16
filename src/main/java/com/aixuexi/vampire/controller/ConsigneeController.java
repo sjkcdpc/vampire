@@ -28,6 +28,8 @@ public class ConsigneeController {
     @RequestMapping(value = "/save")
     public ResultData save(Consignee consignee) {
         ResultData resultData = new ResultData();
+        // 非默认收货地址
+        consignee.setStatus(0);
         resultData.setBody(consigneeService.insert(consignee));
         return resultData;
     }

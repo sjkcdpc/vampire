@@ -2,12 +2,12 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.manager.OrderManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * 订单
@@ -57,23 +57,36 @@ public class OrderController {
     /**
      * 计算运费
      *
+     * @param userId       用户ID
+     * @param consigneeId  收货人ID
+     * @param goodsTypeIds 商品类型ID
      * @return
      */
     @RequestMapping(value = "/freight")
-    private ResultData freight() {
-        // TODO
-        return null;
+    private ResultData freight(@RequestParam Integer userId, @RequestParam Integer consigneeId,
+                               @RequestParam List<Integer> goodsTypeIds) {
+        ResultData resultData = new ResultData();
+        resultData.setBody(orderManager.reloadFreight(userId, consigneeId, goodsTypeIds));
+        return resultData;
     }
 
     /**
      * 提交订单
      *
+     * @param userId       用户ID
+     * @param consigneeId  收货人ID
+     * @param receivePhone 接收发货通知手机号
+     * @param express      快递
+     * @param goodsTypeIds 商品类型ID
      * @return
      */
     @RequestMapping(value = "/submit")
-    public ResultData submit() {
-        // TODO
-        return null;
+    public ResultData submit(@RequestParam Integer userId, @RequestParam Integer consigneeId,
+                             @RequestParam String receivePhone, @RequestParam String express,
+                             @RequestParam List<Integer> goodsTypeIds) {
+        ResultData resultData = new ResultData();
+        resultData.setBody(orderManager.submit(userId, consigneeId, receivePhone, express, goodsTypeIds));
+        return resultData;
     }
 
     /**
