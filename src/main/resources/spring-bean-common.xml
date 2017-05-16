@@ -3,5 +3,32 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
-    <context:property-placeholder location="classpath:config.properties"/>
+    <context:property-placeholder location="classpath:config.properties" file-encoding="utf-8"/>
+
+    <!-- 快递公司 -->
+    <bean id="expressUtil" scope="singleton" class="com.aixuexi.vampire.util.ExpressUtil">
+        <property name="express">
+            <list>
+                <bean class="com.gaosi.api.independenceDay.vo.ConfirmExpressVo">
+                    <property name="key" value="${express1.key}"/>
+                    <property name="name" value="${express1.name}"/>
+                    <property name="desc" value="${express1.desc}"/>
+                    <property name="chargingRules" value="${express1.chargingRules}"/>
+                </bean>
+                <bean class="com.gaosi.api.independenceDay.vo.ConfirmExpressVo">
+                    <property name="key" value="${express2.key}"/>
+                    <property name="name" value="${express2.name}"/>
+                    <property name="desc" value="${express2.desc}"/>
+                    <property name="chargingRules" value="${express2.chargingRules}"/>
+                </bean>
+                <bean class="com.gaosi.api.independenceDay.vo.ConfirmExpressVo">
+                    <property name="key" value="${express3.key}"/>
+                    <property name="name" value="${express3.name}"/>
+                    <property name="desc" value="${express3.desc}"/>
+                    <property name="chargingRules" value="${express3.chargingRules}"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
 </beans>

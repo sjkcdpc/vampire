@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo" xmlns:bean="http://code.alibabatech.com/schema/dubbo"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
 		http://www.springframework.org/schema/beans/spring-beans.xsd 
 		http://code.alibabatech.com/schema/dubbo 
@@ -22,5 +22,12 @@
         <property name="shareSessionService" ref="shareSessionService"/>
         <property name="accessAuthorityService" ref="accessAuthorityService"/>
     </bean>
+
+    <dubbo:reference interface="com.gaosi.api.independenceDay.service.ConsigneeService" id="consigneeService"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
+    <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
+    <dubbo:reference interface="com.aixuexi.ordernew.facade.OrderServiceFacade" id="orderServiceFacade"/>
+    <dubbo:reference interface="com.aixuexi.account.api.GoodsRestService" id="goodsRestService"/>
+    <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
 
 </beans>

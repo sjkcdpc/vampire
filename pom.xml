@@ -13,14 +13,20 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>1.1.12-RELEASE</avatar.version>
+        <avatar.version>mall-1.0.0-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor.version>1.4.9.2-RELEASE</thor.version>
+        <account-api.version>1.9.7-RELEASE</account-api.version>
     </properties>
 
     <dependencies>
 
         <!-- 爱学习 -->
+        <dependency>
+            <groupId>com.aixuexi.account</groupId>
+            <artifactId>account-api</artifactId>
+            <version>${account-api.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.aixuexi</groupId>
             <artifactId>thor-util</artifactId>
@@ -52,6 +58,12 @@
                     <artifactId>thor-util</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aixuexi.account</groupId>
+            <artifactId>account-api</artifactId>
+            <version>${account-api.version}</version>
         </dependency>
 
         <!--外部-->
