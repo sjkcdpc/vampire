@@ -58,15 +58,16 @@ public class OrderController {
      * 计算运费
      *
      * @param userId       用户ID
-     * @param consigneeId  收货人ID
+     * @param insId        机构ID
+     * @param provinceId   省ID
      * @param goodsTypeIds 商品类型ID
      * @return
      */
     @RequestMapping(value = "/freight")
-    private ResultData freight(@RequestParam Integer userId, @RequestParam Integer consigneeId,
-                               @RequestParam List<Integer> goodsTypeIds) {
+    private ResultData freight(@RequestParam Integer userId, @RequestParam Integer insId,
+                               @RequestParam Integer provinceId, @RequestParam List<Integer> goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.reloadFreight(userId, consigneeId, goodsTypeIds));
+        resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds));
         return resultData;
     }
 

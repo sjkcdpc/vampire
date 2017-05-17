@@ -14,6 +14,7 @@ import com.gaosi.api.independenceDay.vo.ConfirmExpressVo;
 import com.gaosi.api.independenceDay.vo.ConfirmGoodsVo;
 import com.gaosi.api.independenceDay.vo.ConfirmOrderVo;
 import com.gaosi.api.independenceDay.vo.ConsigneeVo;
+import com.gaosi.api.independenceDay.vo.FreightVo;
 import com.gaosi.util.model.ResultData;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -57,7 +58,7 @@ public class OrderManager {
     @Autowired
     private ExpressUtil expressUtil;
 
-    private static final String express = "shentong,shunfeng";
+    private static final String express = "shunfeng,shentong";
 
     /**
      * 核对订单信息
@@ -79,6 +80,7 @@ public class OrderManager {
         int goodsPieces = 0; // 商品总件数
         double goodsAmount = 0; // 总金额
         double weight = 0; // 商品重量
+        // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
             goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
@@ -98,29 +100,18 @@ public class OrderManager {
         confirmOrderVo.setGoodsItem(goodsVos);
         confirmOrderVo.setGoodsPieces(goodsPieces);
         confirmOrderVo.setGoodsAmount(goodsAmount);
-        // 查询邮费
-        Integer areaId = 0;
+        // 计算邮费
+        Integer provinceId = 0;
         for (ConsigneeVo consigneeVo : consigneeVos) {
             if (consigneeVo.getStatus() == 1) {
-                areaId = consigneeVo.getAreaId();
+                provinceId = consigneeVo.getProvinceId();
                 break;
             } // 默认收货地址
         }
-        // TODO 根据区ID查询省ID
-        List<Double> doubleList = calcFreight(areaId, weight, express);
-        for (int i = 0; i < confirmOrderVo.getExpress().size(); i++) {
-            if (i == 2) {
-                // 德邦物流，商品件数大于50件或者重量大于999，运费:0，否则走申通运费。
-                double freight = confirmOrderVo.getGoodsPieces() >= 50 || weight > 999 ? 0 : doubleList.get(0);
-                confirmOrderVo.getExpress().get(i).setFreight(freight);
-            } else {
-                confirmOrderVo.getExpress().get(i).setFreight(doubleList.get(i));
-            }
-        }
+        calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
         confirmOrderVo.setBalance(remain / 10000);
-        confirmOrderVo.setStatus(confirmOrderVo.getBalance() >= goodsAmount ? 0 : 1);
         return confirmOrderVo;
     }
 
@@ -159,30 +150,40 @@ public class OrderManager {
     /**
      * 计算运费
      *
-     * @param provinceId 省ID
-     * @param weight     商品重量
-     * @param express    快递公司，多个,分割
-     * @return
+     * @param provinceId     省ID
+     * @param weight         商品重量
+     * @param expressVoLists 物流信息
      */
-    private List<Double> calcFreight(Integer provinceId, Double weight, String express) {
-        List<Double> doubleList = Lists.newArrayList();
+    private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists) {
         ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight, express);
         List<HashMap<String, Object>> listMap = resultData.getData();
-        for (HashMap<String, Object> stringObjectHashMap : listMap) {
-            doubleList.add(Double.valueOf(stringObjectHashMap.get("totalFreight").toString()));
+        for (int i = 0; i < expressVoLists.size(); i++) {
+            ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
+            HashMap<String, Object> map = null;
+            if (i == 2) {
+                map = listMap.get(1);
+            } else {
+                map = listMap.get(i);
+            }
+            confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+            confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+            confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
+            confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
         }
-        return doubleList;
+
     }
 
     /**
      * 修改商品数量，选择部分商品，重新选择收货人，重新计算运费。
      *
-     * @param userId
-     * @param consigneeId
-     * @param goodsTypeIds
+     * @param userId       用户ID
+     * @param insId        机构ID
+     * @param provinceId   省ID
+     * @param goodsTypeIds 商品类型ID
      * @return
      */
-    public List<ConfirmExpressVo> reloadFreight(Integer userId, Integer consigneeId, List<Integer> goodsTypeIds) {
+    public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId, List<Integer> goodsTypeIds) {
+        FreightVo freightVo = new FreightVo();
         List<ConfirmExpressVo> confirmExpressVos = expressUtil.getExpress();
         List<ShoppingCartList> shoppingCartLists = null;
         if (CollectionUtils.isEmpty(goodsTypeIds)) {
@@ -192,7 +193,7 @@ public class OrderManager {
         }
         goodsTypeIds = Lists.newArrayList();
         int goodsPieces = 0; // 商品总件数
-        // 数量
+        // 数量 goodsTypeIds - > num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
             goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
@@ -200,24 +201,24 @@ public class OrderManager {
             goodsPieces += shoppingCartList.getNum();
         }
         double weight = 0; // 重量
+        double goodsAmount = 0; // 总金额
         List<ConfirmGoodsVo> goodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             // 数量*单重量
             weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
+            // 数量*单价
+            goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
         }
-        // 查询收货信息
-        Consignee consignee = consigneeService.selectById(consigneeId);
-        // TODO 根据区ID查询省ID
-        List<Double> doubleList = calcFreight(consignee.getAreaId(), weight, express);
-        for (int i = 0; i < confirmExpressVos.size(); i++) {
-            if (i == 2) {
-                // 德邦物流，商品件数大于50件或者重量大于999，运费:0，否则走申通运费。
-                double freight = goodsPieces >= 50 || weight > 999 ? 0 : doubleList.get(0);
-                confirmExpressVos.get(i).setFreight(freight);
-            } else {
-                confirmExpressVos.get(i).setFreight(doubleList.get(i));
-            }
-        }
-        return confirmExpressVos;
+        // 计算邮费
+        calcFreight(provinceId, weight, confirmExpressVos);
+        // set
+        freightVo.setGoodsPieces(goodsPieces);
+        freightVo.setGoodsWeight(weight);
+        freightVo.setGoodsAmount(goodsAmount);
+        freightVo.setExpress(confirmExpressVos);
+        // 账号余额
+        Long remain = axxBankService.getRemainAidouByInsId(insId);
+        freightVo.setBalance(remain / 10000);
+        return freightVo;
     }
 }
