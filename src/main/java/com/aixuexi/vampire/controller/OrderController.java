@@ -65,7 +65,7 @@ public class OrderController {
      */
     @RequestMapping(value = "/freight")
     private ResultData freight(@RequestParam Integer userId, @RequestParam Integer insId,
-                               @RequestParam Integer provinceId, @RequestParam List<Integer> goodsTypeIds) {
+                               @RequestParam Integer provinceId, List<Integer> goodsTypeIds) {
         ResultData resultData = new ResultData();
         resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds));
         return resultData;
@@ -75,6 +75,7 @@ public class OrderController {
      * 提交订单
      *
      * @param userId       用户ID
+     * @param insId        机构ID
      * @param consigneeId  收货人ID
      * @param receivePhone 接收发货通知手机号
      * @param express      快递
@@ -82,11 +83,11 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/submit")
-    public ResultData submit(@RequestParam Integer userId, @RequestParam Integer consigneeId,
-                             @RequestParam String receivePhone, @RequestParam String express,
-                             @RequestParam List<Integer> goodsTypeIds) {
+    public ResultData submit(@RequestParam Integer userId, @RequestParam Integer insId,
+                             @RequestParam Integer consigneeId, @RequestParam String receivePhone,
+                             @RequestParam String express, List<Integer> goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.submit(userId, consigneeId, receivePhone, express, goodsTypeIds));
+        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds));
         return resultData;
     }
 

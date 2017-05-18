@@ -26,6 +26,7 @@
                 </bean>
             </list>
         </property>
+        <property name="syncToWms" value="${syncToWms}"/>
     </bean>
 
 </beans>
