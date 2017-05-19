@@ -81,8 +81,8 @@ public class OrderManager {
     /**
      * 核对订单信息
      *
-     * @param userId
-     * @param insId
+     * @param userId 用户ID
+     * @param insId  机构ID
      * @return
      */
     public ConfirmOrderVo confirmOrder(Integer userId, Integer insId) {
@@ -138,12 +138,12 @@ public class OrderManager {
     /**
      * 提交订单
      *
-     * @param userId
-     * @param insId
-     * @param consigneeId
-     * @param receivePhone
-     * @param express
-     * @param goodsTypeIds
+     * @param userId       用户ID
+     * @param insId        机构ID
+     * @param consigneeId  收货人ID
+     * @param receivePhone 收货通知手机号
+     * @param express      快递
+     * @param goodsTypeIds 商品类型ID
      * @return
      */
     public OrderSuccessVo submit(Integer userId, Integer insId, Integer consigneeId, String receivePhone,
@@ -165,6 +165,13 @@ public class OrderManager {
         // 创建订单对象
         GoodsOrder goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
         logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrder));
+        // 支付金额 = 商品金额 + 邮费
+        Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
+        // 账号余额
+        Long remain = axxBankService.getRemainAidouByInsId(insId);
+        if (amount.longValue() > remain) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
+        }
         // 创建订单
         ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
@@ -182,11 +189,11 @@ public class OrderManager {
      * 创建订单对象
      *
      * @param shoppingCartLists 购物车中的商品
-     * @param userId 用户ID
-     * @param insId 机构ID
-     * @param consigneeId 收货人ID
-     * @param receivePhone
-     * @param express
+     * @param userId            用户ID
+     * @param insId             机构ID
+     * @param consigneeId       收货人ID
+     * @param receivePhone      收货通知手机号
+     * @param express           快递
      * @return
      */
     private GoodsOrder createGoodsOrder(List<ShoppingCartList> shoppingCartLists, Integer userId, Integer insId,
@@ -243,22 +250,24 @@ public class OrderManager {
         boolean isFree = false; // 是否免物流费
         if (express.equals(express_dbwl)) {
             if (weight > 999) {
-                express = express_dbwl;
+                goodsOrder.setExpressCode(express_dbwl);
                 isFree = true;
             } else if (goodsPieces >= 50) {
-                express = express_shentong;
+                goodsOrder.setExpressCode(express_shentong);
                 isFree = true;
             }
-        } // 选择德邦物流
-        goodsOrder.setExpressCode(express);
+        } else {
+            goodsOrder.setExpressCode(express);
+        }
         // 是否计算邮费
         if (isFree) {
-            // 选择德邦物流，weight >999 || goodsPieces >= 50， 邮费0。
+            // 选择德邦物流，weight > 999 || goodsPieces >= 50， 邮费0。
             goodsOrder.setFreight(0D);
         } else {
             // 计算邮费
             Integer provinceId = 0; // TODO 根据区ID查询省ID
-            ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight, express);
+            ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight,
+                    express.equals(express_dbwl) ? express_shentong : express);
             logger.info("submitOrder --> freight : {}", resultData);
             HashMap<String, Object> freightMap = resultData.getData().get(0);
             goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
