@@ -1,13 +1,26 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.OrderManager;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.gaosi.api.basicdata.DictionaryApi;
+import com.gaosi.api.basicdata.model.bo.DictionaryBo;
+import com.gaosi.api.common.constants.ApiRetCode;
+import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.revolver.GoodsOrderService;
+import com.gaosi.api.revolver.model.GoodsOrder;
+import com.gaosi.api.revolver.vo.GoodsOrderVo;
+import com.google.common.collect.Maps;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单
@@ -20,26 +33,57 @@ public class OrderController {
     @Resource(name = "orderManager")
     private OrderManager orderManager;
 
+    @Autowired
+    private GoodsOrderService goodsOrderService;
+
+    @Autowired
+    private DictionaryApi dictionaryApi;
+
     /**
      * 订单列表
      *
+     * @param insId     机构ID
+     * @param pageIndex 页号
+     * @param pageSize  页码
      * @return
      */
     @RequestMapping(value = "/list")
-    public ResultData list() {
-        // TODO
-        return null;
+    public ResultData list(Integer insId, Integer userId, Integer pageIndex, Integer pageSize) {
+        ResultData resultData = new ResultData();
+        Page<GoodsOrder> page = goodsOrderService.selectGoodsOrderByIns(insId, userId, pageIndex, pageSize);
+        Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
+        retPage.setPageTotal(page.getPageTotal());
+        retPage.setPageSize(page.getPageSize());
+        retPage.setPageNum(page.getPageNum());
+        retPage.setItemTotal(page.getItemTotal());
+        retPage.setStartNum(page.getStartNum());
+        Map<String, String> expressMap = selectExpress();
+        for (GoodsOrder goodsOrder : page.getList()) {
+            String express = expressMap.get(goodsOrder.getExpressCode());
+            goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
+        }
+        String json = JSONObject.toJSONString(page.getList(), SerializerFeature.WriteDateUseDateFormat);
+        retPage.setList(JSONObject.parseArray(json, GoodsOrderVo.class));
+        resultData.setBody(retPage);
+        return resultData;
     }
 
     /**
      * 订单详情
      *
+     * @param orderId 订单号
      * @return
      */
     @RequestMapping(value = "/detail")
-    public ResultData detail() {
-        // TODO
-        return null;
+    public ResultData detail(String orderId) {
+        ResultData resultData = new ResultData();
+        GoodsOrder goodsOrder = goodsOrderService.selectGoodsOrderById(orderId);
+        Map<String, String> expressMap = selectExpress();
+        String express = expressMap.get(goodsOrder.getExpressCode());
+        goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
+        String json = JSONObject.toJSONString(goodsOrder, SerializerFeature.WriteDateUseDateFormat);
+        resultData.setBody(JSONObject.parseObject(json, GoodsOrderVo.class));
+        return resultData;
     }
 
     /**
@@ -100,6 +144,27 @@ public class OrderController {
     public ResultData cancel() {
         // TODO
         return null;
+    }
+
+    /**
+     * 快递公司字典TYPE
+     */
+    private static final String DELIVERY_COMPANY_DICT_TYPE = "DELIVERY_COMPANY";
+
+    /**
+     * 查询快递公司
+     *
+     * @return
+     */
+    private Map<String, String> selectExpress() {
+        Map<String, String> retMap = Maps.newHashMap();
+        ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, DELIVERY_COMPANY_DICT_TYPE);
+        if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+            for (DictionaryBo dictionaryBo : apiResponse.getBody()) {
+                retMap.put(dictionaryBo.getCode(), dictionaryBo.getName());
+            }
+        }
+        return retMap;
     }
 }
 
