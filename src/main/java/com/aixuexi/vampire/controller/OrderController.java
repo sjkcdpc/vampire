@@ -48,7 +48,8 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/list")
-    public ResultData list(Integer insId, Integer userId, Integer pageIndex, Integer pageSize) {
+    public ResultData list(@RequestParam Integer insId, Integer userId,
+                           @RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
         Page<GoodsOrder> page = goodsOrderService.selectGoodsOrderByIns(insId, userId, pageIndex, pageSize);
         Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
@@ -75,7 +76,7 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/detail")
-    public ResultData detail(String orderId) {
+    public ResultData detail(@RequestParam String orderId) {
         ResultData resultData = new ResultData();
         GoodsOrder goodsOrder = goodsOrderService.selectGoodsOrderById(orderId);
         Map<String, String> expressMap = selectExpress();
