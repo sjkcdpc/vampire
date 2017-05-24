@@ -156,6 +156,9 @@ public class OrderManager {
         } else {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
         }
+        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
         // 是否走发网
         Boolean syncToWms = true;
         if (insIds.contains(insId) || expressUtil.getSyncToWms()) {
@@ -176,7 +179,15 @@ public class OrderManager {
         ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             logger.info("submitOrder --> orderId : {}", apiResponse.getBody());
-            // TODO 清空购物车。
+            try {
+                List<Integer> shoppingCartListIds = Lists.newArrayList();
+                for (ShoppingCartList shoppingCartList : shoppingCartLists) {
+                    shoppingCartListIds.add(shoppingCartList.getId());
+                }
+                shoppingCartService.clearShoppingCart(shoppingCartListIds);
+            } catch (Throwable e) {
+                logger.error("submitOrder --> clearShoppingCart fail, orderId : {}", apiResponse.getBody());
+            }
             // TODO 根据快递提示信息。
             String tips = "我们将在两个工作日之内发货，发货后约3～6天到货。";
             return new OrderSuccessVo(apiResponse.getBody(), tips);
