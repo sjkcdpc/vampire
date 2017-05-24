@@ -20,7 +20,7 @@ import com.gaosi.api.revolver.vo.ConfirmExpressVo;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.ConfirmOrderVo;
 import com.gaosi.api.revolver.vo.ConsigneeVo;
-import com.gaosi.api.independenceDay.vo.FreightVo;
+import com.gaosi.api.revolver.vo.FreightVo;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.util.model.ResultData;
 import com.google.common.collect.Lists;
