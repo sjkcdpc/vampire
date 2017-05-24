@@ -1,8 +1,8 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
-import com.gaosi.api.independenceDay.model.Consignee;
-import com.gaosi.api.independenceDay.service.ConsigneeService;
+import com.gaosi.api.revolver.model.Consignee;
+import com.gaosi.api.revolver.ConsigneeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;

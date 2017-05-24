@@ -5,7 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.bo.AreaBo;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.independenceDay.vo.AreaVo;
+import com.gaosi.api.revolver.vo.AreaVo;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;

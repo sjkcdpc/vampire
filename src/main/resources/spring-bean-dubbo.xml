@@ -23,7 +23,7 @@
         <property name="accessAuthorityService" ref="accessAuthorityService"/>
     </bean>
 
-    <dubbo:reference interface="com.gaosi.api.independenceDay.service.ConsigneeService" id="consigneeService"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.ConsigneeService" id="consigneeService"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
     <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
     <dubbo:reference interface="com.aixuexi.ordernew.facade.OrderServiceFacade" id="orderServiceFacade"/>

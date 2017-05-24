@@ -1,6 +1,6 @@
 package com.aixuexi.vampire.util;
 
-import com.gaosi.api.independenceDay.vo.ConfirmExpressVo;
+import com.gaosi.api.revolver.vo.ConfirmExpressVo;
 
 import java.util.List;
 
