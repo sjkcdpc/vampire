@@ -13,15 +13,15 @@ import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.entity.ShoppingCartList;
-import com.gaosi.api.revolver.model.Consignee;
-import com.gaosi.api.revolver.ConsigneeService;
 import com.gaosi.api.independenceDay.service.ShoppingCartService;
+import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.ConsigneeService;
+import com.gaosi.api.revolver.model.Consignee;
 import com.gaosi.api.revolver.vo.ConfirmExpressVo;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.ConfirmOrderVo;
 import com.gaosi.api.revolver.vo.ConsigneeVo;
 import com.gaosi.api.revolver.vo.FreightVo;
-import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.util.model.ResultData;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -130,7 +130,7 @@ public class OrderManager {
         calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
-        confirmOrderVo.setBalance(remain / 10000);
+        confirmOrderVo.setBalance(Double.valueOf(remain) / 100000);
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         return confirmOrderVo;
     }
@@ -364,7 +364,7 @@ public class OrderManager {
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
-        freightVo.setBalance(remain / 10000);
+        freightVo.setBalance(Double.valueOf(remain) / 100000);
         return freightVo;
     }
 }

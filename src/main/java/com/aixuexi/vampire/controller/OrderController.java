@@ -12,6 +12,7 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.GoodsOrderService;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -109,10 +110,10 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/freight")
-    private ResultData freight(@RequestParam Integer userId, @RequestParam Integer insId,
-                               @RequestParam Integer provinceId, List<Integer> goodsTypeIds) {
+    public ResultData freight(@RequestParam Integer userId, @RequestParam Integer insId,
+                              @RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds));
+        resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
         return resultData;
     }
 
@@ -130,9 +131,9 @@ public class OrderController {
     @RequestMapping(value = "/submit")
     public ResultData submit(@RequestParam Integer userId, @RequestParam Integer insId,
                              @RequestParam Integer consigneeId, @RequestParam String receivePhone,
-                             @RequestParam String express, List<Integer> goodsTypeIds) {
+                             @RequestParam String express, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds));
+        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
         return resultData;
     }
 
