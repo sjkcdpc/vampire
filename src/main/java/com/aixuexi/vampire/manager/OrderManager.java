@@ -10,6 +10,7 @@ import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
+import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.entity.ShoppingCartList;
@@ -156,6 +157,9 @@ public class OrderManager {
         } else {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
         }
+        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
         // 是否走发网
         Boolean syncToWms = true;
         if (insIds.contains(insId) || expressUtil.getSyncToWms()) {
@@ -176,7 +180,15 @@ public class OrderManager {
         ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             logger.info("submitOrder --> orderId : {}", apiResponse.getBody());
-            // TODO 清空购物车。
+            try {
+                List<Integer> shoppingCartListIds = Lists.newArrayList();
+                for (ShoppingCartList shoppingCartList : shoppingCartLists) {
+                    shoppingCartListIds.add(shoppingCartList.getId());
+                }
+                shoppingCartService.clearShoppingCart(shoppingCartListIds);
+            } catch (Throwable e) {
+                logger.error("submitOrder --> clearShoppingCart fail, orderId : {}", apiResponse.getBody());
+            }
             // TODO 根据快递提示信息。
             String tips = "我们将在两个工作日之内发货，发货后约3～6天到货。";
             return new OrderSuccessVo(apiResponse.getBody(), tips);
@@ -264,8 +276,10 @@ public class OrderManager {
             // 选择德邦物流，weight > 999 || goodsPieces >= 50， 邮费0。
             goodsOrder.setFreight(0D);
         } else {
+            List<AddressDTO> addressDTOS = findAddressByIds(consignee.getAreaId());
+            // 省ID
+            Integer provinceId = addressDTOS.get(0).getProvinceId();
             // 计算邮费
-            Integer provinceId = 0; // TODO 根据区ID查询省ID
             ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight,
                     express.equals(express_dbwl) ? express_shentong : express);
             logger.info("submitOrder --> freight : {}", resultData);
@@ -286,10 +300,45 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(consignees)) {
             String consigneeJson = JSONObject.toJSONString(consignees);
             List<ConsigneeVo> consigneeVos = JSONObject.parseArray(consigneeJson, ConsigneeVo.class);
-            // TODO 批量查询省市区 areaApi
+            // 区ids
+            Integer[] areaIds = new Integer[consigneeVos.size()];
+            for (int i = 0; i < consigneeVos.size(); i++) {
+                areaIds[i] = consigneeVos.get(i).getAreaId();
+            }
+            List<AddressDTO> addressDTOS = findAddressByIds(areaIds);
+            Map<Integer, AddressDTO> addressMap = Maps.newHashMap();
+            for (AddressDTO addressDTO : addressDTOS) {
+                addressMap.put(addressDTO.getDistrictId(), addressDTO);
+            }
+            for (ConsigneeVo consigneeVo : consigneeVos) {
+                AddressDTO addressDTO = addressMap.get(consigneeVo.getAreaId());
+                consigneeVo.setProvinceId(addressDTO.getProvinceId());
+                consigneeVo.setProvince(addressDTO.getProvince());
+                consigneeVo.setCityId(addressDTO.getCityId());
+                consigneeVo.setCity(addressDTO.getCity());
+                consigneeVo.setArea(addressDTO.getDistrict());
+            }
             return consigneeVos;
         }
         return Lists.newArrayList();
+    }
+
+    /**
+     * 批量查询省市区
+     *
+     * @param ids 区ID
+     * @return
+     */
+    private List<AddressDTO> findAddressByIds(Integer... ids) {
+        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(ids);
+        if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+            if (CollectionUtils.isEmpty(apiResponse.getBody())) {
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+            }
+            return apiResponse.getBody();
+        } else {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+        }
     }
 
     /**
