@@ -301,7 +301,7 @@ public class OrderManager {
             String consigneeJson = JSONObject.toJSONString(consignees);
             List<ConsigneeVo> consigneeVos = JSONObject.parseArray(consigneeJson, ConsigneeVo.class);
             // 区ids
-            Integer[] areaIds = new Integer[]{consigneeVos.size()};
+            Integer[] areaIds = new Integer[consigneeVos.size()];
             for (int i = 0; i < consigneeVos.size(); i++) {
                 areaIds[i] = consigneeVos.get(i).getAreaId();
             }
