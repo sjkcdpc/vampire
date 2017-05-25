@@ -1,10 +1,14 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.thor.util.Page;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.GoodsService;
-import com.gaosi.api.revolver.vo.*;
+import com.gaosi.api.revolver.vo.CommonConditionVo;
+import com.gaosi.api.revolver.vo.GoodsVo;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -17,7 +21,7 @@ import java.util.List;
 @RequestMapping(value = "/goods")
 public class GoodsController {
 
-    @Resource(name = "vGoodsService")
+    @Resource(name = "goodsService")
     private GoodsService goodsService;
 
     /**
@@ -42,7 +46,7 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/getPeriod")
-    public ResultData getPeriod(Integer subjectId){
+    public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
         ApiResponse<List<CommonConditionVo>> response = goodsService.queryPeriod(subjectId);
         List<CommonConditionVo> periodVos = response.getBody();
@@ -58,7 +62,8 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/getCategory")
-    public ResultData getCategory(Integer subjectId, Integer period){
+    public ResultData getCategory(@RequestParam(required = false) Integer subjectId,
+                                  @RequestParam(required = false) Integer period){
         ResultData resultData = new ResultData();
         ApiResponse<List<CommonConditionVo>> response = goodsService.queryCategory(subjectId, period);
         List<CommonConditionVo> categoryVos = response.getBody();
@@ -75,8 +80,9 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/getBookVersionArea")
-    public ResultData getBookVersionArea(Integer subjectId, Integer period,
-                                         Integer categoryId){
+    public ResultData getBookVersionArea(@RequestParam(required = false) Integer subjectId,
+                                         @RequestParam(required = false) Integer period,
+                                         @RequestParam(required = false) Integer categoryId){
         ResultData resultData = new ResultData();
         ApiResponse<List<CommonConditionVo>> response = goodsService.queryBookVersionArea(subjectId,
                 period, categoryId);
@@ -84,5 +90,45 @@ public class GoodsController {
         resultData.setBody(bookVersionAreaVos);
 
         return resultData;
+    }
+
+    /**
+     * 商品列表查询
+     *
+     * @param insId 结构id
+     * @param sid 学科id
+     * @param pid 学期code
+     * @param vtId 教材版本=1/考区=2
+     * @param vid 教材版本
+     * @param eid 考区
+     * @param pageNum 当前页
+     * @param pageSize 页大小
+     * @return
+     */
+    @RequestMapping(value = "/index", method = RequestMethod.GET)
+    public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam(required = false) Integer sid,
+                                     @RequestParam(required = false) Integer pid, @RequestParam(required = false) Integer vtId,
+                                     @RequestParam(required = false) Integer vid, @RequestParam(required = false) Integer eid,
+                                     @RequestParam Integer pageNum,
+                                     @RequestParam Integer pageSize){
+        ResultData resultData = new ResultData();
+        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(insId, sid, pid, vtId, vid,
+                eid, pageNum, pageSize);
+        Page<GoodsVo> page = response.getBody();
+        resultData.setBody(page);
+
+        return resultData;
+    }
+
+    /**
+     *
+     *
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
+
+        return null;
     }
 }
