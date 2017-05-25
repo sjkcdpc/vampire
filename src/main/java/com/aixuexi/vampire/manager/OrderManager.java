@@ -75,6 +75,8 @@ public class OrderManager {
 
     private static final String express_shentong = "shentong";
 
+    private static final String express_shunfeng = "shunfeng";
+
     private List<Integer> insIds = Lists.newArrayList(25, 26);
 
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -96,6 +98,9 @@ public class OrderManager {
         confirmOrderVo.setExpress(expressUtil.getExpress());
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
+        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
         List<Integer> goodsTypeIds = Lists.newArrayList();
         int goodsPieces = 0; // 商品总件数
         double goodsAmount = 0; // 总金额
@@ -113,9 +118,13 @@ public class OrderManager {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
             // 数量*单价
             goodsVo.setTotal(goodsVo.getNum() * goodsVo.getPrice());
-            // 数量*单重量
-            weight += goodsVo.getNum() * goodsVo.getWeight();
-            goodsAmount += goodsVo.getTotal();
+            if (goodsVo.getStatus() == 1) { // 上架
+                // 数量*单重量
+                weight += goodsVo.getNum() * goodsVo.getWeight();
+                goodsAmount += goodsVo.getTotal();
+            } else { // 下架
+                goodsPieces -= goodsVo.getNum();
+            }
         }
         confirmOrderVo.setGoodsItem(goodsVos);
         confirmOrderVo.setGoodsPieces(goodsPieces);
@@ -386,6 +395,9 @@ public class OrderManager {
         } else {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
         }
+        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
         goodsTypeIds = Lists.newArrayList();
         int goodsPieces = 0; // 商品总件数
         // 数量 goodsTypeIds - > num
@@ -399,10 +411,14 @@ public class OrderManager {
         double goodsAmount = 0; // 总金额
         List<ConfirmGoodsVo> goodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
-            // 数量*单重量
-            weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
-            // 数量*单价
-            goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
+            if (goodsVo.getStatus() == 1) { // 上架
+                // 数量*单重量
+                weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
+                // 数量*单价
+                goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
+            } else { // 下架
+                goodsPieces -= goodsNum.get(goodsVo.getGoodsTypeId());
+            }
         }
         // 计算邮费
         calcFreight(provinceId, weight, confirmExpressVos);
