@@ -33,4 +33,8 @@
     <dubbo:reference interface="com.gaosi.api.revolver.GoodsOrderService" id="goodsOrderService"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
 
+    <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="vdictionaryApi"/>
 </beans>
