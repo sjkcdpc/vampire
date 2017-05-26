@@ -2,16 +2,27 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.gaosi.api.basicdata.BookVersionApi;
+import com.gaosi.api.basicdata.DictionaryApi;
+import com.gaosi.api.basicdata.ExamAreaApi;
+import com.gaosi.api.basicdata.SubjectProductApi;
+import com.gaosi.api.basicdata.model.bo.BookVersionBo;
+import com.gaosi.api.basicdata.model.bo.DictionaryBo;
+import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
+import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.revolver.GoodsConstans;
 import com.gaosi.api.revolver.GoodsService;
 import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
+import com.gaosi.api.revolver.vo.RequestGoodsConditionVo;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,6 +35,18 @@ public class GoodsController {
     @Resource(name = "vGoodsService")
     private GoodsService goodsService;
 
+    @Resource
+    private SubjectProductApi subjectProductApi;
+
+    @Resource
+    private ExamAreaApi examAreaApi;
+
+    @Resource
+    private BookVersionApi bookVersionApi;
+
+    @Resource(name = "vdictionaryApi")
+    private DictionaryApi dictionaryApi;
+
     /**
      * 获取学科列表
      *
@@ -32,10 +55,18 @@ public class GoodsController {
     @RequestMapping(value = "/getSubject")
     public ResultData getSubject(){
         ResultData resultData = new ResultData();
-        ApiResponse<List<CommonConditionVo>> response = goodsService.querySubject();
-        List<CommonConditionVo> subjectVos = response.getBody();
+        List<Integer> list = goodsService.querySubject();
 
-        resultData.setBody(subjectVos);
+        List<CommonConditionVo> conditionVos = new ArrayList<>();
+        //调用获取名字接口
+        List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(list);
+        for (SubjectProductBo productBo: productBos) {
+            CommonConditionVo conditionVo = new CommonConditionVo();
+            conditionVo.setId(productBo.getSubjectId());
+            conditionVo.setName(productBo.getName());
+            conditionVos.add(conditionVo);
+        }
+        resultData.setBody(conditionVos);
         return resultData;
     }
 
@@ -48,9 +79,18 @@ public class GoodsController {
     @RequestMapping(value = "/getPeriod")
     public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
-        ApiResponse<List<CommonConditionVo>> response = goodsService.queryPeriod(subjectId);
-        List<CommonConditionVo> periodVos = response.getBody();
-        resultData.setBody(periodVos);
+        List<Integer> list = goodsService.queryPeriod(subjectId);
+        List<CommonConditionVo> conditionVos = new ArrayList<>();
+        //需要调用获取名字接口
+        ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(list);
+        for (DictionaryBo dictionaryBo: periods.getBody()) {
+            CommonConditionVo conditionVo = new CommonConditionVo();
+            conditionVo.setId(Integer.valueOf(dictionaryBo.getCode()));
+            conditionVo.setName(dictionaryBo.getName());
+            conditionVos.add(conditionVo);
+        }
+
+        resultData.setBody(conditionVos);
         return resultData;
     }
 
@@ -84,10 +124,31 @@ public class GoodsController {
                                          @RequestParam(required = false) Integer period,
                                          @RequestParam(required = false) Integer categoryId){
         ResultData resultData = new ResultData();
-        ApiResponse<List<CommonConditionVo>> response = goodsService.queryBookVersionArea(subjectId,
-                period, categoryId);
-        List<CommonConditionVo> bookVersionAreaVos = response.getBody();
-        resultData.setBody(bookVersionAreaVos);
+        List<CommonConditionVo> conditionVos = new ArrayList<>();
+        if (categoryId.equals(GoodsConstans.GoodsCategory.BOOKVERSION.getValue())) {
+            //查询教材版本
+            List<Integer> bookVersionIds = goodsService.queryBookVersion(subjectId, period);
+            ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(bookVersionIds);
+            for (BookVersionBo bookVersionBo: bookVersion.getBody()) {
+                CommonConditionVo conditionVo = new CommonConditionVo();
+                conditionVo.setId(bookVersionBo.getId());
+                conditionVo.setName(bookVersionBo.getName());
+                conditionVos.add(conditionVo);
+            }
+        }else if (categoryId.equals(GoodsConstans.GoodsCategory.AREA.getValue())) {
+            //按考区分
+            List<Integer> areaIds = goodsService.queryArea(subjectId, period);
+            ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(areaIds);
+
+            for (ExamAreaBo examAreaBo: examArea.getBody()) {
+                CommonConditionVo conditionVo = new CommonConditionVo();
+                conditionVo.setId(examAreaBo.getId());
+                conditionVo.setName(examAreaBo.getName());
+                conditionVos.add(conditionVo);
+            }
+        }
+
+        resultData.setBody(conditionVos);
 
         return resultData;
     }
@@ -112,8 +173,16 @@ public class GoodsController {
                                      @RequestParam Integer pageNum,
                                      @RequestParam Integer pageSize){
         ResultData resultData = new ResultData();
-        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(insId, sid, pid, vtId, vid,
-                eid, pageNum, pageSize);
+        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
+        conditionVo.setInsId(insId);
+        conditionVo.setSid(sid);
+        conditionVo.setPid(pid);
+        conditionVo.setVtId(vtId);
+        conditionVo.setVid(vid);
+        conditionVo.setEid(eid);
+        conditionVo.setPageNum(pageNum);
+        conditionVo.setPageSize(pageSize);
+        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
         resultData.setBody(page);
 
