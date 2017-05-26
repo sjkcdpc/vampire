@@ -11,9 +11,12 @@ import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.GoodsOrderService;
 import com.gaosi.api.revolver.model.GoodsOrder;
+import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
+import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -65,7 +68,9 @@ public class OrderController {
             goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
         }
         String json = JSONObject.toJSONString(page.getList(), SerializerFeature.WriteDateUseDateFormat);
-        retPage.setList(JSONObject.parseArray(json, GoodsOrderVo.class));
+        List<GoodsOrderVo> goodsOrderVos = JSONObject.parseArray(json, GoodsOrderVo.class);
+        dealGoodsOrder(goodsOrderVos);
+        retPage.setList(goodsOrderVos);
         resultData.setBody(retPage);
         return resultData;
     }
@@ -84,7 +89,10 @@ public class OrderController {
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
         String json = JSONObject.toJSONString(goodsOrder, SerializerFeature.WriteDateUseDateFormat);
-        resultData.setBody(JSONObject.parseObject(json, GoodsOrderVo.class));
+        GoodsOrderVo goodsOrderVo = JSONObject.parseObject(json, GoodsOrderVo.class);
+        List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
+        dealGoodsOrder(goodsOrderVos);
+        resultData.setBody(goodsOrderVos.get(0));
         return resultData;
     }
 
@@ -167,6 +175,34 @@ public class OrderController {
             }
         }
         return retMap;
+    }
+
+
+    /**
+     * 计算总件数/总金额等信息
+     *
+     * @param goodsOrderVos
+     */
+    private void dealGoodsOrder(List<GoodsOrderVo> goodsOrderVos) {
+        if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
+            for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+                // 订单总金额
+                goodsOrderVo.setPayAmount(goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight());
+                int goodsPieces = 0;
+                List<Integer> goodsTypeIds = Lists.newArrayList();
+                for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
+                    goodsPieces += orderDetailVo.getNum();
+                    goodsTypeIds.add(orderDetailVo.getGoodTypeId());
+                }
+                Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = orderManager.findGoodsByTypeIds(goodsTypeIds);
+                for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
+                    ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
+                    orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
+                    orderDetailVo.setTotal(orderDetailVo.getPrice() * orderDetailVo.getNum());
+                }
+                goodsOrderVo.setGoodsPieces(goodsPieces);
+            }
+        }
     }
 }
 

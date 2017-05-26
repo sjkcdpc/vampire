@@ -432,4 +432,22 @@ public class OrderManager {
         freightVo.setBalance(Double.valueOf(remain) / 100000);
         return freightVo;
     }
+
+
+    /**
+     * 根据商品类型ID是查询商品信息
+     *
+     * @param goodsTypeIds
+     * @return
+     */
+    public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
+        Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
+        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
+        if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
+            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                confirmGoodsVoMap.put(confirmGoodsVo.getGoodsTypeId(), confirmGoodsVo);
+            }
+        }
+        return confirmGoodsVoMap;
+    }
 }
