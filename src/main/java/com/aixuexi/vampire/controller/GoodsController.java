@@ -55,11 +55,11 @@ public class GoodsController {
     @RequestMapping(value = "/getSubject")
     public ResultData getSubject(){
         ResultData resultData = new ResultData();
-        List<Integer> list = goodsService.querySubject();
+        ApiResponse<List<Integer>> response = goodsService.querySubject();
 
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         //调用获取名字接口
-        List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(list);
+        List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
         for (SubjectProductBo productBo: productBos) {
             CommonConditionVo conditionVo = new CommonConditionVo();
             conditionVo.setId(productBo.getSubjectId());
@@ -79,10 +79,10 @@ public class GoodsController {
     @RequestMapping(value = "/getPeriod")
     public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
-        List<Integer> list = goodsService.queryPeriod(subjectId);
+        ApiResponse<List<Integer>> response = goodsService.queryPeriod(subjectId);
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         //需要调用获取名字接口
-        ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(list);
+        ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
         for (DictionaryBo dictionaryBo: periods.getBody()) {
             CommonConditionVo conditionVo = new CommonConditionVo();
             conditionVo.setId(Integer.valueOf(dictionaryBo.getCode()));
@@ -127,8 +127,8 @@ public class GoodsController {
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         if (categoryId.equals(GoodsConstans.GoodsCategory.BOOKVERSION.getValue())) {
             //查询教材版本
-            List<Integer> bookVersionIds = goodsService.queryBookVersion(subjectId, period);
-            ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(bookVersionIds);
+            ApiResponse<List<Integer>> response = goodsService.queryBookVersion(subjectId, period);
+            ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
             for (BookVersionBo bookVersionBo: bookVersion.getBody()) {
                 CommonConditionVo conditionVo = new CommonConditionVo();
                 conditionVo.setId(bookVersionBo.getId());
@@ -137,8 +137,8 @@ public class GoodsController {
             }
         }else if (categoryId.equals(GoodsConstans.GoodsCategory.AREA.getValue())) {
             //按考区分
-            List<Integer> areaIds = goodsService.queryArea(subjectId, period);
-            ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(areaIds);
+            ApiResponse<List<Integer>> response = goodsService.queryArea(subjectId, period);
+            ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
 
             for (ExamAreaBo examAreaBo: examArea.getBody()) {
                 CommonConditionVo conditionVo = new CommonConditionVo();
