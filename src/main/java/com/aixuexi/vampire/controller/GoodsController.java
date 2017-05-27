@@ -44,7 +44,7 @@ public class GoodsController {
     @Resource
     private BookVersionApi bookVersionApi;
 
-    @Resource(name = "vdictionaryApi")
+    @Resource
     private DictionaryApi dictionaryApi;
 
     /**
