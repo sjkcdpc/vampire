@@ -166,7 +166,7 @@ public class GoodsController {
      * @param pageSize 页大小
      * @return
      */
-    @RequestMapping(value = "/index", method = RequestMethod.GET)
+    @RequestMapping(value = "/goodsList", method = RequestMethod.GET)
     public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam(required = false) Integer sid,
                                      @RequestParam(required = false) Integer pid, @RequestParam(required = false) Integer vtId,
                                      @RequestParam(required = false) Integer vid, @RequestParam(required = false) Integer eid,
@@ -196,8 +196,10 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
-
-        return null;
+    public ResultData queryGoodsDetail(@RequestParam Integer goodsId, @RequestParam Integer insId){
+        ResultData resultData = new ResultData();
+        ApiResponse<GoodsVo> response = goodsService.queryGoodsDetail(goodsId, insId);
+        resultData.setBody(response.getBody());
+        return resultData;
     }
 }
