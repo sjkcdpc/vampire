@@ -187,12 +187,12 @@ public class OrderController {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
                 // 订单总金额
-                goodsOrderVo.setPayAmount(goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight());
+                goodsOrderVo.setPayAmount(goodsOrderVo.getConsumeAmount() + (goodsOrderVo.getFreight() == null ? 0D : goodsOrderVo.getFreight()));
                 int goodsPieces = 0;
                 List<Integer> goodsTypeIds = Lists.newArrayList();
                 for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
                     goodsPieces += orderDetailVo.getNum();
-                    goodsTypeIds.add(orderDetailVo.getGoodTypeId());
+                    if (orderDetailVo.getGoodTypeId() != null) goodsTypeIds.add(orderDetailVo.getGoodTypeId());
                 }
                 Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = orderManager.findGoodsByTypeIds(goodsTypeIds);
                 for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
