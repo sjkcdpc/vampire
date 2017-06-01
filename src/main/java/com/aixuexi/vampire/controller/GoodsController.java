@@ -15,7 +15,9 @@ import com.gaosi.api.revolver.GoodsConstans;
 import com.gaosi.api.revolver.GoodsService;
 import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
+import com.gaosi.api.revolver.vo.RelationGoodsVo;
 import com.gaosi.api.revolver.vo.RequestGoodsConditionVo;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by zhaowenlei on 17/5/22.
@@ -184,6 +188,8 @@ public class GoodsController {
         conditionVo.setPageSize(pageSize);
         ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
+
+        loadRelationName(page.getList());
         resultData.setBody(page);
 
         return resultData;
@@ -201,5 +207,79 @@ public class GoodsController {
         ApiResponse<GoodsVo> response = goodsService.queryGoodsDetail(goodsId, insId);
         resultData.setBody(response.getBody());
         return resultData;
+    }
+
+    private void loadRelationName(List<GoodsVo> list){
+        List<Integer> bookVersionIds = new ArrayList<>();
+        List<Integer> examAreaIds = new ArrayList<>();
+        for (GoodsVo goodsVo: list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            for (RelationGoodsVo relation:relationGoods) {
+                if (!relation.getBookVersion().equals(0)) {
+                    bookVersionIds.add(relation.getBookVersion());
+                }
+                if (!relation.getExamAreaId().equals(0)) {
+                    examAreaIds.add(relation.getExamAreaId());
+                }
+            }
+        }
+        List<BookVersionBo> bookVersionBos = new ArrayList<>();
+        List<ExamAreaBo> examAreaBos = new ArrayList<>();
+        Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
+        Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
+
+
+        if (CollectionUtils.isNotEmpty(bookVersionIds)) {
+            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
+            bookVersionBos = bookVersionResponse.getBody();
+        }
+
+        if (CollectionUtils.isNotEmpty(examAreaIds)) {
+            ApiResponse<List<ExamAreaBo>> examAreaResponse = examAreaApi.findByExamAreaIds(examAreaIds);
+            examAreaBos = examAreaResponse.getBody();
+        }
+
+        bookVersionMap = toBookVersionMap(bookVersionBos);
+        examAreaMap = toExamAreaMap(examAreaBos);
+
+        for (GoodsVo goodsVo: list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            for (RelationGoodsVo relation:relationGoods) {
+                if (!relation.getBookVersion().equals(0)) {
+                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
+                    relation.setRelationName(bookVersion.getName());
+                }
+                if (!relation.getExamAreaId().equals(0)) {
+                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
+                    relation.setRelationName(examArea.getName());
+                }
+            }
+        }
+    }
+
+    public Map<Integer, BookVersionBo> toBookVersionMap(List<BookVersionBo> bookVersionBos){
+        Map<Integer, BookVersionBo> map = new HashMap<>();
+        for (BookVersionBo bookVersionBo: bookVersionBos) {
+            if (map.containsKey(bookVersionBo.getId())) {
+                continue;
+            }else {
+                map.put(bookVersionBo.getId(), bookVersionBo);
+            }
+        }
+
+        return map;
+    }
+
+    public Map<Integer, ExamAreaBo> toExamAreaMap(List<ExamAreaBo> examAreaBos){
+        Map<Integer, ExamAreaBo> map = new HashMap<>();
+        for (ExamAreaBo examAreaBo: examAreaBos) {
+            if (map.containsKey(examAreaBo.getId())) {
+                continue;
+            }else {
+                map.put(examAreaBo.getId(), examAreaBo);
+            }
+        }
+
+        return map;
     }
 }
