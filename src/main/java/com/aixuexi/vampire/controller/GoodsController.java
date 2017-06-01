@@ -37,7 +37,7 @@ import java.util.Map;
 @RequestMapping(value = "/goods")
 public class GoodsController {
 
-    @Resource(name = "vGoodsService")
+    @Resource
     private GoodsServiceFacade goodsServiceFacade;
 
     @Resource

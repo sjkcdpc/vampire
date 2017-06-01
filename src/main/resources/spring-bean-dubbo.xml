@@ -23,15 +23,21 @@
         <property name="accessAuthorityService" ref="accessAuthorityService"/>
     </bean>
 
+    <!-- 订单中心相关接口 -->
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ConsigneeServiceFacade" id="consigneeService"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
-    <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
     <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade"/>
-    <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
-    <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsServiceFacade" id="vGoodsService"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsServiceFacade" id="goodsServiceFacade"/>
 
+    <!--购物车-->
+    <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
+
+    <!--财务余额&计算运费-->
+    <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
+    <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
+
+    <!--基础数据-->
+    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi"/>

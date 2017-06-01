@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +60,8 @@ public class OrderManager {
     @Autowired
     private GoodsService goodsService;
 
-    @Resource(name = "vGoodsService")
-    private GoodsServiceFacade vGoodsServiceFacade;
+    @Autowired
+    private GoodsServiceFacade goodsServiceFacade;
 
     @Autowired
     private OrderServiceFacade orderServiceFacade;
@@ -114,7 +113,7 @@ public class OrderManager {
             goodsPieces += shoppingCartList.getNum();
         }
         // 4. 根据goodsTypeIds查询商品其他信息
-        List<ConfirmGoodsVo> goodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
             // 数量*单价
@@ -238,7 +237,7 @@ public class OrderManager {
         // 订单详情
         List<OrderDetail> orderDetails = Lists.newArrayList();
         // 查询商品明细
-        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> confirmGoodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
             // 数量*单重量
@@ -408,7 +407,7 @@ public class OrderManager {
         }
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
-        List<ConfirmGoodsVo> goodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             if (goodsVo.getStatus() == 1) { // 上架
                 // 数量*单重量
@@ -441,7 +440,7 @@ public class OrderManager {
      */
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
-        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> confirmGoodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
                 confirmGoodsVoMap.put(confirmGoodsVo.getGoodsTypeId(), confirmGoodsVo);
