@@ -176,7 +176,7 @@ public class GoodsController {
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
         conditionVo.setGoodsName(goodName);
-        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(conditionVo);
+        ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
         loadRelationName(page.getList());
         resultData.setBody(page);
