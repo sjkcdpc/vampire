@@ -11,7 +11,7 @@ import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.GoodsConstans;
+import com.gaosi.api.revolver.constant.GoodsConstant;
 import com.gaosi.api.revolver.GoodsService;
 import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
@@ -130,7 +130,7 @@ public class GoodsController {
                                          @RequestParam(required = false) Integer categoryId){
         ResultData resultData = new ResultData();
         List<CommonConditionVo> conditionVos = new ArrayList<>();
-        if (categoryId.equals(GoodsConstans.GoodsCategory.BOOKVERSION.getValue())) {
+        if (categoryId.equals(GoodsConstant.GoodsCategory.BOOKVERSION.getValue())) {
             //查询教材版本
             ApiResponse<List<Integer>> response = goodsService.queryBookVersion(subjectId, period);
             ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
@@ -140,7 +140,7 @@ public class GoodsController {
                 conditionVo.setName(bookVersionBo.getName());
                 conditionVos.add(conditionVo);
             }
-        }else if (categoryId.equals(GoodsConstans.GoodsCategory.AREA.getValue())) {
+        }else if (categoryId.equals(GoodsConstant.GoodsCategory.AREA.getValue())) {
             //按考区分
             ApiResponse<List<Integer>> response = goodsService.queryArea(subjectId, period);
             ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
