@@ -9,7 +9,7 @@ import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.facade.GoodsOrderService;
+import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
@@ -38,7 +38,7 @@ public class OrderController {
     private OrderManager orderManager;
 
     @Autowired
-    private GoodsOrderService goodsOrderService;
+    private OrderServiceFacade orderServiceFacade;
 
     @Autowired
     private DictionaryApi dictionaryApi;
@@ -55,7 +55,7 @@ public class OrderController {
     public ResultData list(@RequestParam Integer insId, Integer userId,
                            @RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
-        Page<GoodsOrder> page = goodsOrderService.selectGoodsOrderByIns(insId, userId, pageIndex, pageSize);
+        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(insId, userId, pageIndex, pageSize);
         Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
         retPage.setPageTotal(page.getPageTotal());
         retPage.setPageSize(page.getPageSize());
@@ -84,7 +84,7 @@ public class OrderController {
     @RequestMapping(value = "/detail")
     public ResultData detail(@RequestParam String orderId) {
         ResultData resultData = new ResultData();
-        GoodsOrder goodsOrder = goodsOrderService.selectGoodsOrderById(orderId);
+        GoodsOrder goodsOrder = orderServiceFacade.selectGoodsOrderById(orderId);
         Map<String, String> expressMap = selectExpress();
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);

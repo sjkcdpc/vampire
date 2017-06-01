@@ -30,7 +30,6 @@
     <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
     <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsServiceFacade" id="vGoodsService"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsOrderService" id="goodsOrderService"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
 
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>
