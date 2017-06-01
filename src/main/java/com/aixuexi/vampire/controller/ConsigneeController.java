@@ -28,8 +28,6 @@ public class ConsigneeController {
     @RequestMapping(value = "/save")
     public ResultData save(Consignee consignee) {
         ResultData resultData = new ResultData();
-        // 非默认收货地址
-        consignee.setStatus(0);
         resultData.setBody(consigneeServiceFacade.insert(consignee));
         return resultData;
     }
@@ -44,20 +42,6 @@ public class ConsigneeController {
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
         resultData.setBody(consigneeServiceFacade.update(consignee));
-        return resultData;
-    }
-
-    /**
-     * 设置默认收货地址
-     *
-     * @param id    收货地址ID
-     * @param insId 机构ID
-     * @return
-     */
-    @RequestMapping(value = "/default")
-    public ResultData defaultConsignee(@RequestParam Integer id, @RequestParam Integer insId) {
-        ResultData resultData = new ResultData();
-        resultData.setBody(consigneeServiceFacade.defaultConsignee(id, insId));
         return resultData;
     }
 }

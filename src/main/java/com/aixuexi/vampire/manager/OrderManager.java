@@ -6,6 +6,7 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -130,14 +131,9 @@ public class OrderManager {
         confirmOrderVo.setGoodsPieces(goodsPieces);
         confirmOrderVo.setGoodsAmount(goodsAmount);
         // 计算邮费
-        Integer provinceId = 0;
-        for (ConsigneeVo consigneeVo : consigneeVos) {
-            if (consigneeVo.getStatus() == 1) {
-                provinceId = consigneeVo.getProvinceId();
-                break;
-            } // 默认收货地址
-        }
-        calcFreight(provinceId, weight, confirmOrderVo.getExpress());
+        // Integer provinceId = 0;
+        // if (CollectionUtils.isNotEmpty(consigneeVos)) provinceId = consigneeVos.get(0).getProvinceId();
+        // calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
         confirmOrderVo.setBalance(Double.valueOf(remain) / 100000);
@@ -303,7 +299,7 @@ public class OrderManager {
      * @return
      */
     private List<ConsigneeVo> findConsignee(Integer insId) {
-        List<Consignee> consignees = consigneeServiceFacade.selectByIns(insId, null);
+        List<Consignee> consignees = consigneeServiceFacade.selectByIns(insId);
         if (CollectionUtils.isNotEmpty(consignees)) {
             String consigneeJson = JSONObject.toJSONString(consignees);
             List<ConsigneeVo> consigneeVos = JSONObject.parseArray(consigneeJson, ConsigneeVo.class);
