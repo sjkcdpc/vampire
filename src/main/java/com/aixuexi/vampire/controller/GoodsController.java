@@ -17,6 +17,7 @@ import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
 import com.gaosi.api.revolver.vo.RelationGoodsVo;
 import com.gaosi.api.revolver.vo.RequestGoodsConditionVo;
+import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -196,15 +197,17 @@ public class GoodsController {
     }
 
     /**
-     *
+     * 商品详情
      *
      * @param goodsId
+     * @param insId
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId, @RequestParam Integer insId){
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsService.queryGoodsDetail(goodsId, insId);
+        loadRelationName(Lists.newArrayList(response.getBody()));
         resultData.setBody(response.getBody());
         return resultData;
     }
