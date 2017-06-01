@@ -159,6 +159,32 @@ public class GoodsController {
     }
 
     /**
+     * 通过商品名模糊查找商品
+     *
+     * @param goodName
+     * @param insId
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @RequestMapping(value = "/getByGoodsName")
+    public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer insId,
+                                      @RequestParam Integer pageNum, @RequestParam Integer pageSize){
+        ResultData resultData = new ResultData();
+        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
+        conditionVo.setInsId(insId);
+        conditionVo.setPageNum(pageNum);
+        conditionVo.setPageSize(pageSize);
+        conditionVo.setGoodsName(goodName);
+        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(conditionVo);
+        Page<GoodsVo> page = response.getBody();
+        loadRelationName(page.getList());
+        resultData.setBody(page);
+
+        return resultData;
+    }
+
+    /**
      * 商品列表查询
      *
      * @param insId 结构id
