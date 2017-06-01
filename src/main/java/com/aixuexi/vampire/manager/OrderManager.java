@@ -2,8 +2,6 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.account.api.AxxBankService;
 import com.aixuexi.account.api.GoodsService;
-import com.aixuexi.account.model.GoodsOrder;
-import com.aixuexi.account.model.OrderDetail;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.ExpressUtil;
@@ -19,7 +17,13 @@ import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.Consignee;
-import com.gaosi.api.revolver.vo.*;
+import com.gaosi.api.revolver.model.GoodsOrder;
+import com.gaosi.api.revolver.model.OrderDetail;
+import com.gaosi.api.revolver.vo.ConfirmExpressVo;
+import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
+import com.gaosi.api.revolver.vo.ConfirmOrderVo;
+import com.gaosi.api.revolver.vo.ConsigneeVo;
+import com.gaosi.api.revolver.vo.FreightVo;
 import com.gaosi.util.model.ResultData;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -195,9 +199,7 @@ public class OrderManager {
             } catch (Throwable e) {
                 logger.error("submitOrder --> clearShoppingCart fail, orderId : {}", apiResponse.getBody());
             }
-            // TODO 根据快递提示信息。
-            String tips = "我们将在两个工作日之内发货，发货后约3～6天到货。";
-            return new OrderSuccessVo(apiResponse.getBody(), tips);
+            return new OrderSuccessVo(apiResponse.getBody(), findTipsByExpress(express));
         } else {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "订单创建失败");
         }
@@ -247,7 +249,7 @@ public class OrderManager {
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setBarCode(confirmGoodsVo.getBarCode());
             orderDetail.setGoodsId(confirmGoodsVo.getGoodsId());
-            orderDetail.setGoodType_id(confirmGoodsVo.getGoodsTypeId());
+            orderDetail.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
             orderDetail.setName(confirmGoodsVo.getGoodsName());
             orderDetail.setNum(num);
             orderDetail.setPrice(confirmGoodsVo.getPrice());
@@ -447,4 +449,27 @@ public class OrderManager {
         }
         return confirmGoodsVoMap;
     }
+
+    /**
+     * 根据不同的express提示信息
+     *
+     * @param express
+     * @return
+     */
+    private String findTipsByExpress(String express) {
+        String tips = "";
+        switch (express) {
+            case express_shunfeng:
+                tips = "我们将在2个工作日之内发货。";
+                break;
+            case express_shentong:
+                tips = "我们将在2个工作日之内发货，预计5天内到货。";
+                break;
+            case express_dbwl:
+                tips = "我们将在2个工作日之内发货，预计7天内到货";
+                break;
+        }
+        return tips;
+    }
+
 }
