@@ -71,6 +71,7 @@ public class GoodsController {
             conditionVo.setName(productBo.getName());
             conditionVos.add(conditionVo);
         }
+        conditionVos.add(getCommonConditionVo());
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -94,7 +95,7 @@ public class GoodsController {
             conditionVo.setName(dictionaryBo.getName());
             conditionVos.add(conditionVo);
         }
-
+        conditionVos.add(getCommonConditionVo());
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -153,6 +154,7 @@ public class GoodsController {
             }
         }
 
+        conditionVos.add(getCommonConditionVo());
         resultData.setBody(conditionVos);
 
         return resultData;
@@ -191,8 +193,7 @@ public class GoodsController {
      * @param sid 学科id
      * @param pid 学期code
      * @param vtId 教材版本=1/考区=2
-     * @param vid 教材版本
-     * @param eid 考区
+     * @param veId 教材版本/考区
      * @param pageNum 当前页
      * @param pageSize 页大小
      * @return
@@ -200,8 +201,7 @@ public class GoodsController {
     @RequestMapping(value = "/goodsList", method = RequestMethod.GET)
     public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam(required = false) Integer sid,
                                      @RequestParam(required = false) Integer pid, @RequestParam(required = false) Integer vtId,
-                                     @RequestParam(required = false) Integer vid, @RequestParam(required = false) Integer eid,
-                                     @RequestParam Integer pageNum,
+                                     @RequestParam(required = false) Integer veId, @RequestParam Integer pageNum,
                                      @RequestParam Integer pageSize){
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
@@ -209,8 +209,7 @@ public class GoodsController {
         conditionVo.setSid(sid);
         conditionVo.setPid(pid);
         conditionVo.setVtId(vtId);
-        conditionVo.setVid(vid);
-        conditionVo.setEid(eid);
+        conditionVo.setVeId(veId);
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
@@ -310,5 +309,12 @@ public class GoodsController {
         }
 
         return map;
+    }
+
+    public CommonConditionVo getCommonConditionVo(){
+        CommonConditionVo commonConditionVo = new CommonConditionVo();
+        commonConditionVo.setId(0);
+        commonConditionVo.setName("全部");
+        return commonConditionVo;
     }
 }
