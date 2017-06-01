@@ -23,14 +23,14 @@
         <property name="accessAuthorityService" ref="accessAuthorityService"/>
     </bean>
 
-    <dubbo:reference interface="com.gaosi.api.revolver.ConsigneeService" id="consigneeService"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.ConsigneeServiceFacade" id="consigneeService"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
     <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
-    <dubbo:reference interface="com.aixuexi.ordernew.facade.OrderServiceFacade" id="orderServiceFacade"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade"/>
     <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.GoodsService" id="vGoodsService"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.GoodsOrderService" id="goodsOrderService"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsServiceFacade" id="vGoodsService"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsOrderService" id="goodsOrderService"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
 
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>

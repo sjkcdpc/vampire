@@ -6,7 +6,7 @@ import com.aixuexi.thor.response.ResultData;
 import com.gaosi.api.independenceDay.entity.ShoppingCartList;
 import com.gaosi.api.independenceDay.service.ShoppingCartService;
 import com.gaosi.api.independenceDay.vo.ShoppingCartListVo;
-import com.gaosi.api.revolver.GoodsService;
+import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -27,7 +27,7 @@ public class ShoppingCartController {
     @Autowired
     private ShoppingCartService shoppingCartService;
     @Autowired
-    private GoodsService goodsService;
+    private GoodsServiceFacade goodsServiceFacade;
 
 
     /**
@@ -66,7 +66,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add")
     public ResultData add(@RequestParam Integer userId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        List<ConfirmGoodsVo> goodsVos = goodsService.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
+        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
         if (CollectionUtils.isEmpty(goodsVos)) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在");
         }

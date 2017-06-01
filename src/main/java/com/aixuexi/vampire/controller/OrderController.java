@@ -9,7 +9,7 @@ import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.GoodsOrderService;
+import com.gaosi.api.revolver.facade.GoodsOrderService;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;

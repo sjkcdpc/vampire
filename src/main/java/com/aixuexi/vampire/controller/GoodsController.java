@@ -12,7 +12,7 @@ import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.constant.GoodsConstant;
-import com.gaosi.api.revolver.GoodsService;
+import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
 import com.gaosi.api.revolver.vo.RelationGoodsVo;
@@ -38,7 +38,7 @@ import java.util.Map;
 public class GoodsController {
 
     @Resource(name = "vGoodsService")
-    private GoodsService goodsService;
+    private GoodsServiceFacade goodsServiceFacade;
 
     @Resource
     private SubjectProductApi subjectProductApi;
@@ -60,7 +60,7 @@ public class GoodsController {
     @RequestMapping(value = "/getSubject")
     public ResultData getSubject(){
         ResultData resultData = new ResultData();
-        ApiResponse<List<Integer>> response = goodsService.querySubject();
+        ApiResponse<List<Integer>> response = goodsServiceFacade.querySubject();
 
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         //调用获取名字接口
@@ -84,7 +84,7 @@ public class GoodsController {
     @RequestMapping(value = "/getPeriod")
     public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
-        ApiResponse<List<Integer>> response = goodsService.queryPeriod(subjectId);
+        ApiResponse<List<Integer>> response = goodsServiceFacade.queryPeriod(subjectId);
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
@@ -110,7 +110,7 @@ public class GoodsController {
     public ResultData getCategory(@RequestParam(required = false) Integer subjectId,
                                   @RequestParam(required = false) Integer period){
         ResultData resultData = new ResultData();
-        ApiResponse<List<CommonConditionVo>> response = goodsService.queryCategory(subjectId, period);
+        ApiResponse<List<CommonConditionVo>> response = goodsServiceFacade.queryCategory(subjectId, period);
         List<CommonConditionVo> categoryVos = response.getBody();
         resultData.setBody(categoryVos);
         return resultData;
@@ -132,7 +132,7 @@ public class GoodsController {
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         if (categoryId.equals(GoodsConstant.GoodsCategory.BOOKVERSION.getValue())) {
             //查询教材版本
-            ApiResponse<List<Integer>> response = goodsService.queryBookVersion(subjectId, period);
+            ApiResponse<List<Integer>> response = goodsServiceFacade.queryBookVersion(subjectId, period);
             ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
             for (BookVersionBo bookVersionBo: bookVersion.getBody()) {
                 CommonConditionVo conditionVo = new CommonConditionVo();
@@ -142,7 +142,7 @@ public class GoodsController {
             }
         }else if (categoryId.equals(GoodsConstant.GoodsCategory.AREA.getValue())) {
             //按考区分
-            ApiResponse<List<Integer>> response = goodsService.queryArea(subjectId, period);
+            ApiResponse<List<Integer>> response = goodsServiceFacade.queryArea(subjectId, period);
             ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
 
             for (ExamAreaBo examAreaBo: examArea.getBody()) {
@@ -187,7 +187,7 @@ public class GoodsController {
         conditionVo.setEid(eid);
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
-        ApiResponse<Page<GoodsVo>> response = goodsService.queryGoodsList(conditionVo);
+        ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
 
         loadRelationName(page.getList());
@@ -206,7 +206,7 @@ public class GoodsController {
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId, @RequestParam Integer insId){
         ResultData resultData = new ResultData();
-        ApiResponse<GoodsVo> response = goodsService.queryGoodsDetail(goodsId, insId);
+        ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         loadRelationName(Lists.newArrayList(response.getBody()));
         resultData.setBody(response.getBody());
         return resultData;

@@ -2,7 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.gaosi.api.revolver.model.Consignee;
-import com.gaosi.api.revolver.ConsigneeService;
+import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ConsigneeController {
 
     @Autowired
-    private ConsigneeService consigneeService;
+    private ConsigneeServiceFacade consigneeServiceFacade;
 
     /**
      * 保存收货地址
@@ -30,7 +30,7 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         // 非默认收货地址
         consignee.setStatus(0);
-        resultData.setBody(consigneeService.insert(consignee));
+        resultData.setBody(consigneeServiceFacade.insert(consignee));
         return resultData;
     }
 
@@ -43,7 +43,7 @@ public class ConsigneeController {
     @RequestMapping(value = "/update")
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
-        resultData.setBody(consigneeService.update(consignee));
+        resultData.setBody(consigneeServiceFacade.update(consignee));
         return resultData;
     }
 
@@ -57,7 +57,7 @@ public class ConsigneeController {
     @RequestMapping(value = "/default")
     public ResultData defaultConsignee(@RequestParam Integer id, @RequestParam Integer insId) {
         ResultData resultData = new ResultData();
-        resultData.setBody(consigneeService.defaultConsignee(id, insId));
+        resultData.setBody(consigneeServiceFacade.defaultConsignee(id, insId));
         return resultData;
     }
 }

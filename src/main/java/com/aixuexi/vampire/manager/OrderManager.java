@@ -16,7 +16,8 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.entity.ShoppingCartList;
 import com.gaosi.api.independenceDay.service.ShoppingCartService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
-import com.gaosi.api.revolver.ConsigneeService;
+import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
+import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.model.Consignee;
 import com.gaosi.api.revolver.vo.ConfirmExpressVo;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
@@ -46,7 +47,7 @@ import java.util.Map;
 public class OrderManager {
 
     @Autowired
-    private ConsigneeService consigneeService;
+    private ConsigneeServiceFacade consigneeServiceFacade;
 
     @Autowired
     private ShoppingCartService shoppingCartService;
@@ -61,7 +62,7 @@ public class OrderManager {
     private GoodsService goodsService;
 
     @Resource(name = "vGoodsService")
-    private com.gaosi.api.revolver.GoodsService vGoodsService;
+    private GoodsServiceFacade vGoodsServiceFacade;
 
     @Autowired
     private OrderServiceFacade orderServiceFacade;
@@ -113,7 +114,7 @@ public class OrderManager {
             goodsPieces += shoppingCartList.getNum();
         }
         // 4. 根据goodsTypeIds查询商品其他信息
-        List<ConfirmGoodsVo> goodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
             // 数量*单价
@@ -239,7 +240,7 @@ public class OrderManager {
         // 订单详情
         List<OrderDetail> orderDetails = Lists.newArrayList();
         // 查询商品明细
-        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
             // 数量*单重量
@@ -258,7 +259,7 @@ public class OrderManager {
         }
         goodsOrder.setOrderDetails(orderDetails);
         // 收货人信息
-        Consignee consignee = consigneeService.selectById(consigneeId);
+        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
         goodsOrder.setAreaId(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
         goodsOrder.setConsigneePhone(consignee.getPhone());
@@ -305,7 +306,7 @@ public class OrderManager {
      * @return
      */
     private List<ConsigneeVo> findConsignee(Integer insId) {
-        List<Consignee> consignees = consigneeService.selectByIns(insId, null);
+        List<Consignee> consignees = consigneeServiceFacade.selectByIns(insId, null);
         if (CollectionUtils.isNotEmpty(consignees)) {
             String consigneeJson = JSONObject.toJSONString(consignees);
             List<ConsigneeVo> consigneeVos = JSONObject.parseArray(consigneeJson, ConsigneeVo.class);
@@ -409,7 +410,7 @@ public class OrderManager {
         }
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
-        List<ConfirmGoodsVo> goodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             if (goodsVo.getStatus() == 1) { // 上架
                 // 数量*单重量
@@ -442,7 +443,7 @@ public class OrderManager {
      */
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
-        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsService.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> confirmGoodsVos = vGoodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
                 confirmGoodsVoMap.put(confirmGoodsVo.getGoodsTypeId(), confirmGoodsVo);
