@@ -2,14 +2,8 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
-import com.gaosi.api.basicdata.BookVersionApi;
-import com.gaosi.api.basicdata.DictionaryApi;
-import com.gaosi.api.basicdata.ExamAreaApi;
-import com.gaosi.api.basicdata.SubjectProductApi;
-import com.gaosi.api.basicdata.model.bo.BookVersionBo;
-import com.gaosi.api.basicdata.model.bo.DictionaryBo;
-import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
-import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
+import com.gaosi.api.basicdata.*;
+import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.constant.GoodsConstant;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
@@ -52,6 +46,9 @@ public class GoodsController {
     @Resource
     private DictionaryApi dictionaryApi;
 
+    @Resource
+    private SchemeApi schemeApi;
+
     /**
      * 获取学科列表
      *
@@ -67,7 +64,8 @@ public class GoodsController {
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
         for (SubjectProductBo productBo: productBos) {
             CommonConditionVo conditionVo = new CommonConditionVo();
-            conditionVo.setId(productBo.getSubjectId());
+            //goods表存储的是subject_product表里面的id
+            conditionVo.setId(productBo.getId());
             conditionVo.setName(productBo.getName());
             conditionVos.add(conditionVo);
         }
@@ -232,9 +230,17 @@ public class GoodsController {
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId, @RequestParam Integer insId){
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
-        loadRelationName(Lists.newArrayList(response.getBody()));
+        GoodsVo goodsVo = response.getBody();
+        loadRelationName(Lists.newArrayList(goodsVo));
+        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         resultData.setBody(response.getBody());
         return resultData;
+    }
+
+    private String getScheme(Integer scheme){
+        ApiResponse<SchemeBo> response = schemeApi.getById(scheme);
+        SchemeBo schemeBo = response.getBody();
+        return schemeBo.getName();
     }
 
     private void loadRelationName(List<GoodsVo> list){

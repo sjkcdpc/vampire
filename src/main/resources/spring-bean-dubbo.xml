@@ -41,4 +41,5 @@
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.SchemeApi" id="schemeApi"/>
 </beans>
