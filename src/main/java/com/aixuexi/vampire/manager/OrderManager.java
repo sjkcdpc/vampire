@@ -127,6 +127,8 @@ public class OrderManager {
         // 5. 账户余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
         confirmOrderVo.setBalance(Double.valueOf(remain) / 100000);
+        // 6. 获取token
+        confirmOrderVo.setToken(axxBankService.getTokenForCostAiDou());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         return confirmOrderVo;
     }
@@ -140,10 +142,11 @@ public class OrderManager {
      * @param receivePhone 收货通知手机号
      * @param express      快递
      * @param goodsTypeIds 商品类型ID
+     * @param token        财务token
      * @return
      */
     public OrderSuccessVo submit(Integer userId, Integer insId, Integer consigneeId, String receivePhone,
-                                 String express, List<Integer> goodsTypeIds) {
+                                 String express, List<Integer> goodsTypeIds, String token) {
         logger.info("submitOrder --> userId : {}, insId : {}, consigneeId : {}, receivePhone : {}, express : {}, goodsTypeIds : {}",
                 userId, insId, consigneeId, receivePhone, express, goodsTypeIds);
         List<ShoppingCartList> shoppingCartLists = null;
@@ -171,7 +174,7 @@ public class OrderManager {
         if (amount.longValue() > remain) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
         }
-        // 创建订单
+        // 创建订单 TODO 需要传入token
         ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             logger.info("submitOrder --> orderId : {}", apiResponse.getBody());

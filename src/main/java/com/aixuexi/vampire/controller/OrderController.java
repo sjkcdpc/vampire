@@ -131,14 +131,15 @@ public class OrderController {
      * @param receivePhone 接收发货通知手机号
      * @param express      快递
      * @param goodsTypeIds 商品类型ID
+     * @param token        财务token
      * @return
      */
     @RequestMapping(value = "/submit")
     public ResultData submit(@RequestParam Integer userId, @RequestParam Integer insId,
                              @RequestParam Integer consigneeId, @RequestParam String receivePhone,
-                             @RequestParam String express, Integer[] goodsTypeIds) {
+                             @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
+        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
         return resultData;
     }
 
