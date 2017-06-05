@@ -4,9 +4,9 @@ import com.aixuexi.account.api.AxxBankService;
 import com.aixuexi.account.api.GoodsService;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
+import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -69,16 +69,6 @@ public class OrderManager {
 
     @Autowired
     private ExpressUtil expressUtil;
-
-    private static final String express = "shunfeng,shentong";
-
-    private static final String express_dbwl = "debangwuliu";
-
-    private static final String express_shentong = "shentong";
-
-    private static final String express_shunfeng = "shunfeng";
-
-    private List<Integer> insIds = Lists.newArrayList(25, 26);
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -167,7 +157,7 @@ public class OrderManager {
         }
         // 是否走发网
         Boolean syncToWms = true;
-        if (insIds.contains(insId) || expressUtil.getSyncToWms()) {
+        if (Constants.INS_IDS.contains(insId) || expressUtil.getSyncToWms()) {
             syncToWms = false;
         } // 机构25，26或测试环境不走发网
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
@@ -263,12 +253,12 @@ public class OrderManager {
         goodsOrder.setReceivePhone(receivePhone); // 发货通知手机号
         goodsOrder.setUserId(userId);
         boolean isFree = false; // 是否免物流费
-        if (express.equals(express_dbwl)) {
+        if (express.equals(Constants.EXPRESS_DBWL)) {
             if (weight > 999) {
-                goodsOrder.setExpressCode(express_dbwl);
+                goodsOrder.setExpressCode(Constants.EXPRESS_DBWL);
                 isFree = true;
             } else if (goodsPieces >= 50) {
-                goodsOrder.setExpressCode(express_shentong);
+                goodsOrder.setExpressCode(Constants.EXPRESS_SHENTONG);
                 isFree = true;
             }
         } else {
@@ -284,7 +274,7 @@ public class OrderManager {
             Integer provinceId = addressDTOS.get(0).getProvinceId();
             // 计算邮费
             ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight,
-                    express.equals(express_dbwl) ? express_shentong : express);
+                    express.equals(Constants.EXPRESS_DBWL) ? Constants.EXPRESS_SHENTONG : express);
             logger.info("submitOrder --> freight : {}", resultData);
             HashMap<String, Object> freightMap = resultData.getData().get(0);
             goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
@@ -353,7 +343,7 @@ public class OrderManager {
      */
     private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight, express);
+        ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight, Constants.EXPRESS);
         logger.info("calcFreight --> freight : {}", resultData);
         List<HashMap<String, Object>> listMap = resultData.getData();
         for (int i = 0; i < expressVoLists.size(); i++) {
@@ -454,13 +444,13 @@ public class OrderManager {
     private String findTipsByExpress(String express) {
         String tips = "";
         switch (express) {
-            case express_shunfeng:
+            case Constants.EXPRESS_SHUNFENG:
                 tips = "我们将在2个工作日之内发货。";
                 break;
-            case express_shentong:
+            case Constants.EXPRESS_SHENTONG:
                 tips = "我们将在2个工作日之内发货，预计5天内到货。";
                 break;
-            case express_dbwl:
+            case Constants.EXPRESS_DBWL:
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
         }

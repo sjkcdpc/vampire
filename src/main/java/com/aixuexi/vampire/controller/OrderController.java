@@ -2,20 +2,17 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
+import com.aixuexi.vampire.util.Constants;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.gaosi.api.basicdata.DictionaryApi;
-import com.gaosi.api.basicdata.model.bo.DictionaryBo;
-import com.gaosi.api.common.constants.ApiRetCode;
-import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +37,8 @@ public class OrderController {
     @Autowired
     private OrderServiceFacade orderServiceFacade;
 
-    @Autowired
-    private DictionaryApi dictionaryApi;
+    @Resource(name = "dictionaryManager")
+    private DictionaryManager dictionaryManager;
 
     /**
      * 订单列表
@@ -62,7 +59,7 @@ public class OrderController {
         retPage.setPageNum(page.getPageNum());
         retPage.setItemTotal(page.getItemTotal());
         retPage.setStartNum(page.getStartNum());
-        Map<String, String> expressMap = selectExpress();
+        Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         for (GoodsOrder goodsOrder : page.getList()) {
             String express = expressMap.get(goodsOrder.getExpressCode());
             goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
@@ -85,7 +82,7 @@ public class OrderController {
     public ResultData detail(@RequestParam String orderId) {
         ResultData resultData = new ResultData();
         GoodsOrder goodsOrder = orderServiceFacade.selectGoodsOrderById(orderId);
-        Map<String, String> expressMap = selectExpress();
+        Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
         String json = JSONObject.toJSONString(goodsOrder, SerializerFeature.WriteDateUseDateFormat);
@@ -155,28 +152,6 @@ public class OrderController {
         // TODO
         return null;
     }
-
-    /**
-     * 快递公司字典TYPE
-     */
-    private static final String DELIVERY_COMPANY_DICT_TYPE = "DELIVERY_COMPANY";
-
-    /**
-     * 查询快递公司
-     *
-     * @return
-     */
-    private Map<String, String> selectExpress() {
-        Map<String, String> retMap = Maps.newHashMap();
-        ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, DELIVERY_COMPANY_DICT_TYPE);
-        if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-            for (DictionaryBo dictionaryBo : apiResponse.getBody()) {
-                retMap.put(dictionaryBo.getCode(), dictionaryBo.getName());
-            }
-        }
-        return retMap;
-    }
-
 
     /**
      * 计算总件数/总金额等信息
