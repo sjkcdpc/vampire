@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,9 @@ public class OrderManager {
 
     @Autowired
     private ExpressUtil expressUtil;
+
+    @Resource(name = "dictionaryManager")
+    private DictionaryManager dictionaryManager;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -227,6 +231,8 @@ public class OrderManager {
         List<OrderDetail> orderDetails = Lists.newArrayList();
         // 查询商品明细
         List<ConfirmGoodsVo> confirmGoodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        // 再次校验商品是否已下架，库存。
+        validateGoods(confirmGoodsVos);
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
             // 数量*单重量
@@ -253,7 +259,7 @@ public class OrderManager {
         goodsOrder.setConsumeAmount(goodsAmount); // 商品总金额
         goodsOrder.setInstitutionId(insId);
         goodsOrder.setRemark(StringUtils.EMPTY);
-        goodsOrder.setReceivePhone(receivePhone); // 发货通知手机号
+        goodsOrder.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
         goodsOrder.setUserId(userId);
         boolean isFree = false; // 是否免物流费
         if (express.equals(Constants.EXPRESS_DBWL)) {
@@ -460,4 +466,25 @@ public class OrderManager {
         return tips;
     }
 
+    /**
+     * 校验库存和是否下架
+     *
+     * @param confirmGoodsVos
+     */
+    private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
+        if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
+            List<ConfirmGoodsVo> offGoods = Lists.newArrayList();
+            // 1. 校验商品是否已经下架
+            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                if (confirmGoodsVo.getStatus() == 0) {
+                    offGoods.add(confirmGoodsVo);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(offGoods)) {
+                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
+                throw new IllegalArgumentException(jsonString);
+            }
+            // 2. TODO 校验库存
+        }
+    }
 }

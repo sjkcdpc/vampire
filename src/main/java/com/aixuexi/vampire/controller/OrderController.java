@@ -136,10 +136,16 @@ public class OrderController {
      */
     @RequestMapping(value = "/submit")
     public ResultData submit(@RequestParam Integer userId, @RequestParam Integer insId,
-                             @RequestParam Integer consigneeId, @RequestParam String receivePhone,
+                             @RequestParam Integer consigneeId, String receivePhone,
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
+        try {
+            resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
+        } catch (IllegalArgumentException e) {
+            String jsonString = e.getMessage();
+            resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
+            resultData.setStatus(ResultData.STATUS_ERROR);
+        }
         return resultData;
     }
 
