@@ -1,12 +1,19 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
-import com.gaosi.api.revolver.model.Consignee;
+import com.alibaba.fastjson.JSONObject;
+import com.gaosi.api.basicdata.AreaApi;
+import com.gaosi.api.basicdata.model.dto.AddressDTO;
+import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
+import com.gaosi.api.revolver.model.Consignee;
+import com.gaosi.api.revolver.vo.ConsigneeVo;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 收货地址管理
@@ -19,6 +26,9 @@ public class ConsigneeController {
     @Autowired
     private ConsigneeServiceFacade consigneeServiceFacade;
 
+    @Autowired
+    private AreaApi areaApi;
+
     /**
      * 保存收货地址
      *
@@ -28,7 +38,20 @@ public class ConsigneeController {
     @RequestMapping(value = "/save")
     public ResultData save(Consignee consignee) {
         ResultData resultData = new ResultData();
-        resultData.setBody(consigneeServiceFacade.insert(consignee));
+        int id = consigneeServiceFacade.insert(consignee);
+        Consignee resConsignee = consigneeServiceFacade.selectById(id);
+        String jsonString = JSONObject.toJSONString(resConsignee);
+        ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
+        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
+        if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
+            AddressDTO addressDTO = apiResponse.getBody().get(0);
+            consigneeVo.setProvinceId(addressDTO.getProvinceId());
+            consigneeVo.setProvince(addressDTO.getProvince());
+            consigneeVo.setCityId(addressDTO.getCityId());
+            consigneeVo.setCity(addressDTO.getCity());
+            consigneeVo.setArea(addressDTO.getDistrict());
+        }
+        resultData.setBody(consigneeVo);
         return resultData;
     }
 
@@ -44,4 +67,6 @@ public class ConsigneeController {
         resultData.setBody(consigneeServiceFacade.update(consignee));
         return resultData;
     }
+
+
 }
