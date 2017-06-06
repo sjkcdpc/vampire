@@ -173,7 +173,6 @@ public class GoodsController {
                                       @RequestParam Integer pageNum, @RequestParam Integer pageSize) throws UnsupportedEncodingException {
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
-        goodName = new String (goodName.getBytes("ISO-8859-1"), "utf-8");
         conditionVo.setInsId(insId);
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
