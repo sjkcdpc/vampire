@@ -31,9 +31,8 @@
     <!--购物车-->
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.ShoppingCartService" id="shoppingCartService"/>
 
-    <!--财务余额&计算运费-->
+    <!--财务接口-->
     <dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>
-    <dubbo:reference interface="com.aixuexi.account.api.GoodsService" id="goodsService"/>
 
     <!--基础数据-->
     <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>

@@ -1,7 +1,6 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.account.api.AxxBankService;
-import com.aixuexi.account.api.GoodsService;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.Constants;
@@ -25,7 +24,6 @@ import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.ConfirmOrderVo;
 import com.gaosi.api.revolver.vo.ConsigneeVo;
 import com.gaosi.api.revolver.vo.FreightVo;
-import com.gaosi.util.model.ResultData;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
@@ -58,9 +56,6 @@ public class OrderManager {
 
     @Autowired
     private AreaApi areaApi;
-
-    @Autowired
-    private GoodsService goodsService;
 
     @Autowired
     private GoodsServiceFacade goodsServiceFacade;
@@ -282,10 +277,10 @@ public class OrderManager {
             // 省ID
             Integer provinceId = addressDTOS.get(0).getProvinceId();
             // 计算邮费
-            ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight,
+            ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,
                     express.equals(Constants.EXPRESS_DBWL) ? Constants.EXPRESS_SHENTONG : express);
-            logger.info("submitOrder --> freight : {}", resultData);
-            HashMap<String, Object> freightMap = resultData.getData().get(0);
+            logger.info("submitOrder --> freight : {}", apiResponse);
+            HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
             goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
         }
         return goodsOrder;
@@ -352,9 +347,9 @@ public class OrderManager {
      */
     private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        ResultData<List<HashMap<String, Object>>> resultData = goodsService.caleFreight(provinceId, weight, Constants.EXPRESS);
-        logger.info("calcFreight --> freight : {}", resultData);
-        List<HashMap<String, Object>> listMap = resultData.getData();
+        ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, Constants.EXPRESS);
+        logger.info("calcFreight --> freight : {}", apiResponse);
+        List<HashMap<String, Object>> listMap = apiResponse.getBody();
         for (int i = 0; i < expressVoLists.size(); i++) {
             ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
             HashMap<String, Object> map = null;
