@@ -437,7 +437,7 @@ public class OrderManager {
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         if (CollectionUtils.isNotEmpty(goodsVos)) {
-            for (ConfirmGoodsVo confirmGoodsVo : apiResponse.getBody()) {
+            for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {
                 confirmGoodsVoMap.put(confirmGoodsVo.getGoodsTypeId(), confirmGoodsVo);
             }
         }
