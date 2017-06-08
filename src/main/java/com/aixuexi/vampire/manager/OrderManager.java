@@ -103,7 +103,8 @@ public class OrderManager {
             goodsPieces += shoppingCartList.getNum();
         }
         // 4. 根据goodsTypeIds查询商品其他信息
-        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
             // 数量*单价
@@ -225,11 +226,13 @@ public class OrderManager {
         // 订单详情
         List<OrderDetail> orderDetails = Lists.newArrayList();
         // 查询商品明细
-        List<ConfirmGoodsVo> confirmGoodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
         // 再次校验商品是否已下架，库存。
-        validateGoods(confirmGoodsVos);
-        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+        validateGoods(goodsVos, goodsNum);
+        for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {
             int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
+            confirmGoodsVo.setNum(num);
             // 数量*单重量
             weight += num * confirmGoodsVo.getWeight();
             // 数量*单价
@@ -397,7 +400,8 @@ public class OrderManager {
         }
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
-        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             if (goodsVo.getStatus() == 1) { // 上架
                 // 数量*单重量
@@ -430,9 +434,10 @@ public class OrderManager {
      */
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
-        List<ConfirmGoodsVo> confirmGoodsVos = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
-            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
+        if (CollectionUtils.isNotEmpty(goodsVos)) {
+            for (ConfirmGoodsVo confirmGoodsVo : apiResponse.getBody()) {
                 confirmGoodsVoMap.put(confirmGoodsVo.getGoodsTypeId(), confirmGoodsVo);
             }
         }
@@ -465,12 +470,15 @@ public class OrderManager {
      * 校验库存和是否下架
      *
      * @param confirmGoodsVos
+     * @param goodsNum
      */
-    private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
+    private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos, Map<Integer, Integer> goodsNum) {
         if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
             List<ConfirmGoodsVo> offGoods = Lists.newArrayList();
+            List<String> barCodes = Lists.newArrayList();
             // 1. 校验商品是否已经下架
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                barCodes.add(confirmGoodsVo.getBarCode());
                 if (confirmGoodsVo.getStatus() == 0) {
                     offGoods.add(confirmGoodsVo);
                 }
@@ -479,7 +487,25 @@ public class OrderManager {
                 String jsonString = JSONObject.toJSONString(confirmGoodsVos);
                 throw new IllegalArgumentException(jsonString);
             }
-            // 2. TODO 校验库存
+            // 2. 校验库存 {barCode, inventory}
+            boolean flag = false;
+            ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
+            Map<String, Integer> inventoryMap = apiResponse.getBody();
+            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                // 库存量
+                int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
+                // 购买数量
+                int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
+                if (num > inventory) {
+                    confirmGoodsVo.setStatus(2);
+                    confirmGoodsVo.setInventory(inventory);
+                    flag = true;
+                } // 库存不足
+            }
+            if (flag) {
+                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
+                throw new IllegalArgumentException(jsonString);
+            }
         }
     }
 }

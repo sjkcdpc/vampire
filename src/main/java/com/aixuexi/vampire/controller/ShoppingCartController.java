@@ -3,6 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
+import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.entity.ShoppingCartList;
 import com.gaosi.api.independenceDay.service.ShoppingCartService;
 import com.gaosi.api.independenceDay.vo.ShoppingCartListVo;
@@ -66,11 +67,11 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add")
     public ResultData add(@RequestParam Integer userId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        List<ConfirmGoodsVo> goodsVos = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
-        if (CollectionUtils.isEmpty(goodsVos)) {
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
+        if (CollectionUtils.isEmpty(apiResponse.getBody())) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在");
         }
-        ConfirmGoodsVo confirmGoodsVo = goodsVos.get(0);
+        ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setGoodsId(confirmGoodsVo.getGoodsId());
         shoppingCartList.setGoodsName(confirmGoodsVo.getGoodsName());
