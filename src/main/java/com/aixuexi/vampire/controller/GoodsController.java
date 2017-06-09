@@ -20,10 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by zhaowenlei on 17/5/22.
@@ -71,6 +68,7 @@ public class GoodsController {
             conditionVos.add(conditionVo);
         }
         conditionVos.add(getCommonConditionVo());
+        sort(conditionVos);
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -95,6 +93,7 @@ public class GoodsController {
             conditionVos.add(conditionVo);
         }
         conditionVos.add(getCommonConditionVo());
+        sort(conditionVos);
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -154,6 +153,7 @@ public class GoodsController {
         }
 
         conditionVos.add(getCommonConditionVo());
+        sort(conditionVos);
         resultData.setBody(conditionVos);
 
         return resultData;
@@ -323,5 +323,14 @@ public class GoodsController {
         commonConditionVo.setId(0);
         commonConditionVo.setName("全部");
         return commonConditionVo;
+    }
+
+    public void sort(List<CommonConditionVo> conditionVos){
+        Collections.sort(conditionVos, new Comparator<CommonConditionVo>() {
+            @Override
+            public int compare(CommonConditionVo o1, CommonConditionVo o2) {
+                return o1.getId().compareTo(o2.getId());
+            }
+        });
     }
 }
