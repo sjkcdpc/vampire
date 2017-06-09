@@ -11,6 +11,7 @@ import com.gaosi.api.revolver.vo.ConsigneeVo;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -65,6 +66,19 @@ public class ConsigneeController {
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
         resultData.setBody(consigneeServiceFacade.update(consignee));
+        return resultData;
+    }
+
+    /**
+     * 删除收货地址
+     *
+     * @param id 收货地址ID
+     * @return
+     */
+    @RequestMapping(value = "/delete")
+    public ResultData delete(@RequestParam Integer id) {
+        ResultData resultData = new ResultData();
+        resultData.setBody(consigneeServiceFacade.delete(id));
         return resultData;
     }
 
