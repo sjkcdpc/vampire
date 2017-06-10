@@ -10,15 +10,15 @@ import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.independenceDay.entity.ShoppingCartList;
-import com.gaosi.api.independenceDay.service.ShoppingCartService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
+import com.gaosi.api.revolver.facade.ShoppingCartFacade;
 import com.gaosi.api.revolver.model.Consignee;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
+import com.gaosi.api.revolver.model.ShoppingCartList;
 import com.gaosi.api.revolver.vo.ConfirmExpressVo;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.ConfirmOrderVo;
@@ -49,7 +49,7 @@ public class OrderManager {
     private ConsigneeServiceFacade consigneeServiceFacade;
 
     @Autowired
-    private ShoppingCartService shoppingCartService;
+    private ShoppingCartFacade shoppingCartService;
 
     @Autowired
     private AxxBankService axxBankService;

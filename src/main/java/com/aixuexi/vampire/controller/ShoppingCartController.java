@@ -3,12 +3,15 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.independenceDay.entity.ShoppingCartList;
-import com.gaosi.api.independenceDay.service.ShoppingCartService;
-import com.gaosi.api.independenceDay.vo.ShoppingCartListVo;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
+import com.gaosi.api.revolver.facade.ShoppingCartFacade;
+import com.gaosi.api.revolver.model.ShoppingCartList;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
+import com.gaosi.api.revolver.vo.ShoppingCartListVo;
+import com.gaosi.api.revolver.vo.ShoppingCartVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +29,10 @@ import java.util.List;
 public class ShoppingCartController {
 
     @Autowired
-    private ShoppingCartService shoppingCartService;
+    private ShoppingCartFacade shoppingCartFacade;
+
     @Autowired
     private GoodsServiceFacade goodsServiceFacade;
-
 
     /**
      * 购物车
@@ -40,19 +43,23 @@ public class ShoppingCartController {
     @RequestMapping(value = "/list")
     public ResultData list(@RequestParam Integer userId) {
         ResultData resultData = new ResultData();
-        List<ShoppingCartList> shoppingCartListList = shoppingCartService.queryShoppingCartDetail(userId);
+        List<ShoppingCartList> shoppingCartListList = shoppingCartFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isNotEmpty(shoppingCartListList)) {
-            ShoppingCartListVo shoppingCartListVo = new ShoppingCartListVo();
+            ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
             int goodsPieces = 0;
             double payAmount = 0;
-            for (ShoppingCartList shoppingCartList : shoppingCartListList) {
-                goodsPieces += shoppingCartList.getNum();
-                payAmount += (shoppingCartList.getNum() * shoppingCartList.getGoodsTypePrice());
+            String jsonString = JSONObject.toJSONString(shoppingCartListList);
+            List<ShoppingCartListVo> shoppingCartListVos = JSONArray.parseArray(jsonString, ShoppingCartListVo.class);
+            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+                goodsPieces += shoppingCartListVo.getNum();
+                double total = shoppingCartListVo.getNum() * shoppingCartListVo.getGoodsTypePrice();
+                shoppingCartListVo.setTotal(total);
+                payAmount += total;
             }
-            shoppingCartListVo.setGoodsPieces(goodsPieces);
-            shoppingCartListVo.setPayAmount(payAmount);
-            shoppingCartListVo.setShoppingCartListList(shoppingCartListList);
-            resultData.setBody(shoppingCartListVo);
+            shoppingCartVo.setGoodsPieces(goodsPieces);
+            shoppingCartVo.setPayAmount(payAmount);
+            shoppingCartVo.setShoppingCartListList(shoppingCartListVos);
+            resultData.setBody(shoppingCartVo);
         }
         return resultData;
     }
@@ -80,7 +87,9 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
         shoppingCartList.setWeight(confirmGoodsVo.getWeight());
-        return shoppingCartService.addShoppingCart(shoppingCartList, userId);
+        ResultData resultData = new ResultData();
+        resultData.setBody(shoppingCartFacade.addShoppingCart(shoppingCartList, userId));
+        return resultData;
     }
 
     /**
@@ -93,7 +102,9 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/del")
     public ResultData del(@RequestParam Integer userId, @RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
-        return shoppingCartService.delShoppingCart(goodsId, goodsTypeId, userId);
+        ResultData resultData = new ResultData();
+        resultData.setBody(shoppingCartFacade.delShoppingCart(goodsId, goodsTypeId, userId));
+        return resultData;
     }
 
     /**
@@ -107,7 +118,9 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/mod")
     public ResultData mod(@RequestParam Integer userId, @RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        return shoppingCartService.modNumShoppingCart(goodsId, goodsTypeId, num, userId);
+        ResultData resultData = new ResultData();
+        resultData.setBody(shoppingCartFacade.modNumShoppingCart(goodsId, goodsTypeId, num, userId));
+        return resultData;
     }
 
 
