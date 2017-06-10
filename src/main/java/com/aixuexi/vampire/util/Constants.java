@@ -29,4 +29,9 @@ public final class Constants {
 
     public static final List<Integer> INS_IDS = Lists.newArrayList(25, 26);
 
+    /**
+     * 缓存0.5个小时
+     */
+    public static final long CACHE_TIME = 1800;
+
 }
