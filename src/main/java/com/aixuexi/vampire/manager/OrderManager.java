@@ -126,7 +126,7 @@ public class OrderManager {
         // calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
-        confirmOrderVo.setBalance(Double.valueOf(remain) / 100000);
+        confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
         // 6. 获取token
         confirmOrderVo.setToken(axxBankService.getTokenForCostAiDou());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
@@ -421,7 +421,7 @@ public class OrderManager {
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
         Long remain = axxBankService.getRemainAidouByInsId(insId);
-        freightVo.setBalance(Double.valueOf(remain) / 100000);
+        freightVo.setBalance(Double.valueOf(remain) / 10000);
         return freightVo;
     }
 
