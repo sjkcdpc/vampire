@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +54,7 @@ public class OrderController {
     public ResultData list(@RequestParam Integer insId, Integer userId,
                            @RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
-        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(insId, userId, pageIndex, pageSize);
+        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(insId, userId == null ? 0 : userId, pageIndex, pageSize);
         Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
         retPage.setPageTotal(page.getPageTotal());
         retPage.setPageSize(page.getPageSize());
@@ -169,7 +171,7 @@ public class OrderController {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
                 // 订单总金额
-                goodsOrderVo.setPayAmount(goodsOrderVo.getConsumeAmount() + (goodsOrderVo.getFreight() == null ? 0D : goodsOrderVo.getFreight()));
+                goodsOrderVo.setPayAmount(add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
                 int goodsPieces = 0;
                 List<Integer> goodsTypeIds = Lists.newArrayList();
                 for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
@@ -186,5 +188,23 @@ public class OrderController {
             }
         }
     }
+
+    /**
+     * 加法
+     *
+     * @param d1
+     * @param d2
+     * @return
+     */
+    private double add(Double d1, Double d2) {
+        BigDecimal bigDecimal1 = new BigDecimal(d1 == null ? 0 : d1);
+        BigDecimal bigDecimal2 = new BigDecimal(d2 == null ? 0 : d2);
+        return bigDecimal1.add(bigDecimal2).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+
+
+
+
 }
 
