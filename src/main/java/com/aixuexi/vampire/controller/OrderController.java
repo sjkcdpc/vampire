@@ -144,7 +144,7 @@ public class OrderController {
         } catch (IllegalArgumentException e) {
             String jsonString = e.getMessage();
             resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
-            resultData.setStatus(ResultData.STATUS_ERROR);
+            resultData.setStatus(ResultData.STATUS_NORMAL);
         }
         return resultData;
     }
