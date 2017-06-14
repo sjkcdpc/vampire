@@ -66,7 +66,7 @@ public class OrderController {
             String express = expressMap.get(goodsOrder.getExpressCode());
             goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
         }
-        String json = JSONObject.toJSONString(page.getList(), SerializerFeature.WriteDateUseDateFormat);
+        String json = JSONObject.toJSONString(page.getList());
         List<GoodsOrderVo> goodsOrderVos = JSONObject.parseArray(json, GoodsOrderVo.class);
         dealGoodsOrder(goodsOrderVos);
         retPage.setList(goodsOrderVos);
@@ -87,7 +87,7 @@ public class OrderController {
         Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
-        String json = JSONObject.toJSONString(goodsOrder, SerializerFeature.WriteDateUseDateFormat);
+        String json = JSONObject.toJSONString(goodsOrder);
         GoodsOrderVo goodsOrderVo = JSONObject.parseObject(json, GoodsOrderVo.class);
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
         dealGoodsOrder(goodsOrderVos);
