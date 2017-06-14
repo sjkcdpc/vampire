@@ -176,8 +176,8 @@ public class OrderManager {
         if (amount.longValue() > remain) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
         }
-        // 创建订单 TODO 需要传入token
-        ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, syncToWms);
+        // 创建订单
+        ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, token, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             logger.info("submitOrder --> orderId : {}", apiResponse.getBody());
             try {
