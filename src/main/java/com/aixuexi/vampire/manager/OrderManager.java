@@ -130,6 +130,8 @@ public class OrderManager {
         // 6. 获取token
         confirmOrderVo.setToken(axxBankService.getTokenForCostAiDou());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
+        // 清空之前计算的邮费
+        defaultExpressForConfirmOrder(confirmOrderVo.getExpress());
         return confirmOrderVo;
     }
 
@@ -506,6 +508,20 @@ public class OrderManager {
                 String jsonString = JSONObject.toJSONString(confirmGoodsVos);
                 throw new IllegalArgumentException(jsonString);
             }
+        }
+    }
+
+    /**
+     * 处理完成，每次需要清空
+     *
+     * @param expressVos
+     */
+    private void defaultExpressForConfirmOrder(List<ConfirmExpressVo> expressVos) {
+        for (ConfirmExpressVo expressVo : expressVos) {
+            expressVo.setBeyondPrice(StringUtils.EMPTY);
+            expressVo.setBeyondWeight(StringUtils.EMPTY);
+            expressVo.setFirstFreight(StringUtils.EMPTY);
+            expressVo.setTotalFreight(StringUtils.EMPTY);
         }
     }
 }
