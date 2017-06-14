@@ -152,7 +152,7 @@ public class OrderManager {
         logger.info("submitOrder --> userId : {}, insId : {}, consigneeId : {}, receivePhone : {}, express : {}, goodsTypeIds : {}",
                 userId, insId, consigneeId, receivePhone, express, goodsTypeIds);
         List<ShoppingCartList> shoppingCartLists = null;
-        if (CollectionUtils.isEmpty(goodsTypeIds)) {
+        if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
         } else {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
@@ -383,7 +383,7 @@ public class OrderManager {
         FreightVo freightVo = new FreightVo();
         List<ConfirmExpressVo> confirmExpressVos = expressUtil.getExpress();
         List<ShoppingCartList> shoppingCartLists = null;
-        if (CollectionUtils.isEmpty(goodsTypeIds)) {
+        if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
         } else {
             shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
