@@ -9,10 +9,7 @@ import com.gaosi.api.revolver.constant.GoodsConstant;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.vo.CommonConditionVo;
 import com.gaosi.api.revolver.vo.GoodsVo;
-import com.gaosi.api.revolver.vo.RelationGoodsVo;
 import com.gaosi.api.revolver.vo.RequestGoodsConditionVo;
-import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -102,15 +99,18 @@ public class GoodsController {
      * 获取分类
      *
      * @param subjectId
-     * @param period
+     * @param periodId
      * @return
      */
     @RequestMapping(value = "/getCategory")
-    public ResultData getCategory(@RequestParam(required = false) Integer subjectId,
-                                  @RequestParam(required = false) Integer period){
+    public ResultData getCategory(@RequestParam Integer subjectId,
+                                  @RequestParam Integer periodId){
         ResultData resultData = new ResultData();
-        ApiResponse<List<CommonConditionVo>> response = goodsServiceFacade.queryCategory(subjectId, period);
+        ApiResponse<List<CommonConditionVo>> response = goodsServiceFacade.queryCategory(subjectId, periodId);
         List<CommonConditionVo> categoryVos = response.getBody();
+        //解决没有考区和没有教材版本的情况
+        categoryVos.add(getCommonConditionVo());
+        sort(categoryVos);
         resultData.setBody(categoryVos);
         return resultData;
     }
@@ -119,19 +119,19 @@ public class GoodsController {
      * 获取夹菜版本或者考区
      *
      * @param subjectId
-     * @param period
+     * @param periodId
      * @param categoryId
      * @return
      */
     @RequestMapping(value = "/getBookVersionArea")
-    public ResultData getBookVersionArea(@RequestParam(required = false) Integer subjectId,
-                                         @RequestParam(required = false) Integer period,
-                                         @RequestParam(required = false) Integer categoryId){
+    public ResultData getBookVersionArea(@RequestParam Integer subjectId,
+                                         @RequestParam Integer periodId,
+                                         @RequestParam Integer categoryId){
         ResultData resultData = new ResultData();
         List<CommonConditionVo> conditionVos = new ArrayList<>();
         if (categoryId.equals(GoodsConstant.GoodsCategory.BOOKVERSION.getValue())) {
             //查询教材版本
-            ApiResponse<List<Integer>> response = goodsServiceFacade.queryBookVersion(subjectId, period);
+            ApiResponse<List<Integer>> response = goodsServiceFacade.queryBookVersion(subjectId, periodId);
             ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
             for (BookVersionBo bookVersionBo: bookVersion.getBody()) {
                 CommonConditionVo conditionVo = new CommonConditionVo();
@@ -141,7 +141,7 @@ public class GoodsController {
             }
         }else if (categoryId.equals(GoodsConstant.GoodsCategory.AREA.getValue())) {
             //按考区分
-            ApiResponse<List<Integer>> response = goodsServiceFacade.queryArea(subjectId, period);
+            ApiResponse<List<Integer>> response = goodsServiceFacade.queryArea(subjectId, periodId);
             ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
 
             for (ExamAreaBo examAreaBo: examArea.getBody()) {
@@ -179,7 +179,7 @@ public class GoodsController {
         conditionVo.setGoodsName(goodName);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
-        loadRelationName(page.getList());
+//        loadRelationName(page.getList());
         resultData.setBody(page);
 
         return resultData;
@@ -198,9 +198,9 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/goodsList", method = RequestMethod.GET)
-    public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam(required = false) Integer sid,
-                                     @RequestParam(required = false) Integer pid, @RequestParam(required = false) Integer vtId,
-                                     @RequestParam(required = false) Integer veId, @RequestParam Integer pageNum,
+    public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam Integer sid,
+                                     @RequestParam Integer pid, @RequestParam Integer vtId,
+                                     @RequestParam Integer veId, @RequestParam Integer pageNum,
                                      @RequestParam Integer pageSize){
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
@@ -214,7 +214,7 @@ public class GoodsController {
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
 
-        loadRelationName(page.getList());
+//        loadRelationName(page.getList());
         resultData.setBody(page);
 
         return resultData;
@@ -232,7 +232,6 @@ public class GoodsController {
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
-        loadRelationName(Lists.newArrayList(goodsVo));
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         resultData.setBody(response.getBody());
         return resultData;
@@ -242,54 +241,6 @@ public class GoodsController {
         ApiResponse<SchemeBo> response = schemeApi.getById(scheme);
         SchemeBo schemeBo = response.getBody();
         return schemeBo.getName();
-    }
-
-    private void loadRelationName(List<GoodsVo> list){
-        List<Integer> bookVersionIds = new ArrayList<>();
-        List<Integer> examAreaIds = new ArrayList<>();
-        for (GoodsVo goodsVo: list) {
-            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation:relationGoods) {
-                if (!relation.getBookVersion().equals(0)) {
-                    bookVersionIds.add(relation.getBookVersion());
-                }
-                if (!relation.getExamAreaId().equals(0)) {
-                    examAreaIds.add(relation.getExamAreaId());
-                }
-            }
-        }
-        List<BookVersionBo> bookVersionBos = new ArrayList<>();
-        List<ExamAreaBo> examAreaBos = new ArrayList<>();
-        Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
-        Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
-
-
-        if (CollectionUtils.isNotEmpty(bookVersionIds)) {
-            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-            bookVersionBos = bookVersionResponse.getBody();
-        }
-
-        if (CollectionUtils.isNotEmpty(examAreaIds)) {
-            ApiResponse<List<ExamAreaBo>> examAreaResponse = examAreaApi.findByExamAreaIds(examAreaIds);
-            examAreaBos = examAreaResponse.getBody();
-        }
-
-        bookVersionMap = toBookVersionMap(bookVersionBos);
-        examAreaMap = toExamAreaMap(examAreaBos);
-
-        for (GoodsVo goodsVo: list) {
-            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation:relationGoods) {
-                if (!relation.getBookVersion().equals(0)) {
-                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
-                    relation.setRelationName(bookVersion.getName());
-                }
-                if (!relation.getExamAreaId().equals(0)) {
-                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
-                    relation.setRelationName(examArea.getName());
-                }
-            }
-        }
     }
 
     public Map<Integer, BookVersionBo> toBookVersionMap(List<BookVersionBo> bookVersionBos){
