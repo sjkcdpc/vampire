@@ -17,6 +17,7 @@
         <common.util.version>1.0.92</common.util.version>
         <thor.version>1.4.9.2-RELEASE</thor.version>
         <account-api.version>1.9.7-RELEASE</account-api.version>
+        <orika.version>1.5.1</orika.version>
     </properties>
 
     <dependencies>
@@ -226,6 +227,21 @@
                 <exclusion>
                     <artifactId>jackson-databind</artifactId>
                     <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ma.glasnost.orika</groupId>
+            <artifactId>orika-core</artifactId>
+            <version>${orika.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

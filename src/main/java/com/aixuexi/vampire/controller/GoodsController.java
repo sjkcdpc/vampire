@@ -2,14 +2,15 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.constant.GoodsConstant;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
-import com.gaosi.api.revolver.vo.CommonConditionVo;
-import com.gaosi.api.revolver.vo.GoodsVo;
-import com.gaosi.api.revolver.vo.RequestGoodsConditionVo;
+import com.gaosi.api.revolver.vo.*;
+import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,6 +44,9 @@ public class GoodsController {
 
     @Resource
     private SchemeApi schemeApi;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     /**
      * 获取学科列表
@@ -179,7 +183,7 @@ public class GoodsController {
         conditionVo.setGoodsName(goodName);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
-//        loadRelationName(page.getList());
+        loadRelationName(page.getList(), false);
         resultData.setBody(page);
 
         return resultData;
@@ -214,7 +218,7 @@ public class GoodsController {
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
 
-//        loadRelationName(page.getList());
+        loadRelationName(page.getList(), false);
         resultData.setBody(page);
 
         return resultData;
@@ -233,8 +237,97 @@ public class GoodsController {
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
+        loadRelationName(Lists.newArrayList(goodsVo), true);
         resultData.setBody(response.getBody());
         return resultData;
+    }
+
+    private void loadRelationName(List<GoodsVo> list, boolean isDtail){
+        List<Integer> bookVersionIds = new ArrayList<>();
+        List<Integer> examAreaIds = new ArrayList<>();
+        for (GoodsVo goodsVo: list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            for (RelationGoodsVo relation:relationGoods) {
+                if (!relation.getBookVersion().equals(0)) {
+                    bookVersionIds.add(relation.getBookVersion());
+                }
+                if (!relation.getExamAreaId().equals(0)) {
+                    examAreaIds.add(relation.getExamAreaId());
+                }
+            }
+        }
+        List<BookVersionBo> bookVersionBos = new ArrayList<>();
+        List<ExamAreaBo> examAreaBos = new ArrayList<>();
+        Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
+        Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
+
+
+        if (CollectionUtils.isNotEmpty(bookVersionIds)) {
+            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
+            bookVersionBos = bookVersionResponse.getBody();
+        }
+
+        if (CollectionUtils.isNotEmpty(examAreaIds)) {
+            ApiResponse<List<ExamAreaBo>> examAreaResponse = examAreaApi.findByExamAreaIds(examAreaIds);
+            examAreaBos = examAreaResponse.getBody();
+        }
+
+        bookVersionMap = toBookVersionMap(bookVersionBos);
+        examAreaMap = toExamAreaMap(examAreaBos);
+
+        for (GoodsVo goodsVo: list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            for (RelationGoodsVo relation:relationGoods) {
+                if (!relation.getBookVersion().equals(0)) {
+                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
+                    relation.setRelationName(bookVersion.getName());
+                    List<?> relationGoodsTypes = relation.getRelationGoodsType();
+
+                    if (CollectionUtils.isNotEmpty(relationGoodsTypes)) {
+                        getRelationName(isDtail, relation, relationGoodsTypes);
+                    }
+
+                }
+                if (!relation.getExamAreaId().equals(0)) {
+                    List<?> relationGoodsTypes = relation.getRelationGoodsType();
+                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
+                    relation.setRelationName(examArea.getName());
+                    if (CollectionUtils.isNotEmpty(relationGoodsTypes)) {
+                        getRelationName(isDtail, relation, relationGoodsTypes);
+                    }
+                }
+            }
+        }
+    }
+
+    private void getRelationName(boolean isDetail, RelationGoodsVo relation, List<?> relationGoodsTypes){
+        if (isDetail) {
+            List<GoodsTypeDetailVo> detailVos = baseMapper.mapAsList(relationGoodsTypes, GoodsTypeDetailVo.class);
+            relation.setRelationName(relation.getRelationName() + "(");
+            int i = 0;
+            for (GoodsTypeDetailVo detailVo: detailVos) {
+                if (i == 0) {
+                    relation.setRelationName(relation.getRelationName() + detailVo.getName().charAt(0));
+                }else {
+                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName().charAt(0));
+                }
+                i++;
+            }
+            relation.setRelationName(relation.getRelationName() + ")");
+        }else {
+            List<GoodsTypeListVo> detailVos = baseMapper.mapAsList(relationGoodsTypes, GoodsTypeListVo.class);
+            relation.setRelationName(relation.getRelationName() + "(");
+            int i = 0;
+            for (GoodsTypeListVo detailVo: detailVos) {
+                if (i == 0) {
+                    relation.setRelationName(relation.getRelationName() + detailVo.getName().charAt(0));
+                }else {
+                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName().charAt(0));
+                }
+                i++;
+            }
+            relation.setRelationName(relation.getRelationName() + ")");
+        }
     }
 
     private String getScheme(Integer scheme){
