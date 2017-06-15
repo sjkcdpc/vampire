@@ -524,4 +524,17 @@ public class OrderManager {
             expressVo.setTotalFreight(StringUtils.EMPTY);
         }
     }
+
+    /**
+     * 查询运费，提供给cat使用。
+     *
+     * @param provinceId 省ID
+     * @param weight     重量
+     * @param delivery   物流
+     * @return
+     */
+    public List<HashMap<String, Object>> calcFreightForCat(Integer provinceId, Double weight, String delivery) {
+        ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, delivery);
+        return apiResponse.getBody();
+    }
 }
