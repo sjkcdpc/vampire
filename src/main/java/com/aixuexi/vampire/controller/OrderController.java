@@ -6,7 +6,6 @@ import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.Constants;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
@@ -121,6 +120,22 @@ public class OrderController {
                               @RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
         resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
+        return resultData;
+    }
+
+    /**
+     * 查询运费，提供给cat使用。
+     *
+     * @param provinceId 省ID
+     * @param weight     重量
+     * @param delivery   物流
+     * @return
+     */
+    @RequestMapping(value = "/freight/forCat")
+    public ResultData freightForCat(@RequestParam Integer provinceId,
+                                    @RequestParam Double weight, @RequestParam String delivery) {
+        ResultData resultData = new ResultData();
+        resultData.setBody(orderManager.calcFreightForCat(provinceId, weight, delivery));
         return resultData;
     }
 
