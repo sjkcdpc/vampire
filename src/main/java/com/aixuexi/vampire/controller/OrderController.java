@@ -6,6 +6,8 @@ import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.Constants;
 import com.alibaba.fastjson.JSONObject;
+import com.gaosi.api.common.constants.AccessConstant;
+import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
@@ -44,16 +46,15 @@ public class OrderController {
     /**
      * 订单列表
      *
-     * @param insId     机构ID
      * @param pageIndex 页号
      * @param pageSize  页码
      * @return
      */
     @RequestMapping(value = "/list")
-    public ResultData list(@RequestParam Integer insId, Integer userId,
-                           @RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
+    public ResultData list(@RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
-        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(insId, userId == null ? 0 : userId, pageIndex, pageSize);
+        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(
+                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY), UserSessionHandler.getId(), pageIndex, pageSize);
         Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
         retPage.setPageTotal(page.getPageTotal());
         retPage.setPageSize(page.getPageSize());
@@ -100,26 +101,26 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/confirm")
-    public ResultData confirm(@RequestParam Integer userId, @RequestParam Integer insId) {
+    public ResultData confirm() {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.confirmOrder(userId, insId));
+        resultData.setBody(orderManager.confirmOrder(UserSessionHandler.getId(),
+                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY)));
         return resultData;
     }
 
     /**
      * 计算运费
      *
-     * @param userId       用户ID
-     * @param insId        机构ID
      * @param provinceId   省ID
      * @param goodsTypeIds 商品类型ID
      * @return
      */
     @RequestMapping(value = "/freight")
-    public ResultData freight(@RequestParam Integer userId, @RequestParam Integer insId,
-                              @RequestParam Integer provinceId, Integer[] goodsTypeIds) {
+    public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
+        resultData.setBody(orderManager.reloadFreight(UserSessionHandler.getId(),
+                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY),
+                provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
         return resultData;
     }
 
@@ -142,8 +143,6 @@ public class OrderController {
     /**
      * 提交订单
      *
-     * @param userId       用户ID
-     * @param insId        机构ID
      * @param consigneeId  收货人ID
      * @param receivePhone 接收发货通知手机号
      * @param express      快递
@@ -152,12 +151,13 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/submit")
-    public ResultData submit(@RequestParam Integer userId, @RequestParam Integer insId,
-                             @RequestParam Integer consigneeId, String receivePhone,
+    public ResultData submit(@RequestParam Integer consigneeId, String receivePhone,
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         ResultData resultData = new ResultData();
         try {
-            resultData.setBody(orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
+            resultData.setBody(orderManager.submit(UserSessionHandler.getId(),
+                    getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY), consigneeId,
+                    receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
         } catch (IllegalArgumentException e) {
             String jsonString = e.getMessage();
             resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
@@ -230,6 +230,15 @@ public class OrderController {
         return bigDecimal1.multiply(bigDecimal2).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
+    /**
+     * 获取userSessionHandler中的各种ID
+     *
+     * @param key 键
+     * @return
+     */
+    private Integer getIdByKey(String key) {
+        return Integer.parseInt(UserSessionHandler.get(key));
+    }
 
 }
 
