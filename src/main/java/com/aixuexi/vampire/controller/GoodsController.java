@@ -5,7 +5,9 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
+import com.gaosi.api.common.constants.AccessConstant;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.constant.GoodsConstant;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.vo.*;
@@ -167,14 +169,14 @@ public class GoodsController {
      * 通过商品名模糊查找商品
      *
      * @param goodName
-     * @param insId
      * @param pageNum
      * @param pageSize
      * @return
      */
     @RequestMapping(value = "/getByGoodsName")
-    public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer insId,
-                                      @RequestParam Integer pageNum, @RequestParam Integer pageSize) throws UnsupportedEncodingException {
+    public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
+                                      @RequestParam Integer pageSize) throws UnsupportedEncodingException {
+        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
         conditionVo.setInsId(insId);
@@ -192,7 +194,6 @@ public class GoodsController {
     /**
      * 商品列表查询
      *
-     * @param insId 结构id
      * @param sid 学科id
      * @param pid 学期code
      * @param vtId 教材版本=1/考区=2
@@ -202,10 +203,10 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/goodsList", method = RequestMethod.GET)
-    public ResultData queryGoodsList(@RequestParam Integer insId, @RequestParam Integer sid,
-                                     @RequestParam Integer pid, @RequestParam Integer vtId,
-                                     @RequestParam Integer veId, @RequestParam Integer pageNum,
-                                     @RequestParam Integer pageSize){
+    public ResultData queryGoodsList(@RequestParam Integer sid, @RequestParam Integer pid,
+                                     @RequestParam Integer vtId, @RequestParam Integer veId,
+                                     @RequestParam Integer pageNum, @RequestParam Integer pageSize){
+        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
         conditionVo.setInsId(insId);
@@ -228,11 +229,11 @@ public class GoodsController {
      * 商品详情
      *
      * @param goodsId
-     * @param insId
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData queryGoodsDetail(@RequestParam Integer goodsId, @RequestParam Integer insId){
+    public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
+        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
@@ -376,5 +377,16 @@ public class GoodsController {
                 return o1.getId().compareTo(o2.getId());
             }
         });
+    }
+
+
+    /**
+     * 获取userSessionHandler中的各种ID
+     *
+     * @param key 键
+     * @return
+     */
+    private Integer getIdByKey(String key) {
+        return Integer.parseInt(UserSessionHandler.get(key));
     }
 }
