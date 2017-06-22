@@ -1,5 +1,7 @@
 package com.aixuexi.vampire.controller;
 
+import com.aixuexi.thor.except.ExceptionCode;
+import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
@@ -8,6 +10,8 @@ import com.aixuexi.vampire.util.Constants;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.constants.AccessConstant;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
+import com.gaosi.api.independenceDay.model.Institution;
+import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
@@ -42,6 +46,9 @@ public class OrderController {
 
     @Resource(name = "dictionaryManager")
     private DictionaryManager dictionaryManager;
+
+    @Autowired
+    private InstitutionService institutionService;
 
     /**
      * 订单列表
@@ -155,6 +162,7 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         ResultData resultData = new ResultData();
         try {
+            validateInsType(); // 试用机构不能下单
             resultData.setBody(orderManager.submit(UserSessionHandler.getId(),
                     getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY), consigneeId,
                     receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
@@ -238,6 +246,17 @@ public class OrderController {
      */
     private Integer getIdByKey(String key) {
         return Integer.parseInt(UserSessionHandler.get(key));
+    }
+
+    /**
+     * 验证是否试用机构
+     */
+    private void validateInsType() {
+        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
+        Institution institution = institutionService.getInsInfoById(insId);
+        if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
+        }
     }
 
 }

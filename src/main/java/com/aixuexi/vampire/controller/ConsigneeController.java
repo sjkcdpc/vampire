@@ -4,7 +4,9 @@ import com.aixuexi.thor.response.ResultData;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
+import com.gaosi.api.common.constants.AccessConstant;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
 import com.gaosi.api.revolver.model.Consignee;
 import com.gaosi.api.revolver.vo.ConsigneeVo;
@@ -39,6 +41,7 @@ public class ConsigneeController {
     @RequestMapping(value = "/save")
     public ResultData save(Consignee consignee) {
         ResultData resultData = new ResultData();
+        consignee.setInstitutionId(Integer.parseInt(UserSessionHandler.get(AccessConstant.USER_INSTITUTION_ID_KEY)));
         int id = consigneeServiceFacade.insert(consignee);
         Consignee resConsignee = consigneeServiceFacade.selectById(id);
         String jsonString = JSONObject.toJSONString(resConsignee);
@@ -65,6 +68,7 @@ public class ConsigneeController {
     @RequestMapping(value = "/update")
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
+        consignee.setInstitutionId(Integer.parseInt(UserSessionHandler.get(AccessConstant.USER_INSTITUTION_ID_KEY)));
         resultData.setBody(consigneeServiceFacade.update(consignee));
         return resultData;
     }

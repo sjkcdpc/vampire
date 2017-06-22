@@ -4,6 +4,7 @@ import com.aixuexi.thor.response.ResultData;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.ShoppingCartFacade;
 import com.gaosi.api.revolver.model.ShoppingCartList;
@@ -35,13 +36,12 @@ public class ShoppingCartController {
     /**
      * 购物车
      *
-     * @param userId 用户ID
      * @return
      */
     @RequestMapping(value = "/list")
-    public ResultData list(@RequestParam Integer userId) {
+    public ResultData list() {
         ResultData resultData = new ResultData();
-        List<ShoppingCartList> shoppingCartListList = shoppingCartFacade.queryShoppingCartDetail(userId);
+        List<ShoppingCartList> shoppingCartListList = shoppingCartFacade.queryShoppingCartDetail(UserSessionHandler.getId());
         if (CollectionUtils.isNotEmpty(shoppingCartListList)) {
             ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
             int goodsPieces = 0;
@@ -65,13 +65,12 @@ public class ShoppingCartController {
     /**
      * 添加购物车
      *
-     * @param userId      用户ID
      * @param goodsTypeId 商品类型ID
      * @param num         数量
      * @return
      */
     @RequestMapping(value = "/add")
-    public ResultData add(@RequestParam Integer userId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
+    public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         ResultData resultData = new ResultData();
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
         if (CollectionUtils.isEmpty(apiResponse.getBody())) {
@@ -88,7 +87,7 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
         shoppingCartList.setWeight(confirmGoodsVo.getWeight());
-        int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, userId);
+        int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, UserSessionHandler.getId());
         if (flag == -2) {
             resultData.setStatus(ResultData.STATUS_ERROR);
             resultData.setErrorMessage("购物车重复、请联系客服！");
@@ -101,29 +100,27 @@ public class ShoppingCartController {
     /**
      * 删除购物车
      *
-     * @param userId      用户ID
      * @param goodsId     商品ID
      * @param goodsTypeId 商品类型ID
      * @return
      */
     @RequestMapping(value = "/del")
-    public ResultData del(@RequestParam Integer userId, @RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
-        int flag = shoppingCartFacade.delShoppingCart(goodsId, goodsTypeId, userId);
+    public ResultData del(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
+        int flag = shoppingCartFacade.delShoppingCart(goodsId, goodsTypeId, UserSessionHandler.getId());
         return dealDelAndMod(flag);
     }
 
     /**
      * 修改购物车
      *
-     * @param userId      用户ID
      * @param goodsId     商品ID
      * @param goodsTypeId 商品类型ID
      * @param num         数量
      * @return
      */
     @RequestMapping(value = "/mod")
-    public ResultData mod(@RequestParam Integer userId, @RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        int flag = shoppingCartFacade.modNumShoppingCart(goodsId, goodsTypeId, num, userId);
+    public ResultData mod(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
+        int flag = shoppingCartFacade.modNumShoppingCart(goodsId, goodsTypeId, num, UserSessionHandler.getId());
         return dealDelAndMod(flag);
     }
 
@@ -140,4 +137,5 @@ public class ShoppingCartController {
         }
         return resultData;
     }
+
 }

@@ -39,4 +39,7 @@
     <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.SchemeApi" id="schemeApi"/>
+
+    <!-- 机构服务 -->
+    <dubbo:reference interface="com.gaosi.api.independenceDay.service.InstitutionService" id="institutionService"/>
 </beans>

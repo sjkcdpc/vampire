@@ -34,4 +34,9 @@ public final class Constants {
      */
     public static final long CACHE_TIME = 1800;
 
+    /**
+     * 试用机构
+     */
+    public static final Integer INSTITUTION_TYPE_TEST_USE = 2;
+
 }
