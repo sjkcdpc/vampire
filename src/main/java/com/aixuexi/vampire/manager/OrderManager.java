@@ -489,24 +489,26 @@ public class OrderManager {
                 String jsonString = JSONObject.toJSONString(confirmGoodsVos);
                 throw new IllegalArgumentException(jsonString);
             }
-            // 2. 校验库存 {barCode, inventory}
-            boolean flag = false;
-            ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
-            Map<String, Integer> inventoryMap = apiResponse.getBody();
-            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-                // 库存量
-                int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
-                // 购买数量
-                int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
-                if (num > inventory) {
-                    confirmGoodsVo.setStatus(2);
-                    confirmGoodsVo.setInventory(inventory);
-                    flag = true;
-                } // 库存不足
-            }
-            if (flag) {
-                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
-                throw new IllegalArgumentException(jsonString);
+            if (expressUtil.getInventory()) {
+                // 2. 校验库存 {barCode, inventory}
+                boolean flag = false;
+                ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
+                Map<String, Integer> inventoryMap = apiResponse.getBody();
+                for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                    // 库存量
+                    int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
+                    // 购买数量
+                    int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
+                    if (num > inventory) {
+                        confirmGoodsVo.setStatus(2);
+                        confirmGoodsVo.setInventory(inventory);
+                        flag = true;
+                    } // 库存不足
+                }
+                if (flag) {
+                    String jsonString = JSONObject.toJSONString(confirmGoodsVos);
+                    throw new IllegalArgumentException(jsonString);
+                }
             }
         }
     }

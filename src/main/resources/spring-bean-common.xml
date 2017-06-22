@@ -27,6 +27,7 @@
             </list>
         </property>
         <property name="syncToWms" value="${syncToWms}"/>
+        <property name="isInventory" value="${isInventory}"/>
     </bean>
 
 </beans>

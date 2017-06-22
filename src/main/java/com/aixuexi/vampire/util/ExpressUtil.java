@@ -16,6 +16,11 @@ public class ExpressUtil {
      */
     private Boolean syncToWms;
 
+    /**
+     * 是否库存销售
+     */
+    private Boolean isInventory;
+
     public List<ConfirmExpressVo> getExpress() {
         return express;
     }
@@ -30,5 +35,13 @@ public class ExpressUtil {
 
     public void setSyncToWms(Boolean syncToWms) {
         this.syncToWms = syncToWms;
+    }
+
+    public Boolean getIsInventory() {
+        return isInventory;
+    }
+
+    public void setIsInventory(Boolean isInventory) {
+        this.isInventory = isInventory;
     }
 }
