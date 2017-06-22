@@ -3,6 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.common.constants.AccessConstant;
@@ -176,7 +177,7 @@ public class GoodsController {
     @RequestMapping(value = "/getByGoodsName")
     public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
                                       @RequestParam Integer pageSize) throws UnsupportedEncodingException {
-        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
+        Integer insId = UserHandleUtil.getInsId();
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
         conditionVo.setInsId(insId);
@@ -206,7 +207,7 @@ public class GoodsController {
     public ResultData queryGoodsList(@RequestParam Integer sid, @RequestParam Integer pid,
                                      @RequestParam Integer vtId, @RequestParam Integer veId,
                                      @RequestParam Integer pageNum, @RequestParam Integer pageSize){
-        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
+        Integer insId = UserHandleUtil.getInsId();
         ResultData resultData = new ResultData();
         RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
         conditionVo.setInsId(insId);
@@ -233,7 +234,7 @@ public class GoodsController {
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
-        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
+        Integer insId = UserHandleUtil.getInsId();
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
@@ -377,16 +378,5 @@ public class GoodsController {
                 return o1.getId().compareTo(o2.getId());
             }
         });
-    }
-
-
-    /**
-     * 获取userSessionHandler中的各种ID
-     *
-     * @param key 键
-     * @return
-     */
-    private Integer getIdByKey(String key) {
-        return Integer.parseInt(UserSessionHandler.get(key));
     }
 }

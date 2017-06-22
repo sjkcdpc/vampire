@@ -489,7 +489,7 @@ public class OrderManager {
                 String jsonString = JSONObject.toJSONString(confirmGoodsVos);
                 throw new IllegalArgumentException(jsonString);
             }
-            if (expressUtil.getInventory()) {
+            if (expressUtil.getIsInventory()) {
                 // 2. 校验库存 {barCode, inventory}
                 boolean flag = false;
                 ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);

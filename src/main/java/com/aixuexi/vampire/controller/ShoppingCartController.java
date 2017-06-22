@@ -1,10 +1,10 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.ShoppingCartFacade;
 import com.gaosi.api.revolver.model.ShoppingCartList;
@@ -41,7 +41,7 @@ public class ShoppingCartController {
     @RequestMapping(value = "/list")
     public ResultData list() {
         ResultData resultData = new ResultData();
-        List<ShoppingCartList> shoppingCartListList = shoppingCartFacade.queryShoppingCartDetail(UserSessionHandler.getId());
+        List<ShoppingCartList> shoppingCartListList = shoppingCartFacade.queryShoppingCartDetail(UserHandleUtil.getUserId());
         if (CollectionUtils.isNotEmpty(shoppingCartListList)) {
             ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
             int goodsPieces = 0;
@@ -87,7 +87,7 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
         shoppingCartList.setWeight(confirmGoodsVo.getWeight());
-        int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, UserSessionHandler.getId());
+        int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
         if (flag == -2) {
             resultData.setStatus(ResultData.STATUS_ERROR);
             resultData.setErrorMessage("购物车重复、请联系客服！");
@@ -106,7 +106,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/del")
     public ResultData del(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
-        int flag = shoppingCartFacade.delShoppingCart(goodsId, goodsTypeId, UserSessionHandler.getId());
+        int flag = shoppingCartFacade.delShoppingCart(goodsId, goodsTypeId, UserHandleUtil.getUserId());
         return dealDelAndMod(flag);
     }
 
@@ -120,7 +120,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/mod")
     public ResultData mod(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        int flag = shoppingCartFacade.modNumShoppingCart(goodsId, goodsTypeId, num, UserSessionHandler.getId());
+        int flag = shoppingCartFacade.modNumShoppingCart(goodsId, goodsTypeId, num, UserHandleUtil.getUserId());
         return dealDelAndMod(flag);
     }
 

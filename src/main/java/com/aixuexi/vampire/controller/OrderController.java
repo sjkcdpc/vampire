@@ -7,9 +7,8 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.Constants;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.gaosi.api.common.constants.AccessConstant;
-import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
@@ -60,8 +59,8 @@ public class OrderController {
     @RequestMapping(value = "/list")
     public ResultData list(@RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
-        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(
-                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY), UserSessionHandler.getId(), pageIndex, pageSize);
+        Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(UserHandleUtil.getInsId(),
+                UserHandleUtil.getUserId(), pageIndex, pageSize);
         Page<GoodsOrderVo> retPage = new Page<GoodsOrderVo>();
         retPage.setPageTotal(page.getPageTotal());
         retPage.setPageSize(page.getPageSize());
@@ -110,8 +109,7 @@ public class OrderController {
     @RequestMapping(value = "/confirm")
     public ResultData confirm() {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.confirmOrder(UserSessionHandler.getId(),
-                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY)));
+        resultData.setBody(orderManager.confirmOrder(UserHandleUtil.getUserId(), UserHandleUtil.getInsId()));
         return resultData;
     }
 
@@ -125,8 +123,7 @@ public class OrderController {
     @RequestMapping(value = "/freight")
     public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.reloadFreight(UserSessionHandler.getId(),
-                getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY),
+        resultData.setBody(orderManager.reloadFreight(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(),
                 provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
         return resultData;
     }
@@ -163,8 +160,7 @@ public class OrderController {
         ResultData resultData = new ResultData();
         try {
             validateInsType(); // 试用机构不能下单
-            resultData.setBody(orderManager.submit(UserSessionHandler.getId(),
-                    getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY), consigneeId,
+            resultData.setBody(orderManager.submit(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(), consigneeId,
                     receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
         } catch (IllegalArgumentException e) {
             String jsonString = e.getMessage();
@@ -239,20 +235,10 @@ public class OrderController {
     }
 
     /**
-     * 获取userSessionHandler中的各种ID
-     *
-     * @param key 键
-     * @return
-     */
-    private Integer getIdByKey(String key) {
-        return Integer.parseInt(UserSessionHandler.get(key));
-    }
-
-    /**
      * 验证是否试用机构
      */
     private void validateInsType() {
-        Integer insId = getIdByKey(AccessConstant.USER_INSTITUTION_ID_KEY);
+        Integer insId = UserHandleUtil.getInsId();
         Institution institution = institutionService.getInsInfoById(insId);
         if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
