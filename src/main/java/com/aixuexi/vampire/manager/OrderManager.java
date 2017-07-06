@@ -5,6 +5,7 @@ import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
@@ -125,7 +126,12 @@ public class OrderManager {
         // if (CollectionUtils.isNotEmpty(consigneeVos)) provinceId = consigneeVos.get(0).getProvinceId();
         // calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
-        Long remain = finAccService.getRemainAidouByInsId(insId);
+        RemainResult rr = finAccService.getRemainByInsId(insId);
+        if(rr==null)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+        }
+        Long remain = rr.getUsableRemain();
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
         // 6. 获取token
         confirmOrderVo.setToken(finAccService.getTokenForFinancial());
@@ -172,7 +178,12 @@ public class OrderManager {
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
         // 账号余额
-        Long remain = finAccService.getRemainAidouByInsId(insId);
+        RemainResult rr = finAccService.getRemainByInsId(insId);
+        if(rr==null)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+        }
+        Long remain = rr.getUsableRemain();
         if (amount.longValue() > remain) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
         }
@@ -426,7 +437,12 @@ public class OrderManager {
         freightVo.setGoodsAmount(goodsAmount);
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
-        Long remain = finAccService.getRemainAidouByInsId(insId);
+        RemainResult rr = finAccService.getRemainByInsId(insId);
+        if(rr==null)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+        }
+        Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
         return freightVo;
     }
