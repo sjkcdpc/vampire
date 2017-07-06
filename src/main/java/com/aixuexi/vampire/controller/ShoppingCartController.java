@@ -78,6 +78,12 @@ public class ShoppingCartController {
             resultData.setErrorMessage("商品不存在！");
             return resultData;
         }
+        if(num.intValue()>999 || num.intValue()<1)
+        {
+            resultData.setStatus(ResultData.STATUS_ERROR);
+            resultData.setErrorMessage("商品数量必须在1-999之间！");
+            return resultData;
+        }
         ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setGoodsId(confirmGoodsVo.getGoodsId());

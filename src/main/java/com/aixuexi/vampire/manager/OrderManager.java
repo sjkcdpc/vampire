@@ -1,11 +1,11 @@
 package com.aixuexi.vampire.manager;
 
-import com.aixuexi.account.api.AxxBankService;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -52,7 +52,7 @@ public class OrderManager {
     private ShoppingCartFacade shoppingCartService;
 
     @Autowired
-    private AxxBankService axxBankService;
+    private FinancialAccountService finAccService;
 
     @Autowired
     private AreaApi areaApi;
@@ -125,10 +125,10 @@ public class OrderManager {
         // if (CollectionUtils.isNotEmpty(consigneeVos)) provinceId = consigneeVos.get(0).getProvinceId();
         // calcFreight(provinceId, weight, confirmOrderVo.getExpress());
         // 5. 账户余额
-        Long remain = axxBankService.getRemainAidouByInsId(insId);
+        Long remain = finAccService.getRemainAidouByInsId(insId);
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
         // 6. 获取token
-        confirmOrderVo.setToken(axxBankService.getTokenForCostAiDou());
+        confirmOrderVo.setToken(finAccService.getTokenForFinancial());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         // 清空之前计算的邮费
         defaultExpressForConfirmOrder(confirmOrderVo.getExpress());
@@ -172,7 +172,7 @@ public class OrderManager {
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
         // 账号余额
-        Long remain = axxBankService.getRemainAidouByInsId(insId);
+        Long remain = finAccService.getRemainAidouByInsId(insId);
         if (amount.longValue() > remain) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
         }
@@ -252,6 +252,10 @@ public class OrderManager {
         goodsOrder.setOrderDetails(orderDetails);
         // 收货人信息
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
+        if(consignee==null)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
+        }
         goodsOrder.setAreaId(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
         goodsOrder.setConsigneePhone(consignee.getPhone());
@@ -422,7 +426,7 @@ public class OrderManager {
         freightVo.setGoodsAmount(goodsAmount);
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
-        Long remain = axxBankService.getRemainAidouByInsId(insId);
+        Long remain = finAccService.getRemainAidouByInsId(insId);
         freightVo.setBalance(Double.valueOf(remain) / 10000);
         return freightVo;
     }
@@ -464,6 +468,10 @@ public class OrderManager {
             case Constants.EXPRESS_DBWL:
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
+        }
+        if(tips=="")
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
         }
         return tips;
     }
