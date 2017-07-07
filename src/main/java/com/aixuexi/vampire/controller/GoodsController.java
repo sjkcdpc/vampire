@@ -307,9 +307,9 @@ public class GoodsController {
             int i = 0;
             for (GoodsTypeDetailVo detailVo: detailVos) {
                 if (i == 0) {
-                    relation.setRelationName(relation.getRelationName() + detailVo.getName().charAt(0));
+                    relation.setRelationName(relation.getRelationName() + detailVo.getName());
                 }else {
-                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName().charAt(0));
+                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName());
                 }
                 i++;
             }
@@ -320,9 +320,9 @@ public class GoodsController {
             int i = 0;
             for (GoodsTypeListVo detailVo: detailVos) {
                 if (i == 0) {
-                    relation.setRelationName(relation.getRelationName() + detailVo.getName().charAt(0));
+                    relation.setRelationName(relation.getRelationName() + detailVo.getName());
                 }else {
-                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName().charAt(0));
+                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName());
                 }
                 i++;
             }
