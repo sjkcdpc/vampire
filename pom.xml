@@ -18,6 +18,7 @@
         <thor.version>1.4.9.2-RELEASE</thor.version>
         <account-api.version>1.9.7-RELEASE</account-api.version>
         <orika.version>1.5.1</orika.version>
+        <junit.version>4.12</junit.version>
     </properties>
 
     <dependencies>
@@ -68,6 +69,13 @@
         </dependency>
 
         <!--外部-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+            <version>${junit.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>

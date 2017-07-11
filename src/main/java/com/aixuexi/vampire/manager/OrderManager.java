@@ -285,6 +285,10 @@ public class OrderManager {
                 goodsOrder.setExpressCode(Constants.EXPRESS_SHENTONG);
                 isFree = true;
             }
+            else {
+                // ruanyj 其他情况选择申通，不免运费
+                goodsOrder.setExpressCode(Constants.EXPRESS_SHENTONG);
+            }
         } else {
             goodsOrder.setExpressCode(express);
         }
@@ -485,7 +489,7 @@ public class OrderManager {
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
         }
-        if(tips=="")
+        if(StringUtils.isBlank(tips))
         {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
         }
@@ -504,6 +508,11 @@ public class OrderManager {
             List<String> barCodes = Lists.newArrayList();
             // 1. 校验商品是否已经下架
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+                //ruanyj 商品编码为空校验
+                if(StringUtils.isBlank(confirmGoodsVo.getBarCode()))
+                {
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的商品编码为空");
+                }
                 barCodes.add(confirmGoodsVo.getBarCode());
                 if (confirmGoodsVo.getStatus() == 0) {
                     offGoods.add(confirmGoodsVo);
@@ -517,6 +526,10 @@ public class OrderManager {
                 // 2. 校验库存 {barCode, inventory}
                 boolean flag = false;
                 ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
+                // ruanyj 查询库存超时校验
+                if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, "查询库存失败");
+                }
                 Map<String, Integer> inventoryMap = apiResponse.getBody();
                 for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
                     // 库存量

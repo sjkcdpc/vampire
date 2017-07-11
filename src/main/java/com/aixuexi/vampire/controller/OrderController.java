@@ -6,6 +6,7 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -13,11 +14,14 @@ import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
+import com.gaosi.api.revolver.model.LogisticsData;
+import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +52,9 @@ public class OrderController {
 
     @Autowired
     private InstitutionService institutionService;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     /**
      * 订单列表
@@ -93,8 +100,11 @@ public class OrderController {
         Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
-        String json = JSONObject.toJSONString(goodsOrder);
-        GoodsOrderVo goodsOrderVo = JSONObject.parseObject(json, GoodsOrderVo.class);
+        GoodsOrderVo goodsOrderVo = baseMapper.map(goodsOrder, GoodsOrderVo.class);
+        if(StringUtils.isNotBlank(goodsOrder.getLogistics())) {
+            JSONObject logJson = (JSONObject) JSONObject.parse(goodsOrder.getLogistics());
+            goodsOrderVo.setLogdata(JSONObject.parseArray(logJson.getString("data"), LogisticsData.class));
+        }
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
         dealGoodsOrder(goodsOrderVos);
         resultData.setBody(goodsOrderVos.get(0));
