@@ -168,7 +168,8 @@ public class OrderManager {
         }
         // 是否走发网
         Boolean syncToWms = true;
-        if (Constants.INS_IDS.contains(insId) || expressUtil.getSyncToWms()) {
+        // ruanyj 测试环境是否发网的开关
+        if (Constants.INS_IDS.contains(insId) || !expressUtil.getSyncToWms()) {
             syncToWms = false;
         } // 机构25，26或测试环境不走发网
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
@@ -488,10 +489,8 @@ public class OrderManager {
             case Constants.EXPRESS_DBWL:
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
-        }
-        if(StringUtils.isBlank(tips))
-        {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
+            default:
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
         }
         return tips;
     }
@@ -526,7 +525,7 @@ public class OrderManager {
                 // 2. 校验库存 {barCode, inventory}
                 boolean flag = false;
                 ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
-                // ruanyj 查询库存超时校验
+                // ruanyj 查询库存校验
                 if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
                     throw new IllegalArgException(ExceptionCode.UNKNOWN, "查询库存失败");
                 }
