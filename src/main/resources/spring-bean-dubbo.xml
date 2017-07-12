@@ -24,10 +24,12 @@
     </bean>
 
     <!-- 订单中心相关接口 -->
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.ConsigneeServiceFacade" id="consigneeService"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.GoodsServiceFacade" id="goodsServiceFacade"/>
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.ShoppingCartFacade" id="shoppingCartFacade"/>
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade" />
+
+    <!-- 在线商城相关接口 -->
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartFacade" id="shoppingCartFacade" />
 
     <!--财务接口-->
     <!--<dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>-->

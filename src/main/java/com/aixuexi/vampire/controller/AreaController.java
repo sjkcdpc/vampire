@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.bo.AreaBo;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.vo.AreaVo;
+import com.gaosi.api.vulcan.vo.AreaVo;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;

@@ -15,7 +15,7 @@
         <spring-version>4.3.4.RELEASE</spring-version>
         <avatar.version>mall-1.0.0-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor.version>1.4.9.2-RELEASE</thor.version>
+        <thor.version>1.4.15-RELEASE</thor.version>
         <account-api.version>1.9.7-RELEASE</account-api.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>

@@ -1,16 +1,19 @@
 package com.aixuexi.vampire.controller;
 
+import com.aixuexi.thor.redis.MyJedisService;
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.gaosi.api.basicdata.constant.Constant;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.facade.GoodsServiceFacade;
-import com.gaosi.api.revolver.facade.ShoppingCartFacade;
-import com.gaosi.api.revolver.model.ShoppingCartList;
-import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
-import com.gaosi.api.revolver.vo.ShoppingCartListVo;
-import com.gaosi.api.revolver.vo.ShoppingCartVo;
+import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.facade.ShoppingCartFacade;
+import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
+import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
+import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,9 @@ public class ShoppingCartController {
 
     @Autowired
     private GoodsServiceFacade goodsServiceFacade;
+
+    @Autowired
+    private MyJedisService myJedisService;
 
     /**
      * 购物车
@@ -71,18 +77,12 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add")
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        ResultData resultData = new ResultData();
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
         if (CollectionUtils.isEmpty(apiResponse.getBody())) {
-            resultData.setStatus(ResultData.STATUS_ERROR);
-            resultData.setErrorMessage("商品不存在！");
-            return resultData;
+            return ResultData.failed("商品不存在！");
         }
-        if(num.intValue()>999 || num.intValue()<1)
-        {
-            resultData.setStatus(ResultData.STATUS_ERROR);
-            resultData.setErrorMessage("商品数量必须在1-999之间！");
-            return resultData;
+        if(num.intValue()>999 || num.intValue()<1) {
+            return ResultData.failed("商品数量必须在1-999之间！");
         }
         ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
         ShoppingCartList shoppingCartList = new ShoppingCartList();
@@ -93,14 +93,21 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
         shoppingCartList.setWeight(confirmGoodsVo.getWeight());
-        int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
-        if (flag == -2) {
-            resultData.setStatus(ResultData.STATUS_ERROR);
-            resultData.setErrorMessage("购物车重复、请联系客服！");
-            return resultData;
+        String redisKey=Constants.PRE_SHOPPINGCART+UserHandleUtil.getUserId();
+        try {
+            boolean ret = myJedisService.setnx(redisKey, "", 60);
+            if(!ret){
+                return ResultData.failed("请勿操作过快！");
+            }
+            int flag = shoppingCartFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
+            if (flag == -2) {
+                return ResultData.failed("购物车重复、请联系客服！");
+            }
         }
-        resultData.setBody(flag);
-        return resultData;
+        finally {
+            myJedisService.del(redisKey);
+        }
+        return ResultData.successed();
     }
 
     /**

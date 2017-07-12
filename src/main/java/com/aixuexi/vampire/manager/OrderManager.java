@@ -11,20 +11,22 @@ import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.independenceDay.model.Institution;
+import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
-import com.gaosi.api.revolver.facade.ConsigneeServiceFacade;
-import com.gaosi.api.revolver.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
+import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.revolver.facade.ShoppingCartFacade;
-import com.gaosi.api.revolver.model.Consignee;
+import com.gaosi.api.vulcan.facade.ShoppingCartFacade;
+import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
-import com.gaosi.api.revolver.model.ShoppingCartList;
-import com.gaosi.api.revolver.vo.ConfirmExpressVo;
-import com.gaosi.api.revolver.vo.ConfirmGoodsVo;
-import com.gaosi.api.revolver.vo.ConfirmOrderVo;
-import com.gaosi.api.revolver.vo.ConsigneeVo;
-import com.gaosi.api.revolver.vo.FreightVo;
+import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.vo.ConfirmExpressVo;
+import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
+import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
+import com.gaosi.api.vulcan.vo.ConsigneeVo;
+import com.gaosi.api.vulcan.vo.FreightVo;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
@@ -64,6 +66,8 @@ public class OrderManager {
     @Autowired
     private OrderServiceFacade orderServiceFacade;
 
+    @Autowired
+    private InstitutionService institutionService;
     @Autowired
     private ExpressUtil expressUtil;
 
@@ -169,9 +173,11 @@ public class OrderManager {
         // 是否走发网
         Boolean syncToWms = true;
         // ruanyj 测试环境是否发网的开关
-        if (Constants.INS_IDS.contains(insId) || !expressUtil.getSyncToWms()) {
+        Institution insinfo = institutionService.getInsInfoById(insId);
+        // 1测试机构 2试用机构 或者关闭发网开关 则不走发网
+        if (insinfo!=null&&Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()) || !expressUtil.getSyncToWms()) {
             syncToWms = false;
-        } // 机构25，26或测试环境不走发网
+        }
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
         // 创建订单对象
         GoodsOrder goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);

@@ -9,17 +9,17 @@
     <bean id="expressUtil" scope="singleton" class="com.aixuexi.vampire.util.ExpressUtil">
         <property name="express">
             <list>
-                <bean class="com.gaosi.api.revolver.vo.ConfirmExpressVo">
+                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
                     <property name="key" value="${express1.key}"/>
                     <property name="name" value="${express1.name}"/>
                     <property name="desc" value="${express1.desc}"/>
                 </bean>
-                <bean class="com.gaosi.api.revolver.vo.ConfirmExpressVo">
+                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
                     <property name="key" value="${express2.key}"/>
                     <property name="name" value="${express2.name}"/>
                     <property name="desc" value="${express2.desc}"/>
                 </bean>
-                <bean class="com.gaosi.api.revolver.vo.ConfirmExpressVo">
+                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
                     <property name="key" value="${express3.key}"/>
                     <property name="name" value="${express3.name}"/>
                     <property name="desc" value="${express3.desc}"/>

@@ -26,8 +26,8 @@ public final class Constants {
     public static final String EXPRESS_SHENTONG = "shentong";
 
     public static final String EXPRESS_SHUNFENG = "shunfeng";
-
-    public static final List<Integer> INS_IDS = Lists.newArrayList(25, 26);
+    //机构类型 0 正式 1测试机构 2试用机构 3外研英语机构
+    public static final List<Integer> INS_TYPES = Lists.newArrayList(1, 2);
 
     /**
      * 缓存0.5个小时
@@ -38,5 +38,8 @@ public final class Constants {
      * 试用机构
      */
     public static final Integer INSTITUTION_TYPE_TEST_USE = 2;
+
+
+    public static final String PRE_SHOPPINGCART ="SHOPPINGCART_";
 
 }
