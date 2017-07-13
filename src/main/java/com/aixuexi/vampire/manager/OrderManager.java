@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -275,9 +276,10 @@ public class OrderManager {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
         goodsOrder.setAreaId(consignee.getAreaId());
+        ApiResponse<AddressDTO> ad = areaApi.getProvinceCityById(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
         goodsOrder.setConsigneePhone(consignee.getPhone());
-        goodsOrder.setConsigneeAddress(consignee.getAddress());
+        goodsOrder.setConsigneeAddress(ad.getBody().getProvince()+ad.getBody().getCity()+ad.getBody().getDistrict()+" "+consignee.getAddress());
         goodsOrder.setConsumeAmount(goodsAmount); // 商品总金额
         goodsOrder.setInstitutionId(insId);
         goodsOrder.setRemark(StringUtils.EMPTY);
@@ -455,6 +457,10 @@ public class OrderManager {
         }
         Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
+        //ruanyj double展示保留两位小数
+        DecimalFormat df1 = new DecimalFormat("0.00");
+        freightVo.setBalanceDis(df1.format(freightVo.getBalance()));
+        freightVo.setGoodsAmountDis(df1.format(freightVo.getGoodsAmount()));
         return freightVo;
     }
 
@@ -516,7 +522,7 @@ public class OrderManager {
                 //ruanyj 商品编码为空校验
                 if(StringUtils.isBlank(confirmGoodsVo.getBarCode()))
                 {
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的商品编码为空");
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空");
                 }
                 barCodes.add(confirmGoodsVo.getBarCode());
                 if (confirmGoodsVo.getStatus() == 0) {

@@ -11,9 +11,7 @@ import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,8 +35,8 @@ public class ConsigneeController {
      * @param consignee 收货地址
      * @return
      */
-    @RequestMapping(value = "/save")
-    public ResultData save(Consignee consignee) {
+    @RequestMapping(value = "/save",method = RequestMethod.POST)
+    public ResultData save(@RequestBody Consignee consignee) {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(consignee);

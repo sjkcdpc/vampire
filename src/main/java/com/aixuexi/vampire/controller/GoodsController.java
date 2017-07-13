@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -219,8 +220,16 @@ public class GoodsController {
         Page<GoodsVo> page = response.getBody();
 
         loadRelationName(page.getList(), false);
+        for(GoodsVo goodsVo:page.getList()) {
+            List<GoodsTypeListVo> gtdlist = (List<GoodsTypeListVo>) goodsVo.getGoodsGrades();
+            for (GoodsTypeListVo gtdv : gtdlist) {
+                String price = gtdv.getPrice();
+                Double cny = Double.parseDouble(price);//转换成Double
+                DecimalFormat df = new DecimalFormat("0.00");//格式化
+                gtdv.setPrice(df.format(cny));
+            }
+        }
         resultData.setBody(page);
-
         return resultData;
     }
 
@@ -237,6 +246,14 @@ public class GoodsController {
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
+        List<GoodsTypeDetailVo> gtdlist =(List<GoodsTypeDetailVo>)goodsVo.getGoodsGrades();
+        for(GoodsTypeDetailVo gtdv :gtdlist)
+        {
+            String price = gtdv.getPrice();
+            Double cny = Double.parseDouble(price);//转换成Double
+            DecimalFormat df = new DecimalFormat("0.00");//格式化
+            gtdv.setPrice(df.format(cny));
+        }
         loadRelationName(Lists.newArrayList(goodsVo), true);
         resultData.setBody(response.getBody());
         return resultData;

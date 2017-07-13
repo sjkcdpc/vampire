@@ -29,6 +29,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -99,7 +103,8 @@ public class OrderController {
         Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
-        GoodsOrderVo goodsOrderVo = baseMapper.map(goodsOrder, GoodsOrderVo.class);
+        String json = JSONObject.toJSONString(goodsOrder);
+        GoodsOrderVo goodsOrderVo = JSONObject.parseObject(json, GoodsOrderVo.class);
         if(StringUtils.isNotBlank(goodsOrder.getLogistics())) {
             JSONObject logJson = (JSONObject) JSONObject.parse(goodsOrder.getLogistics());
             goodsOrderVo.setLogdata(JSONObject.parseArray(logJson.getString("data"), LogisticsData.class));
@@ -198,6 +203,8 @@ public class OrderController {
     private void dealGoodsOrder(List<GoodsOrderVo> goodsOrderVos) {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+                //ruanyj double展示保留两位小数
+                DecimalFormat df1 = new DecimalFormat("0.00");
                 // 订单总金额
                 goodsOrderVo.setPayAmount(add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
                 int goodsPieces = 0;
@@ -211,8 +218,15 @@ public class OrderController {
                     ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
                     orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
                     orderDetailVo.setTotal(mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
+                    //格式化double类型的数据
+                    orderDetailVo.setPriceDis(orderDetailVo.getPrice()==null?"0.00":df1.format(orderDetailVo.getPrice()));
+                    orderDetailVo.setTotalDis(orderDetailVo.getTotal()==null?"0.00":df1.format(orderDetailVo.getTotal()));
                 }
                 goodsOrderVo.setGoodsPieces(goodsPieces);
+                //格式化double类型的数据
+                goodsOrderVo.setFreightDis(goodsOrderVo.getFreight()==null?"0.00":df1.format(goodsOrderVo.getFreight()));
+                goodsOrderVo.setConsumeAmountDis(goodsOrderVo.getConsumeAmount()==null?"0.00":df1.format(goodsOrderVo.getConsumeAmount()));
+                goodsOrderVo.setPayAmountDis(goodsOrderVo.getPayAmount()==null?"0.00":df1.format(goodsOrderVo.getPayAmount()));
             }
         }
     }
@@ -253,6 +267,5 @@ public class OrderController {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
     }
-
 }
 
