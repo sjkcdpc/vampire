@@ -279,7 +279,21 @@ public class OrderManager {
         ApiResponse<AddressDTO> ad = areaApi.getProvinceCityById(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
         goodsOrder.setConsigneePhone(consignee.getPhone());
-        goodsOrder.setConsigneeAddress(ad.getBody().getProvince()+ad.getBody().getCity()+ad.getBody().getDistrict()+" "+consignee.getAddress());
+        //ruanyj 收货人地址补全
+        AddressDTO add = ad.getBody();
+        StringBuilder preAddress = new StringBuilder();
+        if(add!=null) {
+            preAddress.append(add.getProvince() == null ? "" : add.getProvince());
+            preAddress.append(add.getCity() == null ? "" : add.getCity());
+            preAddress.append(add.getDistrict() == null ? "" :add.getDistrict());
+        }
+        if(StringUtils.isBlank(preAddress.toString()))
+        {
+            goodsOrder.setConsigneeAddress(consignee.getAddress());
+        }
+        else {
+            goodsOrder.setConsigneeAddress(preAddress.toString() + " " + consignee.getAddress());
+        }
         goodsOrder.setConsumeAmount(goodsAmount); // 商品总金额
         goodsOrder.setInstitutionId(insId);
         goodsOrder.setRemark(StringUtils.EMPTY);
@@ -287,7 +301,7 @@ public class OrderManager {
         goodsOrder.setUserId(userId);
         boolean isFree = false; // 是否免物流费
         if (express.equals(Constants.EXPRESS_DBWL)) {
-            if (weight > 999) {
+            if (goodsPieces > 100) {
                 goodsOrder.setExpressCode(Constants.EXPRESS_DBWL);
                 isFree = true;
             } else if (goodsPieces >= 50) {
@@ -378,7 +392,7 @@ public class OrderManager {
      * @param weight         商品重量
      * @param expressVoLists 物流信息
      */
-    private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists) {
+    private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists,int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
         ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, Constants.EXPRESS);
         logger.info("calcFreight --> freight : {}", apiResponse);
@@ -388,13 +402,27 @@ public class OrderManager {
             HashMap<String, Object> map = null;
             if (i == 2) {
                 map = listMap.get(1);
+                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
+                //ruanyj 德邦物流超过50本或者超过一公斤免费
+                if(goodsPieces>=50||weight>=1000)
+                {
+                    confirmExpressVo.setRemark(Constants.FREE_FREIGHT);
+                    confirmExpressVo.setTotalFreight(Constants.DEFAULT_DOUBLE_VALUE);
+                }
+                else
+                {
+                    confirmExpressVo.setRemark("");
+                    confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+                }
             } else {
                 map = listMap.get(i);
+                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
+                confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
             }
-            confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-            confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-            confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-            confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
         }
     }
 
@@ -411,39 +439,39 @@ public class OrderManager {
         FreightVo freightVo = new FreightVo();
         List<ConfirmExpressVo> confirmExpressVos = expressUtil.getExpress();
         List<ShoppingCartList> shoppingCartLists = null;
-        if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
-        } else {
-            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
-        }
-        if (CollectionUtils.isEmpty(shoppingCartLists)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-        }
-        goodsTypeIds = Lists.newArrayList();
         int goodsPieces = 0; // 商品总件数
-        // 数量 goodsTypeIds - > num
-        Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
-            goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
-            goodsPieces += shoppingCartList.getNum();
-        }
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-        for (ConfirmGoodsVo goodsVo : goodsVos) {
-            if (goodsVo.getStatus() == 1) { // 上架
-                // 数量*单重量
-                weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
-                // 数量*单价
-                goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
-            } else { // 下架
-                goodsPieces -= goodsNum.get(goodsVo.getGoodsTypeId());
+        if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
+            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
+            if (CollectionUtils.isEmpty(shoppingCartLists)) {
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+            }
+            goodsTypeIds = Lists.newArrayList();
+
+            // 数量 goodsTypeIds - > num
+            Map<Integer, Integer> goodsNum = Maps.newHashMap();
+            for (ShoppingCartList shoppingCartList : shoppingCartLists) {
+                goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
+                goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
+                goodsPieces += shoppingCartList.getNum();
+            }
+
+            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+            List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
+            for (ConfirmGoodsVo goodsVo : goodsVos) {
+                if (goodsVo.getStatus() == 1) { // 上架
+                    // 数量*单重量
+                    weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
+                    // 数量*单价
+                    goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
+                } else { // 下架
+                    goodsPieces -= goodsNum.get(goodsVo.getGoodsTypeId());
+                }
             }
         }
         // 计算邮费
-        calcFreight(provinceId, weight, confirmExpressVos);
+        calcFreight(provinceId, weight, confirmExpressVos,goodsPieces);
         // set
         freightVo.setGoodsPieces(goodsPieces);
         freightVo.setGoodsWeight(weight);
@@ -457,10 +485,6 @@ public class OrderManager {
         }
         Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
-        //ruanyj double展示保留两位小数
-        DecimalFormat df1 = new DecimalFormat("0.00");
-        freightVo.setBalanceDis(df1.format(freightVo.getBalance()));
-        freightVo.setGoodsAmountDis(df1.format(freightVo.getGoodsAmount()));
         return freightVo;
     }
 

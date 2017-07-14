@@ -15,10 +15,7 @@ import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.vulcan.model.LogisticsData;
-import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
-import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
-import com.gaosi.api.vulcan.vo.GoodsOrderVo;
-import com.gaosi.api.vulcan.vo.OrderDetailVo;
+import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -147,8 +144,13 @@ public class OrderController {
     @RequestMapping(value = "/freight")
     public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.reloadFreight(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(),
-                provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds)));
+        FreightVo freightVo =orderManager.reloadFreight(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(),
+                provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds));
+        //ruanyj double展示保留两位小数
+        DecimalFormat df1 = new DecimalFormat("0.00");
+        freightVo.setBalanceDis(df1.format(freightVo.getBalance()));
+        freightVo.setGoodsAmountDis(df1.format(freightVo.getGoodsAmount()));
+        resultData.setBody(freightVo);
         return resultData;
     }
 
