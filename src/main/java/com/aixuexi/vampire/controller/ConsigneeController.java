@@ -40,19 +40,7 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(consignee);
-        Consignee resConsignee = consigneeServiceFacade.selectById(id);
-        String jsonString = JSONObject.toJSONString(resConsignee);
-        ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
-        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
-        if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
-            AddressDTO addressDTO = apiResponse.getBody().get(0);
-            consigneeVo.setProvinceId(addressDTO.getProvinceId());
-            consigneeVo.setProvince(addressDTO.getProvince());
-            consigneeVo.setCityId(addressDTO.getCityId());
-            consigneeVo.setCity(addressDTO.getCity());
-            consigneeVo.setArea(addressDTO.getDistrict());
-        }
-        resultData.setBody(consigneeVo);
+        resultData.setBody(getConsigneeVoById(id));
         return resultData;
     }
 
@@ -66,7 +54,8 @@ public class ConsigneeController {
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
-        resultData.setBody(consigneeServiceFacade.update(consignee));
+        consigneeServiceFacade.update(consignee);
+        resultData.setBody(getConsigneeVoById(consignee.getId()));
         return resultData;
     }
 
@@ -81,6 +70,28 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         resultData.setBody(consigneeServiceFacade.delete(id));
         return resultData;
+    }
+    /**
+     * 返回新增或更新后的收货人信息
+     *
+     * @param id 收货人ID
+     * @return
+     */
+    public ConsigneeVo getConsigneeVoById(int id)
+    {
+        Consignee resConsignee = consigneeServiceFacade.selectById(id);
+        String jsonString = JSONObject.toJSONString(resConsignee);
+        ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
+        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
+        if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
+            AddressDTO addressDTO = apiResponse.getBody().get(0);
+            consigneeVo.setProvinceId(addressDTO.getProvinceId());
+            consigneeVo.setProvince(addressDTO.getProvince());
+            consigneeVo.setCityId(addressDTO.getCityId());
+            consigneeVo.setCity(addressDTO.getCity());
+            consigneeVo.setArea(addressDTO.getDistrict());
+        }
+        return consigneeVo;
     }
 
 
