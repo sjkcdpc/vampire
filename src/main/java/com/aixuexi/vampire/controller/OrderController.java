@@ -16,6 +16,7 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.vulcan.model.LogisticsData;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
+import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.GoodsOrderVo;
 import com.gaosi.api.vulcan.vo.OrderDetailVo;
 import com.google.common.collect.Lists;
@@ -123,7 +124,16 @@ public class OrderController {
     @RequestMapping(value = "/confirm")
     public ResultData confirm() {
         ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.confirmOrder(UserHandleUtil.getUserId(), UserHandleUtil.getInsId()));
+        ConfirmOrderVo conOrderVo = orderManager.confirmOrder(UserHandleUtil.getUserId(), UserHandleUtil.getInsId());
+        DecimalFormat df1 = new DecimalFormat("0.00");
+        conOrderVo.setBalanceDis(df1.format(conOrderVo.getBalance()));
+        conOrderVo.setGoodsAmountDis(df1.format(conOrderVo.getGoodsAmount()));
+        for(ConfirmGoodsVo cgv:conOrderVo.getGoodsItem())
+        {
+            cgv.setPriceDis(df1.format(cgv.getPrice()));
+            cgv.setTotalDis(df1.format(cgv.getTotal()));
+        }
+        resultData.setBody(conOrderVo);
         return resultData;
     }
 

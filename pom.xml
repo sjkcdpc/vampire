@@ -13,7 +13,7 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>mall-1.0.0-SNAPSHOT</avatar.version>
+        <avatar.version>mall-1.0.1-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor.version>1.4.15-RELEASE</thor.version>
         <account-api.version>1.9.7-RELEASE</account-api.version>
@@ -253,7 +253,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
     </dependencies>
 
     <profiles>
