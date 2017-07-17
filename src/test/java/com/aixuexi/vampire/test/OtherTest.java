@@ -1,7 +1,7 @@
 package com.aixuexi.vampire.test;
 
 
-import com.gaosi.api.vulcan.vo.GoodsOrderVo;
+import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import org.junit.Test;
 
 import java.text.DecimalFormat;
