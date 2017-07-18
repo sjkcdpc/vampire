@@ -129,7 +129,7 @@ public class OrderManager {
         // 计算邮费
         // Integer provinceId = 0;
         // if (CollectionUtils.isNotEmpty(consigneeVos)) provinceId = consigneeVos.get(0).getProvinceId();
-        // calcFreight(provinceId, weight, confirmOrderVo.getExpress());
+        calcFreight(null, weight, confirmOrderVo.getExpress(),goodsPieces);
         // 5. 账户余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr==null)
@@ -394,34 +394,46 @@ public class OrderManager {
      */
     private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists,int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, Constants.EXPRESS);
-        logger.info("calcFreight --> freight : {}", apiResponse);
-        List<HashMap<String, Object>> listMap = apiResponse.getBody();
-        for (int i = 0; i < expressVoLists.size(); i++) {
-            ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
-            HashMap<String, Object> map = null;
-            if (i == 2) {
-                map = listMap.get(1);
-                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-                //ruanyj 德邦物流超过50本或者超过一公斤免费
-                if(goodsPieces>=50||weight>=1000)
-                {
-                    confirmExpressVo.setRemark(Constants.FREE_FREIGHT);
-                    confirmExpressVo.setTotalFreight(Constants.DEFAULT_DOUBLE_VALUE);
-                }
-                else
-                {
-                    confirmExpressVo.setRemark("");
+        if(provinceId!=null) {
+            ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, Constants.EXPRESS);
+            logger.info("calcFreight --> freight : {}", apiResponse);
+            List<HashMap<String, Object>> listMap = apiResponse.getBody();
+            for (int i = 0; i < expressVoLists.size(); i++) {
+                ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
+                HashMap<String, Object> map = null;
+                if (i == 2) {
+                    map = listMap.get(1);
+                    confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+                    confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+                    confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
+                    //ruanyj 德邦物流超过50本或者超过一公斤免费
+                    if (goodsPieces >= 50 || weight >= 1000) {
+                        confirmExpressVo.setRemark(Constants.FREE_FREIGHT);
+                        confirmExpressVo.setTotalFreight(Constants.DEFAULT_DOUBLE_VALUE);
+                    } else {
+                        confirmExpressVo.setRemark("");
+                        confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+                    }
+                } else {
+                    map = listMap.get(i);
+                    confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+                    confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+                    confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
                     confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+                    confirmExpressVo.setRemark("");
                 }
-            } else {
-                map = listMap.get(i);
-                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-                confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+            }
+        }
+        else
+        {
+            //ruanyj 刚进确认订单页面时清空物流信息
+            for (int i = 0; i < expressVoLists.size(); i++) {
+                ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
+                confirmExpressVo.setFirstFreight("");
+                confirmExpressVo.setBeyondPrice("");
+                confirmExpressVo.setBeyondWeight("");
+                confirmExpressVo.setTotalFreight("");
+                confirmExpressVo.setRemark("");
             }
         }
     }
