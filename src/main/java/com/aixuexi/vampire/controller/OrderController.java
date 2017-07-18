@@ -16,11 +16,14 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderDetailVo;
+import com.gaosi.api.vulcan.facade.GoodsPicServiceFacade;
+import com.gaosi.api.vulcan.model.GoodsPic;
 import com.gaosi.api.vulcan.model.LogisticsData;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +59,9 @@ public class OrderController {
     private InstitutionService institutionService;
 
     @Resource
+    private GoodsPicServiceFacade goodsPicServiceFacade;
+
+    @Resource
     private BaseMapper baseMapper;
 
     /**
@@ -84,6 +90,11 @@ public class OrderController {
         String json = JSONObject.toJSONString(page.getList());
         List<GoodsOrderVo> goodsOrderVos = JSONObject.parseArray(json, GoodsOrderVo.class);
         dealGoodsOrder(goodsOrderVos);
+        //ruanyj 查询商品图片，放到web层处理，商品图片和订单没有关系
+        for(GoodsOrderVo goodsOrderVo:goodsOrderVos) {
+            List<OrderDetailVo> orderDetails = goodsOrderVo.getOrderDetails();
+            addGoodsPics(orderDetails);
+        }
         retPage.setList(goodsOrderVos);
         resultData.setBody(retPage);
         return resultData;
@@ -110,8 +121,28 @@ public class OrderController {
         }
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
         dealGoodsOrder(goodsOrderVos);
+        //ruanyj 查询商品图片，放到web层处理，商品图片和订单没有关系
+        List<OrderDetailVo> orderDetails = goodsOrderVos.get(0).getOrderDetails();
+        addGoodsPics(orderDetails);
         resultData.setBody(goodsOrderVos.get(0));
         return resultData;
+    }
+    /**
+     * ruanyj 添加商品图片
+     */
+    private void addGoodsPics(List<OrderDetailVo> orderDetails)
+    {
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(orderDetails)) {
+            List<Integer> goodsIds = Lists.newArrayList();
+            for (OrderDetailVo orderDetail : orderDetails) {
+                goodsIds.add(orderDetail.getGoodsId());
+            }
+            // goodsId -> goodsPics
+            Map<Integer, List<GoodsPic>> picMap = selectGoodsPicByGoodsIds(goodsIds);
+            for (OrderDetailVo orderDetail : orderDetails) {
+                orderDetail.setGoodsPics(picMap.get(orderDetail.getGoodsId()));
+            }
+        }
     }
 
     /**
@@ -279,6 +310,24 @@ public class OrderController {
         if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
+    }
+    /**
+     * 订单所需的商品图片查询
+     */
+    private Map<Integer, List<GoodsPic>> selectGoodsPicByGoodsIds(List<Integer> goodsIds) {
+        Map<Integer, List<GoodsPic>> picMap = Maps.newHashMap();
+        List<GoodsPic> goodsPics = goodsPicServiceFacade.findGoodsPicByGoodsIds(goodsIds).getBody();
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(goodsPics)) {
+            for (GoodsPic goodsPic : goodsPics) {
+                List<GoodsPic> goodsPicList = picMap.get(goodsPic.getGoodsId());
+                if (org.apache.commons.collections4.CollectionUtils.isEmpty(goodsPicList)) {
+                    goodsPicList = Lists.newArrayList();
+                }
+                goodsPicList.add(goodsPic);
+                picMap.put(goodsPic.getGoodsId(), goodsPicList);
+            }
+        } // 商品图片
+        return picMap;
     }
 }
 
