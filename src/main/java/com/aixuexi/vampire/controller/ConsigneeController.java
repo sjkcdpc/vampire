@@ -1,5 +1,7 @@
 package com.aixuexi.vampire.controller;
 
+import com.aixuexi.thor.except.ExceptionCode;
+import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -55,7 +57,15 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         consigneeServiceFacade.update(consignee);
-        resultData.setBody(getConsigneeVoById(consignee.getId()));
+        ConsigneeVo cv = getConsigneeVoById(consignee.getId());
+        if(cv==null)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+        }
+        else
+        {
+            resultData.setBody(cv);
+        }
         return resultData;
     }
 
@@ -68,7 +78,15 @@ public class ConsigneeController {
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
-        resultData.setBody(consigneeServiceFacade.delete(id));
+        int res = consigneeServiceFacade.delete(id);
+        if(res<=0)
+        {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+        }
+        else
+        {
+            resultData.setBody(res);
+        }
         return resultData;
     }
     /**
