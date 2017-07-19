@@ -60,16 +60,9 @@ public class GoodsController {
         ResultData resultData = new ResultData();
         ApiResponse<List<Integer>> response = goodsServiceFacade.querySubject();
 
-        List<CommonConditionVo> conditionVos = new ArrayList<>();
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
-        for (SubjectProductBo productBo: productBos) {
-            CommonConditionVo conditionVo = new CommonConditionVo();
-            //goods表存储的是subject_product表里面的id
-            conditionVo.setId(productBo.getId());
-            conditionVo.setName(productBo.getName());
-            conditionVos.add(conditionVo);
-        }
+        List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
         conditionVos.add(getCommonConditionVo());
         sort(conditionVos);
         resultData.setBody(conditionVos);
@@ -86,15 +79,10 @@ public class GoodsController {
     public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
         ApiResponse<List<Integer>> response = goodsServiceFacade.queryPeriod(subjectId);
-        List<CommonConditionVo> conditionVos = new ArrayList<>();
+
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
-        for (DictionaryBo dictionaryBo: periods.getBody()) {
-            CommonConditionVo conditionVo = new CommonConditionVo();
-            conditionVo.setId(Integer.valueOf(dictionaryBo.getCode()));
-            conditionVo.setName(dictionaryBo.getName());
-            conditionVos.add(conditionVo);
-        }
+        List<CommonConditionVo> conditionVos = baseMapper.mapAsList(periods.getBody(), CommonConditionVo.class);
         conditionVos.add(getCommonConditionVo());
         sort(conditionVos);
         resultData.setBody(conditionVos);
@@ -122,7 +110,7 @@ public class GoodsController {
     }
 
     /**
-     * 获取夹菜版本或者考区
+     * 获取教材版本或者考区
      *
      * @param subjectId
      * @param periodId
@@ -139,23 +127,12 @@ public class GoodsController {
             //查询教材版本
             ApiResponse<List<Integer>> response = goodsServiceFacade.queryBookVersion(subjectId, periodId);
             ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
-            for (BookVersionBo bookVersionBo: bookVersion.getBody()) {
-                CommonConditionVo conditionVo = new CommonConditionVo();
-                conditionVo.setId(bookVersionBo.getId());
-                conditionVo.setName(bookVersionBo.getName());
-                conditionVos.add(conditionVo);
-            }
+            conditionVos = baseMapper.mapAsList(bookVersion.getBody(), CommonConditionVo.class);
         }else if (categoryId.equals(GoodsConstant.GoodsCategory.AREA.getValue())) {
             //按考区分
             ApiResponse<List<Integer>> response = goodsServiceFacade.queryArea(subjectId, periodId);
             ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
-
-            for (ExamAreaBo examAreaBo: examArea.getBody()) {
-                CommonConditionVo conditionVo = new CommonConditionVo();
-                conditionVo.setId(examAreaBo.getId());
-                conditionVo.setName(examAreaBo.getName());
-                conditionVos.add(conditionVo);
-            }
+            conditionVos = baseMapper.mapAsList(examArea.getBody(), CommonConditionVo.class);
         }
 
         conditionVos.add(getCommonConditionVo());
@@ -247,8 +224,7 @@ public class GoodsController {
         GoodsVo goodsVo = response.getBody();
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         List<GoodsTypeDetailVo> gtdlist =(List<GoodsTypeDetailVo>)goodsVo.getGoodsGrades();
-        for(GoodsTypeDetailVo gtdv :gtdlist)
-        {
+        for(GoodsTypeDetailVo gtdv :gtdlist) {
             String price = gtdv.getPrice();
             Double cny = Double.parseDouble(price);//转换成Double
             DecimalFormat df = new DecimalFormat("0.00");//格式化
@@ -275,8 +251,8 @@ public class GoodsController {
         }
         List<BookVersionBo> bookVersionBos = new ArrayList<>();
         List<ExamAreaBo> examAreaBos = new ArrayList<>();
-        Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
-        Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
+        Map<Integer, ExamAreaBo> examAreaMap = null;
+        Map<Integer, BookVersionBo> bookVersionMap = null;
 
 
         if (CollectionUtils.isNotEmpty(bookVersionIds)) {

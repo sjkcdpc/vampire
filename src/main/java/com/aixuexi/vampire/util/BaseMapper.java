@@ -1,7 +1,9 @@
 package com.aixuexi.vampire.util;
 
+import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
+import com.gaosi.api.vulcan.vo.CommonConditionVo;
 import ma.glasnost.orika.CustomMapper;
 import ma.glasnost.orika.MapperFactory;
 import ma.glasnost.orika.MappingContext;
@@ -30,6 +32,11 @@ public class BaseMapper extends ConfigurableMapper {
                         goodsOrderVo.setCreateOrderTime(createOrderTimeStr);
                     }
                 })
+                .register();
+        factory.classMap(DictionaryBo.class,CommonConditionVo.class)
+                .mapNulls(true).mapNullsInReverse(true)
+                .byDefault()
+                .fieldAToB("code","id")
                 .register();
     }
 }
