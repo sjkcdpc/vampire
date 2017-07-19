@@ -45,4 +45,6 @@ public final class Constants {
     public static final String  DEFAULT_DOUBLE_VALUE="0.00";
     //免运费提示
     public static final String FREE_FREIGHT="已满50件，免物流服务费";
+    //订单详情中商品名称拼接的分隔符
+    public static final String ORDERDETAIL_NAME_DIV ="-";
 }

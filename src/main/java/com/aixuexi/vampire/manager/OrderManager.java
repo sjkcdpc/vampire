@@ -263,7 +263,7 @@ public class OrderManager {
             orderDetail.setBarCode(confirmGoodsVo.getBarCode());
             orderDetail.setGoodsId(confirmGoodsVo.getGoodsId());
             orderDetail.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
-            orderDetail.setName(confirmGoodsVo.getGoodsName());
+            orderDetail.setName(confirmGoodsVo.getGoodsName()+Constants.ORDERDETAIL_NAME_DIV+confirmGoodsVo.getGoodsTypeName());
             orderDetail.setNum(num);
             orderDetail.setPrice(confirmGoodsVo.getPrice());
             orderDetails.add(orderDetail);
