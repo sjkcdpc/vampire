@@ -176,7 +176,7 @@ public class OrderManager {
         // ruanyj 测试环境是否发网的开关
         Institution insinfo = institutionService.getInsInfoById(insId);
         // 1测试机构 2试用机构 或者关闭发网开关 则不走发网
-        if (insinfo!=null&&Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()) || !expressUtil.getSyncToWms()) {
+        if ((insinfo!=null&&Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue())) || !expressUtil.getSyncToWms()) {
             syncToWms = false;
         }
         logger.info("submitOrder --> syncToWms : {}", syncToWms);

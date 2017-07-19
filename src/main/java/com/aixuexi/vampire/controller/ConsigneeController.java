@@ -3,6 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
@@ -15,6 +16,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -30,6 +32,9 @@ public class ConsigneeController {
 
     @Autowired
     private AreaApi areaApi;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     /**
      * 保存收货地址
@@ -95,8 +100,8 @@ public class ConsigneeController {
     {
         Consignee resConsignee = consigneeServiceFacade.selectById(id);
         if(resConsignee!=null) {
-            String jsonString = JSONObject.toJSONString(resConsignee);
-            ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
+
+            ConsigneeVo consigneeVo = baseMapper.map(resConsignee, ConsigneeVo.class);
             ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
             if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
                 AddressDTO addressDTO = apiResponse.getBody().get(0);

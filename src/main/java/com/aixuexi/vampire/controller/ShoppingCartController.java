@@ -2,11 +2,9 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.redis.MyJedisService;
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.gaosi.api.basicdata.constant.Constant;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartFacade;
@@ -21,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -39,6 +38,9 @@ public class ShoppingCartController {
     @Autowired
     private MyJedisService myJedisService;
 
+    @Resource
+    private BaseMapper baseMapper;
+
     /**
      * 购物车
      *
@@ -52,8 +54,7 @@ public class ShoppingCartController {
             ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
             int goodsPieces = 0;
             double payAmount = 0;
-            String jsonString = JSONObject.toJSONString(shoppingCartListList);
-            List<ShoppingCartListVo> shoppingCartListVos = JSONArray.parseArray(jsonString, ShoppingCartListVo.class);
+            List<ShoppingCartListVo> shoppingCartListVos = baseMapper.mapAsList(shoppingCartListList, ShoppingCartListVo.class);
             for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
                 goodsPieces += shoppingCartListVo.getNum();
                 double total = shoppingCartListVo.getNum() * shoppingCartListVo.getGoodsTypePrice();

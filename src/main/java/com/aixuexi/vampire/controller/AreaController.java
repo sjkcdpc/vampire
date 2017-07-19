@@ -1,6 +1,7 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +32,9 @@ public class AreaController {
 
     @Autowired
     private AreaApi areaApi;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     /**
      * 根据ID删除县
@@ -46,8 +51,7 @@ public class AreaController {
         ResultData resultData = new ResultData();
         try {
             List<AreaBo> areaBos = cacheBuilderProvince.get(1);
-            String areaJson = JSONObject.toJSONString(areaBos);
-            resultData.setBody(JSONObject.parseArray(areaJson, AreaVo.class));
+            resultData.setBody(baseMapper.mapAsList(areaBos, AreaVo.class));
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
@@ -65,8 +69,7 @@ public class AreaController {
         ResultData resultData = new ResultData();
         try {
             List<AreaBo> areaBos = cacheBuilderCity.get(parentId);
-            String areaJson = JSONObject.toJSONString(areaBos);
-            resultData.setBody(JSONObject.parseArray(areaJson, AreaVo.class));
+            resultData.setBody(baseMapper.mapAsList(areaBos, AreaVo.class));
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
