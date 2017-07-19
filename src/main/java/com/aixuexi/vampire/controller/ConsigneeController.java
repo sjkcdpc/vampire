@@ -58,12 +58,10 @@ public class ConsigneeController {
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         consigneeServiceFacade.update(consignee);
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
-        if(cv==null)
-        {
+        if(cv==null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
-        else
-        {
+        else {
             resultData.setBody(cv);
         }
         return resultData;
@@ -79,12 +77,10 @@ public class ConsigneeController {
     public ResultData delete(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
         int res = consigneeServiceFacade.delete(id);
-        if(res<=0)
-        {
+        if(res<=0) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
-        else
-        {
+        else {
             resultData.setBody(res);
         }
         return resultData;
@@ -95,21 +91,24 @@ public class ConsigneeController {
      * @param id 收货人ID
      * @return
      */
-    public ConsigneeVo getConsigneeVoById(int id)
+    private ConsigneeVo getConsigneeVoById(int id)
     {
         Consignee resConsignee = consigneeServiceFacade.selectById(id);
-        String jsonString = JSONObject.toJSONString(resConsignee);
-        ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
-        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
-        if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
-            AddressDTO addressDTO = apiResponse.getBody().get(0);
-            consigneeVo.setProvinceId(addressDTO.getProvinceId());
-            consigneeVo.setProvince(addressDTO.getProvince());
-            consigneeVo.setCityId(addressDTO.getCityId());
-            consigneeVo.setCity(addressDTO.getCity());
-            consigneeVo.setArea(addressDTO.getDistrict());
+        if(resConsignee!=null) {
+            String jsonString = JSONObject.toJSONString(resConsignee);
+            ConsigneeVo consigneeVo = JSONObject.parseObject(jsonString, ConsigneeVo.class);
+            ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
+            if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
+                AddressDTO addressDTO = apiResponse.getBody().get(0);
+                consigneeVo.setProvinceId(addressDTO.getProvinceId());
+                consigneeVo.setProvince(addressDTO.getProvince());
+                consigneeVo.setCityId(addressDTO.getCityId());
+                consigneeVo.setCity(addressDTO.getCity());
+                consigneeVo.setArea(addressDTO.getDistrict());
+            }
+            return consigneeVo;
         }
-        return consigneeVo;
+        return null;
     }
 
 
