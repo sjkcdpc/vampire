@@ -87,8 +87,7 @@ public class OrderController {
             String express = expressMap.get(goodsOrder.getExpressCode());
             goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
         }
-        String json = JSONObject.toJSONString(page.getList());
-        List<GoodsOrderVo> goodsOrderVos = JSONObject.parseArray(json, GoodsOrderVo.class);
+        List<GoodsOrderVo> goodsOrderVos = baseMapper.mapAsList(page.getList(),GoodsOrderVo.class);
         dealGoodsOrder(goodsOrderVos);
         //ruanyj 查询商品图片，放到web层处理，商品图片和订单没有关系
         for(GoodsOrderVo goodsOrderVo:goodsOrderVos) {
@@ -113,8 +112,7 @@ public class OrderController {
         Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
         String express = expressMap.get(goodsOrder.getExpressCode());
         goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
-        String json = JSONObject.toJSONString(goodsOrder);
-        GoodsOrderVo goodsOrderVo = JSONObject.parseObject(json, GoodsOrderVo.class);
+        GoodsOrderVo goodsOrderVo = baseMapper.map(goodsOrder,GoodsOrderVo.class);;
         if(StringUtils.isNotBlank(goodsOrder.getLogistics())) {
             JSONObject logJson = (JSONObject) JSONObject.parse(goodsOrder.getLogistics());
             goodsOrderVo.setLogdata(JSONObject.parseArray(logJson.getString("data"), LogisticsData.class));
@@ -130,9 +128,8 @@ public class OrderController {
     /**
      * ruanyj 添加商品图片
      */
-    private void addGoodsPics(List<OrderDetailVo> orderDetails)
-    {
-        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(orderDetails)) {
+    private void addGoodsPics(List<OrderDetailVo> orderDetails) {
+        if (CollectionUtils.isNotEmpty(orderDetails)) {
             List<Integer> goodsIds = Lists.newArrayList();
             for (OrderDetailVo orderDetail : orderDetails) {
                 goodsIds.add(orderDetail.getGoodsId());
@@ -157,8 +154,7 @@ public class OrderController {
         DecimalFormat df1 = new DecimalFormat("0.00");
         conOrderVo.setBalanceDis(df1.format(conOrderVo.getBalance()));
         conOrderVo.setGoodsAmountDis(df1.format(conOrderVo.getGoodsAmount()));
-        for(ConfirmGoodsVo cgv:conOrderVo.getGoodsItem())
-        {
+        for(ConfirmGoodsVo cgv:conOrderVo.getGoodsItem()) {
             cgv.setPriceDis(df1.format(cgv.getPrice()));
             cgv.setTotalDis(df1.format(cgv.getTotal()));
         }
