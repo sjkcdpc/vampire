@@ -217,6 +217,7 @@ public class OrderController {
             resultData.setBody(orderManager.submit(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(), consigneeId,
                     receivePhone, express, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds), token));
         } catch (IllegalArgumentException e) {
+            //查询库存失败时抛出,前端要求status为normal
             String jsonString = e.getMessage();
             resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
             resultData.setStatus(ResultData.STATUS_NORMAL);

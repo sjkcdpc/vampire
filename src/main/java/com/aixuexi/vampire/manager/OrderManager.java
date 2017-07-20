@@ -2,6 +2,7 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -69,8 +70,12 @@ public class OrderManager {
 
     @Autowired
     private InstitutionService institutionService;
+
     @Autowired
     private ExpressUtil expressUtil;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     @Resource(name = "dictionaryManager")
     private DictionaryManager dictionaryManager;
@@ -342,8 +347,7 @@ public class OrderManager {
     private List<ConsigneeVo> findConsignee(Integer insId) {
         List<Consignee> consignees = consigneeServiceFacade.selectByIns(insId);
         if (CollectionUtils.isNotEmpty(consignees)) {
-            String consigneeJson = JSONObject.toJSONString(consignees);
-            List<ConsigneeVo> consigneeVos = JSONObject.parseArray(consigneeJson, ConsigneeVo.class);
+            List<ConsigneeVo> consigneeVos = baseMapper.mapAsList(consignees, ConsigneeVo.class);
             // 区ids
             Integer[] areaIds = new Integer[consigneeVos.size()];
             for (int i = 0; i < consigneeVos.size(); i++) {
