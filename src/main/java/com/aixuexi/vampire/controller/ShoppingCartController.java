@@ -3,6 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.redis.MyJedisService;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
@@ -57,7 +58,7 @@ public class ShoppingCartController {
             List<ShoppingCartListVo> shoppingCartListVos = baseMapper.mapAsList(shoppingCartListList, ShoppingCartListVo.class);
             for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
                 goodsPieces += shoppingCartListVo.getNum();
-                double total = shoppingCartListVo.getNum() * shoppingCartListVo.getGoodsTypePrice();
+                double total = CalculateUtil.mul(shoppingCartListVo.getNum().doubleValue(), shoppingCartListVo.getGoodsTypePrice());
                 shoppingCartListVo.setTotal(total);
                 payAmount += total;
             }
@@ -82,8 +83,8 @@ public class ShoppingCartController {
         if (CollectionUtils.isEmpty(apiResponse.getBody())) {
             return ResultData.failed("商品不存在！");
         }
-        if(num.intValue()>999 || num.intValue()<1) {
-            return ResultData.failed("商品数量必须在1-999之间！");
+        if(num.intValue()>5000 || num.intValue()<1) {
+            return ResultData.failed("商品数量必须在1-5000之间！");
         }
         ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
         ShoppingCartList shoppingCartList = new ShoppingCartList();

@@ -39,9 +39,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 订单
@@ -322,18 +320,20 @@ public class OrderManager {
         }
         // 是否计算邮费
         if (isFree) {
-            // 选择德邦物流，weight > 999 || goodsPieces >= 50， 邮费0。
+            // 选择德邦物流，goodsPieces >= 50， 邮费0。
             goodsOrder.setFreight(0D);
         } else {
             List<AddressDTO> addressDTOS = findAddressByIds(consignee.getAreaId());
-            // 省ID
-            Integer provinceId = addressDTOS.get(0).getProvinceId();
-            // 计算邮费
-            ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,
-                    express.equals(Constants.EXPRESS_DBWL) ? Constants.EXPRESS_SHENTONG : express);
-            logger.info("submitOrder --> freight : {}", apiResponse);
-            HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
-            goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
+            if(!CollectionUtils.isEmpty(addressDTOS)) {
+                // 省ID
+                Integer provinceId = addressDTOS.get(0).getProvinceId();
+                // 计算邮费
+                ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,
+                        express.equals(Constants.EXPRESS_DBWL) ? Constants.EXPRESS_SHENTONG : express);
+                logger.info("submitOrder --> freight : {}", apiResponse);
+                HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
+                goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
+            }
         }
         return goodsOrder;
     }
@@ -354,19 +354,21 @@ public class OrderManager {
                 areaIds[i] = consigneeVos.get(i).getAreaId();
             }
             List<AddressDTO> addressDTOS = findAddressByIds(areaIds);
-            Map<Integer, AddressDTO> addressMap = Maps.newHashMap();
-            for (AddressDTO addressDTO : addressDTOS) {
-                addressMap.put(addressDTO.getDistrictId(), addressDTO);
+            if (!CollectionUtils.isEmpty(addressDTOS)) {
+                Map<Integer, AddressDTO> addressMap = Maps.newHashMap();
+                for (AddressDTO addressDTO : addressDTOS) {
+                    addressMap.put(addressDTO.getDistrictId(), addressDTO);
+                }
+                for (ConsigneeVo consigneeVo : consigneeVos) {
+                    AddressDTO addressDTO = addressMap.get(consigneeVo.getAreaId());
+                    consigneeVo.setProvinceId(addressDTO.getProvinceId());
+                    consigneeVo.setProvince(addressDTO.getProvince());
+                    consigneeVo.setCityId(addressDTO.getCityId());
+                    consigneeVo.setCity(addressDTO.getCity());
+                    consigneeVo.setArea(addressDTO.getDistrict());
+                }
+                return consigneeVos;
             }
-            for (ConsigneeVo consigneeVo : consigneeVos) {
-                AddressDTO addressDTO = addressMap.get(consigneeVo.getAreaId());
-                consigneeVo.setProvinceId(addressDTO.getProvinceId());
-                consigneeVo.setProvince(addressDTO.getProvince());
-                consigneeVo.setCityId(addressDTO.getCityId());
-                consigneeVo.setCity(addressDTO.getCity());
-                consigneeVo.setArea(addressDTO.getDistrict());
-            }
-            return consigneeVos;
         }
         return Lists.newArrayList();
     }
@@ -379,13 +381,19 @@ public class OrderManager {
      */
     private List<AddressDTO> findAddressByIds(Integer... ids) {
         ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(ids);
-        if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-            if (CollectionUtils.isEmpty(apiResponse.getBody())) {
+        //确认订单时，查不到收货人地址不抛异常
+        if(apiResponse!=null) {
+            if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+                if (CollectionUtils.isEmpty(apiResponse.getBody())) {
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+                }
+                return apiResponse.getBody();
+            } else {
                 throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
             }
-            return apiResponse.getBody();
-        } else {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+        }
+        else{
+            return null;
         }
     }
 
