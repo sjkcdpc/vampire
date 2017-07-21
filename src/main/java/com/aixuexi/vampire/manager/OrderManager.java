@@ -176,6 +176,20 @@ public class OrderManager {
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
+        // 账号余额
+        RemainResult rr = finAccService.getRemainByInsId(insId);
+        if(rr==null) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+        }
+        // 创建订单对象
+        GoodsOrder goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
+        logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrder));
+        // 支付金额 = 商品金额 + 邮费
+        Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
+        Long remain = rr.getUsableRemain();
+        if (amount.longValue() > remain) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
+        }
         // 是否走发网
         Boolean syncToWms = true;
         // ruanyj 测试环境是否发网的开关
@@ -185,21 +199,6 @@ public class OrderManager {
             syncToWms = false;
         }
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
-        // 创建订单对象
-        GoodsOrder goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
-        logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrder));
-        // 支付金额 = 商品金额 + 邮费
-        Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
-        // 账号余额
-        RemainResult rr = finAccService.getRemainByInsId(insId);
-        if(rr==null)
-        {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
-        Long remain = rr.getUsableRemain();
-        if (amount.longValue() > remain) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
-        }
         // 创建订单
         ApiResponse<String> apiResponse = orderServiceFacade.createOrder(goodsOrder, token, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
@@ -232,6 +231,11 @@ public class OrderManager {
      */
     private GoodsOrder createGoodsOrder(List<ShoppingCartList> shoppingCartLists, Integer userId, Integer insId,
                                         Integer consigneeId, String receivePhone, String express) {
+        // 收货人信息判断
+        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
+        if(consignee==null) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
+        }
         // 订单
         GoodsOrder goodsOrder = new GoodsOrder();
         // 商品类型ID
@@ -274,12 +278,6 @@ public class OrderManager {
             orderDetails.add(orderDetail);
         }
         goodsOrder.setOrderDetails(orderDetails);
-        // 收货人信息
-        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
-        if(consignee==null)
-        {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
-        }
         goodsOrder.setAreaId(consignee.getAreaId());
         ApiResponse<AddressDTO> ad = areaApi.getProvinceCityById(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
