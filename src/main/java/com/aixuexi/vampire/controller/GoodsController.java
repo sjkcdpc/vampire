@@ -8,6 +8,7 @@ import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
+import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
@@ -221,25 +222,21 @@ public class GoodsController {
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
         Integer insId = UserHandleUtil.getInsId();
-        ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
+        if (response.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, response.getMessage());
+        }
         GoodsVo goodsVo = response.getBody();
-        if(goodsVo!=null) {
-            goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
-            List<GoodsTypeDetailVo> gtdlist = (List<GoodsTypeDetailVo>) goodsVo.getGoodsGrades();
-            for (GoodsTypeDetailVo gtdv : gtdlist) {
-                String price = gtdv.getPrice();
-                Double cny = Double.parseDouble(price);//转换成Double
-                DecimalFormat df = new DecimalFormat("0.00");//格式化
-                gtdv.setPrice(df.format(cny));
-            }
-            loadRelationName(Lists.newArrayList(goodsVo), true);
-            resultData.setBody(response.getBody());
-            return resultData;
+        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
+        List<GoodsTypeDetailVo> gtdlist = (List<GoodsTypeDetailVo>) goodsVo.getGoodsGrades();
+        for (GoodsTypeDetailVo gtdv : gtdlist) {
+            String price = gtdv.getPrice();
+            Double cny = Double.parseDouble(price);//转换成Double
+            DecimalFormat df = new DecimalFormat("0.00");//格式化
+            gtdv.setPrice(df.format(cny));
         }
-        else {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该商品不存在!");
-        }
+        loadRelationName(Lists.newArrayList(goodsVo), true);
+        return ResultData.successed(response.getBody());
     }
 
     private void loadRelationName(List<GoodsVo> list, boolean isDtail){
