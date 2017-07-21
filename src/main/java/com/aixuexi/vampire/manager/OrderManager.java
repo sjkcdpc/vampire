@@ -165,20 +165,19 @@ public class OrderManager {
                                  String express, List<Integer> goodsTypeIds, String token) {
         logger.info("submitOrder --> userId : {}, insId : {}, consigneeId : {}, receivePhone : {}, express : {}, goodsTypeIds : {}",
                 userId, insId, consigneeId, receivePhone, express, goodsTypeIds);
-        List<ShoppingCartList> shoppingCartLists = null;
-        if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
-        } else {
-            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
-        }
-        if (CollectionUtils.isEmpty(shoppingCartLists)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-        }
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr==null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
         }
+        if (CollectionUtils.isEmpty(goodsTypeIds)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "所选商品不能为空");
+        }
+        List<ShoppingCartList> shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
+        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
+
         // 创建订单对象
         GoodsOrder goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
         logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrder));
@@ -552,8 +551,7 @@ public class OrderManager {
             // 1. 校验商品是否已经下架
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
                 //ruanyj 商品编码为空校验
-                if(StringUtils.isBlank(confirmGoodsVo.getBarCode()))
-                {
+                if(StringUtils.isBlank(confirmGoodsVo.getBarCode())) {
                     throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空");
                 }
                 barCodes.add(confirmGoodsVo.getBarCode());
