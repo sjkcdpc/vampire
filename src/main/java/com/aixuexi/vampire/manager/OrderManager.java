@@ -18,7 +18,7 @@ import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.vulcan.facade.ShoppingCartFacade;
+import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
@@ -38,7 +38,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -52,7 +51,7 @@ public class OrderManager {
     private ConsigneeServiceFacade consigneeServiceFacade;
 
     @Autowired
-    private ShoppingCartFacade shoppingCartService;
+    private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
     @Autowired
     private FinancialAccountService finAccService;
@@ -96,7 +95,7 @@ public class OrderManager {
         // 2. 快递公司
         confirmOrderVo.setExpress(expressUtil.getExpress());
         // 3. 用户购物车中商品清单
-        List<ShoppingCartList> shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId);
+        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
@@ -173,7 +172,7 @@ public class OrderManager {
         if (CollectionUtils.isEmpty(goodsTypeIds)) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "所选商品不能为空");
         }
-        List<ShoppingCartList> shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
+        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
@@ -205,7 +204,7 @@ public class OrderManager {
                 for (ShoppingCartList shoppingCartList : shoppingCartLists) {
                     shoppingCartListIds.add(shoppingCartList.getId());
                 }
-                shoppingCartService.clearShoppingCart(shoppingCartListIds);
+                shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
             } catch (Throwable e) {
                 logger.error("submitOrder --> clearShoppingCart fail, orderId : {}", apiResponse.getBody());
             }
@@ -450,7 +449,7 @@ public class OrderManager {
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            shoppingCartLists = shoppingCartService.queryShoppingCartDetail(userId, goodsTypeIds);
+            shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
             if (CollectionUtils.isEmpty(shoppingCartLists)) {
                 throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }

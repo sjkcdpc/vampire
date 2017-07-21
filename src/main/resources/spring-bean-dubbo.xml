@@ -29,7 +29,7 @@
     <!-- 在线商城相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartFacade" id="shoppingCartFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade"/>
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade"/>
     <!--财务接口-->
     <!--<dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>-->
