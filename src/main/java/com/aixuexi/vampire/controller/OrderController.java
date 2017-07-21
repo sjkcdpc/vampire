@@ -7,6 +7,7 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -247,7 +248,7 @@ public class OrderController {
                 //ruanyj double展示保留两位小数
                 DecimalFormat df1 = new DecimalFormat("0.00");
                 // 订单总金额
-                goodsOrderVo.setPayAmount(add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
+                goodsOrderVo.setPayAmount(CalculateUtil.add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
                 int goodsPieces = 0;
                 List<Integer> goodsTypeIds = Lists.newArrayList();
                 for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
@@ -258,7 +259,7 @@ public class OrderController {
                 for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetails()) {
                     ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
                     orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
-                    orderDetailVo.setTotal(mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
+                    orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
                     //格式化double类型的数据
                     orderDetailVo.setPriceDis(orderDetailVo.getPrice()==null?"0.00":df1.format(orderDetailVo.getPrice()));
                     orderDetailVo.setTotalDis(orderDetailVo.getTotal()==null?"0.00":df1.format(orderDetailVo.getTotal()));
@@ -271,33 +272,6 @@ public class OrderController {
             }
         }
     }
-
-    /**
-     * 加法
-     *
-     * @param d1
-     * @param d2
-     * @return
-     */
-    private double add(Double d1, Double d2) {
-        BigDecimal bigDecimal1 = new BigDecimal(d1 == null ? 0 : d1);
-        BigDecimal bigDecimal2 = new BigDecimal(d2 == null ? 0 : d2);
-        return bigDecimal1.add(bigDecimal2).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    /**
-     * 乘法
-     *
-     * @param d1
-     * @param d2
-     * @return
-     */
-    private double mul(Double d1, Double d2) {
-        BigDecimal bigDecimal1 = new BigDecimal(d1 == null ? 0 : d1);
-        BigDecimal bigDecimal2 = new BigDecimal(d2 == null ? 0 : d2);
-        return bigDecimal1.multiply(bigDecimal2).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    }
-
     /**
      * 验证是否试用机构
      */
