@@ -302,7 +302,7 @@ public class OrderManager {
         goodsOrder.setUserId(userId);
         boolean isFree = false; // 是否免物流费
         if (express.equals(Constants.EXPRESS_DBWL)) {
-            if (goodsPieces > 100) {
+            if (goodsPieces >= 100) {
                 goodsOrder.setExpressCode(Constants.EXPRESS_DBWL);
                 isFree = true;
             } else if (goodsPieces >= 50) {
@@ -415,8 +415,8 @@ public class OrderManager {
                 confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
                 confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
                 confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-                //ruanyj 德邦物流超过50本或者超过一公斤免费
-                if (goodsPieces >= 50 || weight >= 1000) {
+                //ruanyj 德邦物流超过50本免运费
+                if (goodsPieces >= 50) {
                     confirmExpressVo.setRemark(Constants.FREE_FREIGHT);
                     confirmExpressVo.setTotalFreight(Constants.DEFAULT_DOUBLE_VALUE);
                 } else {
