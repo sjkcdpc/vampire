@@ -1,5 +1,7 @@
 package com.aixuexi.vampire.controller;
 
+import com.aixuexi.thor.except.ExceptionCode;
+import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -222,17 +224,22 @@ public class GoodsController {
         ResultData resultData = new ResultData();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         GoodsVo goodsVo = response.getBody();
-        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
-        List<GoodsTypeDetailVo> gtdlist =(List<GoodsTypeDetailVo>)goodsVo.getGoodsGrades();
-        for(GoodsTypeDetailVo gtdv :gtdlist) {
-            String price = gtdv.getPrice();
-            Double cny = Double.parseDouble(price);//转换成Double
-            DecimalFormat df = new DecimalFormat("0.00");//格式化
-            gtdv.setPrice(df.format(cny));
+        if(goodsVo!=null) {
+            goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
+            List<GoodsTypeDetailVo> gtdlist = (List<GoodsTypeDetailVo>) goodsVo.getGoodsGrades();
+            for (GoodsTypeDetailVo gtdv : gtdlist) {
+                String price = gtdv.getPrice();
+                Double cny = Double.parseDouble(price);//转换成Double
+                DecimalFormat df = new DecimalFormat("0.00");//格式化
+                gtdv.setPrice(df.format(cny));
+            }
+            loadRelationName(Lists.newArrayList(goodsVo), true);
+            resultData.setBody(response.getBody());
+            return resultData;
         }
-        loadRelationName(Lists.newArrayList(goodsVo), true);
-        resultData.setBody(response.getBody());
-        return resultData;
+        else {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该商品不存在!");
+        }
     }
 
     private void loadRelationName(List<GoodsVo> list, boolean isDtail){
