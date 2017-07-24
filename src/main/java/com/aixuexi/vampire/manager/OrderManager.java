@@ -2,6 +2,7 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
+import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
@@ -15,19 +16,15 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
-import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
-import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
-import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
+import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
+import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
+import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
-import com.gaosi.api.vulcan.vo.ConfirmExpressVo;
-import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
-import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
-import com.gaosi.api.vulcan.vo.ConsigneeVo;
-import com.gaosi.api.vulcan.vo.FreightVo;
+import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
@@ -38,7 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 订单
@@ -112,6 +111,9 @@ public class OrderManager {
         }
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
@@ -254,6 +256,9 @@ public class OrderManager {
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if(listApiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
+        }
+        if (CollectionUtils.isEmpty(listApiResponse.getBody())) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
         }
         List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
@@ -468,6 +473,9 @@ public class OrderManager {
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
             if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            }
+            if (CollectionUtils.isEmpty(apiResponse.getBody())) {
                 throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
             }
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
@@ -509,6 +517,9 @@ public class OrderManager {
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         if (CollectionUtils.isNotEmpty(goodsVos)) {
             for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {

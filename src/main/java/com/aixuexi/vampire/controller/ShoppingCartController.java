@@ -6,6 +6,7 @@ import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
+import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
@@ -80,6 +81,9 @@ public class ShoppingCartController {
     @RequestMapping(value = "/add")
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
+        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE) {
+            return ResultData.failed(apiResponse.getMessage());
+        }
         if (CollectionUtils.isEmpty(apiResponse.getBody())) {
             return ResultData.failed("商品不存在！");
         }
