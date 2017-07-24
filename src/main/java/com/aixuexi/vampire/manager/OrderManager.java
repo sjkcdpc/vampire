@@ -253,6 +253,9 @@ public class OrderManager {
         List<OrderDetail> orderDetails = Lists.newArrayList();
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        if(listApiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
+        }
         List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
         // 再次校验商品是否已下架，库存。
         validateGoods(goodsVos, goodsNum);
@@ -464,6 +467,9 @@ public class OrderManager {
             }
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+            if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
+            }
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             for (ConfirmGoodsVo goodsVo : goodsVos) {
                 if (goodsVo.getStatus() == 1) { // 上架
@@ -485,8 +491,7 @@ public class OrderManager {
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
-        if(rr==null)
-        {
+        if(rr==null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Long remain = rr.getUsableRemain();
