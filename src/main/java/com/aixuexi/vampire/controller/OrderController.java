@@ -172,6 +172,9 @@ public class OrderController {
      */
     @RequestMapping(value = "/freight")
     public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
+        if(provinceId==null) {
+            return ResultData.failed("收货人地址有误! ");
+        }
         ResultData resultData = new ResultData();
         FreightVo freightVo =orderManager.reloadFreight(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(),
                 provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds));
