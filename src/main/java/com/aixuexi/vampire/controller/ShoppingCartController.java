@@ -8,6 +8,7 @@ import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
@@ -91,6 +92,9 @@ public class ShoppingCartController {
             return ResultData.failed("商品数量必须在1-5000之间！");
         }
         ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
+        if(confirmGoodsVo.getStatus()!= GoodsConstant.Status.ON) {
+            return ResultData.failed("商品已下架！");
+        }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setGoodsId(confirmGoodsVo.getGoodsId());
         shoppingCartList.setGoodsName(confirmGoodsVo.getGoodsName());
