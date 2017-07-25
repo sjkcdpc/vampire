@@ -19,6 +19,7 @@ import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
+import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
@@ -107,7 +108,7 @@ public class OrderManager {
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
             goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
             goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
-            goodsPieces += shoppingCartList.getNum();
+
         }
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
@@ -119,12 +120,11 @@ public class OrderManager {
             goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
             // 数量*单价
             goodsVo.setTotal(goodsVo.getNum() * goodsVo.getPrice());
-            if (goodsVo.getStatus() == 1) { // 上架
+            if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
                 // 数量*单重量
                 weight += goodsVo.getNum() * goodsVo.getWeight();
                 goodsAmount += goodsVo.getTotal();
-            } else { // 下架
-                goodsPieces -= goodsVo.getNum();
+                goodsPieces += goodsVo.getNum();
             }
         }
         confirmOrderVo.setGoodsItem(goodsVos);
@@ -468,7 +468,6 @@ public class OrderManager {
             for (ShoppingCartList shoppingCartList : shoppingCartLists) {
                 goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
                 goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
-                goodsPieces += shoppingCartList.getNum();
             }
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
@@ -480,13 +479,12 @@ public class OrderManager {
             }
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             for (ConfirmGoodsVo goodsVo : goodsVos) {
-                if (goodsVo.getStatus() == 1) { // 上架
+                if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
                     // 数量*单重量
                     weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
                     // 数量*单价
                     goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
-                } else { // 下架
-                    goodsPieces -= goodsNum.get(goodsVo.getGoodsTypeId());
+                    goodsPieces += goodsNum.get(goodsVo.getGoodsTypeId());
                 }
             }
         }
@@ -570,7 +568,7 @@ public class OrderManager {
                     throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空");
                 }
                 barCodes.add(confirmGoodsVo.getBarCode());
-                if (confirmGoodsVo.getStatus() == 0) {
+                if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
                     offGoods.add(confirmGoodsVo);
                 }
             }
