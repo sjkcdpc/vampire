@@ -573,8 +573,7 @@ public class OrderManager {
                 }
             }
             if (CollectionUtils.isNotEmpty(offGoods)) {
-                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
-                throw new IllegalArgumentException(jsonString);
+                throw new IllegalArgException(ExceptionCode.UNKNOWN,"订单列表中存在已下架商品,请刷新页面!");
             }
             if (expressUtil.getIsInventory()) {
                 // 2. 校验库存 {barCode, inventory}
