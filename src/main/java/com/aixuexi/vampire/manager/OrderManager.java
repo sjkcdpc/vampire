@@ -565,7 +565,7 @@ public class OrderManager {
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
                 //ruanyj 商品编码为空校验
                 if(StringUtils.isBlank(confirmGoodsVo.getBarCode())) {
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空");
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空!");
                 }
                 barCodes.add(confirmGoodsVo.getBarCode());
                 if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
@@ -573,7 +573,7 @@ public class OrderManager {
                 }
             }
             if (CollectionUtils.isNotEmpty(offGoods)) {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN,"订单列表中存在已下架商品,请刷新页面!");
+                throw new IllegalArgException(ExceptionCode.ARGUMENT_IS_ERROR_ERROR,String.valueOf(ExceptionCode.ARGUMENT_IS_ERROR_ERROR.getCode()));
             }
             if (expressUtil.getIsInventory()) {
                 // 2. 校验库存 {barCode, inventory}
