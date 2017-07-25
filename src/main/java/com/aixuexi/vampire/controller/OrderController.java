@@ -23,19 +23,21 @@ import com.gaosi.api.vulcan.model.LogisticsData;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
+import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +48,7 @@ import java.util.Map;
 @RestController
 @RequestMapping(value = "/order")
 public class OrderController {
+    private final Logger logger = LoggerFactory.getLogger(OrderController.class);
 
     @Resource(name = "orderManager")
     private OrderManager orderManager;
@@ -64,6 +67,8 @@ public class OrderController {
 
     @Resource
     private BaseMapper baseMapper;
+    @Resource
+    private TaskProducerApi taskProducerApi;
 
     /**
      * 订单列表
@@ -225,7 +230,19 @@ public class OrderController {
             String jsonString = e.getMessage();
             resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
             resultData.setStatus(ResultData.STATUS_NORMAL);
+            return resultData;
         }
+        //发送消息
+        try{
+            Map<String, Object> map =new HashMap<>();
+            map.put("insId", UserHandleUtil.getInsId());
+            map.put("userId", UserHandleUtil.getUserId());
+            map.put("taskCode", "84FA0A9E96C086F232108FA87A711301");
+            taskProducerApi.headMasterProducer(map);
+        }catch (Exception e){
+            logger.error("创建订单后,发送消息失败",e);
+        }
+
         return resultData;
     }
 

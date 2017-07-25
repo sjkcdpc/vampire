@@ -45,4 +45,5 @@
 
     <!-- 机构服务 -->
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.InstitutionService" id="institutionService"/>
+    <dubbo:reference interface="com.gaosi.api.warcraft.mq.TaskProducerApi" id="taskProducerApi"/>
 </beans>
