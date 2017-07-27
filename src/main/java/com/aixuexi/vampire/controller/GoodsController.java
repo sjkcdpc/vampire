@@ -83,7 +83,7 @@ public class GoodsController {
 
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
-        logger.debug("sort after : {}",productBos.toString());
+        logger.info("sort after : {}",productBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
@@ -105,7 +105,7 @@ public class GoodsController {
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
         List<DictionaryBo> dictionaryBos = periods.getBody();
-        logger.debug("sort before : {} ",dictionaryBos.toString());
+        logger.info("sort before : {} ",dictionaryBos.toString());
         for(DictionaryBo db :dictionaryBos) {
             setSortId(db);
         }
@@ -115,7 +115,7 @@ public class GoodsController {
                 return o1.getOrderIndex().compareTo(o2.getOrderIndex());
             }
         });
-        logger.debug("sort after :{}",dictionaryBos.toString());
+        logger.info("sort after :{}",dictionaryBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(dictionaryBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
