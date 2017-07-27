@@ -16,6 +16,8 @@ import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +35,8 @@ import java.util.*;
 @RestController
 @RequestMapping(value = "/goods")
 public class GoodsController {
+
+    private final Logger logger = LoggerFactory.getLogger(GoodsController.class);
 
     @Resource
     private GoodsServiceFacade goodsServiceFacade;
@@ -79,6 +83,7 @@ public class GoodsController {
 
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
+        logger.debug("sort after : {}",productBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
@@ -100,6 +105,7 @@ public class GoodsController {
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
         List<DictionaryBo> dictionaryBos = periods.getBody();
+        logger.debug("sort before : {} ",dictionaryBos.toString());
         for(DictionaryBo db :dictionaryBos) {
             setSortId(db);
         }
@@ -109,6 +115,7 @@ public class GoodsController {
                 return o1.getOrderIndex().compareTo(o2.getOrderIndex());
             }
         });
+        logger.debug("sort after :{}",dictionaryBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(dictionaryBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
