@@ -15,11 +15,13 @@ import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
@@ -53,6 +55,18 @@ public class GoodsController {
     @Resource
     private BaseMapper baseMapper;
 
+    private Map<String,Integer> periodMap = new HashMap<>();
+
+    @PostConstruct
+    private void init(){
+        periodMap.put("1",4);
+        periodMap.put("2",1);
+        periodMap.put("3",2);
+        periodMap.put("4",3);
+        periodMap.put("5",5);
+        periodMap.put("6",6);
+    }
+
     /**
      * 获取学科列表
      *
@@ -66,8 +80,8 @@ public class GoodsController {
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
-        conditionVos.add(getCommonConditionVo());
-        sort(conditionVos);
+        conditionVos.add(0,getCommonConditionVo());
+        //sort(conditionVos);
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -85,11 +99,35 @@ public class GoodsController {
 
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
-        List<CommonConditionVo> conditionVos = baseMapper.mapAsList(periods.getBody(), CommonConditionVo.class);
-        conditionVos.add(getCommonConditionVo());
-        sort(conditionVos);
+        List<DictionaryBo> dictionaryBos = periods.getBody();
+        for(DictionaryBo db :dictionaryBos) {
+            setSortId(db);
+        }
+        Collections.sort(dictionaryBos, new Comparator<DictionaryBo>() {
+            @Override
+            public int compare(DictionaryBo o1, DictionaryBo o2) {
+                return o1.getOrderIndex().compareTo(o2.getOrderIndex());
+            }
+        });
+        List<CommonConditionVo> conditionVos = baseMapper.mapAsList(dictionaryBos, CommonConditionVo.class);
+        conditionVos.add(0,getCommonConditionVo());
+        //sort(conditionVos);
         resultData.setBody(conditionVos);
         return resultData;
+    }
+
+    /**
+     * 学期重置排序
+     * @param db
+     */
+    private void setSortId(DictionaryBo db) {
+        if(StringUtils.isNotBlank(db.getCode())) {
+            if (periodMap.containsKey(db.getCode().trim())) {
+                db.setOrderIndex(periodMap.get(db.getCode().trim()));
+            } else {
+                db.setOrderIndex(db.getId());
+            }
+        }
     }
 
     /**
