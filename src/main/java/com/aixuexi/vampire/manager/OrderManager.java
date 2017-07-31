@@ -2,7 +2,6 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.except.IllegalArgException;
-import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
@@ -16,6 +15,7 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
@@ -36,6 +36,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +149,7 @@ public class OrderManager {
         confirmOrderVo.setToken(finAccService.getTokenForFinancial());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         // 清空之前计算的邮费
-        defaultExpressForConfirmOrder(confirmOrderVo.getExpress());
+        defaultExpressForConfirmOrder(confirmOrderVo.getExpress(),goodsPieces);
         return confirmOrderVo;
     }
 
@@ -307,17 +310,17 @@ public class OrderManager {
         goodsOrder.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
         goodsOrder.setUserId(userId);
         boolean isFree = false; // 是否免物流费
-        if (express.equals(Constants.EXPRESS_DBWL)) {
+        if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
             if (goodsPieces >= 100) {
-                goodsOrder.setExpressCode(Constants.EXPRESS_DBWL);
+                goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
                 isFree = true;
             } else if (goodsPieces >= 50) {
-                goodsOrder.setExpressCode(Constants.EXPRESS_SHENTONG);
+                goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
                 isFree = true;
             }
             else {
                 // ruanyj 其他情况选择申通，不免运费
-                goodsOrder.setExpressCode(Constants.EXPRESS_SHENTONG);
+                goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
             }
         } else {
             goodsOrder.setExpressCode(express);
@@ -332,8 +335,24 @@ public class OrderManager {
                 // 省ID
                 Integer provinceId = addressDTOS.get(0).getProvinceId();
                 // 计算邮费
-                ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,
-                        express.equals(Constants.EXPRESS_DBWL) ? Constants.EXPRESS_SHENTONG : express);
+                Date curDate = new Date();
+                ApiResponse<List<HashMap<String, Object>>> apiResponse ;
+                SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+                Date updateTime= null;
+                try {
+                    updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+                } catch (ParseException e) {
+                    logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+                }
+                if(curDate.before(updateTime))
+                {
+                    apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,express,goodsPieces);
+                }
+                else
+                {
+                    apiResponse = orderServiceFacade.newCalFreight(provinceId, weight,express,goodsPieces);
+                }
+
                 logger.info("submitOrder --> freight : {}", apiResponse);
                 HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
                 goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
@@ -410,32 +429,44 @@ public class OrderManager {
      */
     private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, Constants.EXPRESS);
-        logger.info("calcFreight --> freight : {}", apiResponse);
+        Date curDate = new Date();
+        ApiResponse<List<HashMap<String, Object>>> apiResponse;
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+        Date updateTime= null;
+        try {
+            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+        }
+        catch (ParseException e) {
+            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+        }
+        Boolean flag = curDate.before(updateTime);
+        if(flag) {
+            apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
+        }
+        else{
+            apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
+        }
         List<HashMap<String, Object>> listMap = apiResponse.getBody();
         for (int i = 0; i < expressVoLists.size(); i++) {
             ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
-            HashMap<String, Object> map = null;
-            if (i == 2) {
-                map = listMap.get(1);
-                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-                //ruanyj 德邦物流超过50本免运费
-                if (goodsPieces >= 50) {
-                    confirmExpressVo.setRemark(Constants.FREE_FREIGHT);
-                    confirmExpressVo.setTotalFreight(Constants.DEFAULT_DOUBLE_VALUE);
-                } else {
-                    confirmExpressVo.setRemark(StringUtils.EMPTY);
-                    confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+            HashMap<String, Object> map = listMap.get(i);
+            confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
+            confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
+            confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
+            confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
+            confirmExpressVo.setRemark(map.get("remark").toString());
+            if(confirmExpressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+                if(flag) {
+                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.DESC);
                 }
-            } else {
-                map = listMap.get(i);
-                confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-                confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-                confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-                confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
-                confirmExpressVo.setRemark(StringUtils.EMPTY);
+                else {
+                    if(goodsPieces>=100) {
+                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
+                    }
+                    else{
+                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
+                    }
+                }
             }
         }
     }
@@ -536,13 +567,13 @@ public class OrderManager {
     private String findTipsByExpress(String express) {
         String tips = "";
         switch (express) {
-            case Constants.EXPRESS_SHUNFENG:
+            case OrderConstant.LogisticsMode.EXPRESS_SHUNFENG:
                 tips = "我们将在2个工作日之内发货。";
                 break;
-            case Constants.EXPRESS_SHENTONG:
+            case OrderConstant.LogisticsMode.EXPRESS_SHENTONG:
                 tips = "我们将在2个工作日之内发货，预计5天内到货。";
                 break;
-            case Constants.EXPRESS_DBWL:
+            case OrderConstant.LogisticsMode.EXPRESS_DBWL:
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
             default:
@@ -608,26 +639,35 @@ public class OrderManager {
      *
      * @param expressVos
      */
-    private void defaultExpressForConfirmOrder(List<ConfirmExpressVo> expressVos) {
+    private void defaultExpressForConfirmOrder(List<ConfirmExpressVo> expressVos,Integer goodsPieces) {
+
+        Date curDate = new Date();
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+        Date updateTime= null;
+        try {
+            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+        } catch (ParseException e) {
+            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+        }
         for (ConfirmExpressVo expressVo : expressVos) {
             expressVo.setBeyondPrice(StringUtils.EMPTY);
             expressVo.setBeyondWeight(StringUtils.EMPTY);
             expressVo.setFirstFreight(StringUtils.EMPTY);
             expressVo.setTotalFreight(StringUtils.EMPTY);
             expressVo.setRemark(StringUtils.EMPTY);
+            if(expressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+                if(curDate.before(updateTime)) {
+                    expressVo.setDesc(OrderConstant.LogisticsMode.DESC);
+                }
+                else {
+                    if(goodsPieces>=100){
+                        expressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
+                    }
+                    else{
+                        expressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
+                    }
+                }
+            }
         }
-    }
-
-    /**
-     * 查询运费，提供给cat使用。
-     *
-     * @param provinceId 省ID
-     * @param weight     重量
-     * @param delivery   物流
-     * @return
-     */
-    public List<HashMap<String, Object>> calcFreightForCat(Integer provinceId, Double weight, String delivery) {
-        ApiResponse<List<HashMap<String, Object>>> apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, delivery);
-        return apiResponse.getBody();
     }
 }

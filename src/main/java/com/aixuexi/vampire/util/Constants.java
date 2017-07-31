@@ -19,13 +19,6 @@ public final class Constants {
      */
     public static final String MALL_SALES_MODEL = "mall_sales_mode";
 
-    public static final String EXPRESS = "shunfeng,shentong";
-
-    public static final String EXPRESS_DBWL = "debangwuliu";
-
-    public static final String EXPRESS_SHENTONG = "shentong";
-
-    public static final String EXPRESS_SHUNFENG = "shunfeng";
     //机构类型 0 正式 1测试机构 2试用机构 3外研英语机构
     public static final List<Integer> INS_TYPES = Lists.newArrayList(1, 2);
 
@@ -41,10 +34,7 @@ public final class Constants {
 
 
     public static final String PRE_SHOPPINGCART ="SHOPPINGCART_";
-    //double 类型 前端显示的默认值
-    public static final String  DEFAULT_DOUBLE_VALUE="0.00";
-    //免运费提示
-    public static final String FREE_FREIGHT="已满50件，免物流服务费";
+
     //订单详情中商品名称拼接的分隔符
     public static final String ORDERDETAIL_NAME_DIV ="-";
 }

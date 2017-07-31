@@ -21,6 +21,8 @@ public class ExpressUtil {
      */
     private Boolean isInventory;
 
+    private String freightUpdateTime;
+
     public List<ConfirmExpressVo> getExpress() {
         return express;
     }
@@ -43,5 +45,13 @@ public class ExpressUtil {
 
     public void setIsInventory(Boolean isInventory) {
         this.isInventory = isInventory;
+    }
+
+    public String getFreightUpdateTime() {
+        return freightUpdateTime;
+    }
+
+    public void setFreightUpdateTime(String freightUpdateTime) {
+        this.freightUpdateTime = freightUpdateTime;
     }
 }

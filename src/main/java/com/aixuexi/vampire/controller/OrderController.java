@@ -192,22 +192,6 @@ public class OrderController {
     }
 
     /**
-     * 查询运费，提供给cat使用。
-     *
-     * @param provinceId 省ID
-     * @param weight     重量
-     * @param delivery   物流
-     * @return
-     */
-    @RequestMapping(value = "/freight/forCat")
-    public ResultData freightForCat(@RequestParam Integer provinceId,
-                                    @RequestParam Double weight, @RequestParam String delivery) {
-        ResultData resultData = new ResultData();
-        resultData.setBody(orderManager.calcFreightForCat(provinceId, weight, delivery));
-        return resultData;
-    }
-
-    /**
      * 提交订单
      *
      * @param consigneeId  收货人ID

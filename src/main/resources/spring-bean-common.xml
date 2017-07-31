@@ -22,12 +22,13 @@
                 <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
                     <property name="key" value="${express3.key}"/>
                     <property name="name" value="${express3.name}"/>
-                    <property name="desc" value="${express3.desc}"/>
+                    <!--<property name="desc" value="${express3.desc}"/>-->
                 </bean>
             </list>
         </property>
         <property name="syncToWms" value="${syncToWms}"/>
         <property name="isInventory" value="${isInventory}"/>
+        <property name="freightUpdateTime" value="${freightUpdateTime}"/>
     </bean>
 
 </beans>
