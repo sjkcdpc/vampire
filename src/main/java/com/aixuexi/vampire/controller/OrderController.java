@@ -96,10 +96,10 @@ public class OrderController {
         List<GoodsOrderVo> goodsOrderVos = baseMapper.mapAsList(page.getList(),GoodsOrderVo.class);
         dealGoodsOrder(goodsOrderVos);
         //ruanyj 查询商品图片，放到web层处理，商品图片和订单没有关系
-        for(GoodsOrderVo goodsOrderVo:goodsOrderVos) {
-            List<OrderDetailVo> orderDetails = goodsOrderVo.getOrderDetails();
-            addGoodsPics(orderDetails);
-        }
+//        for(GoodsOrderVo goodsOrderVo:goodsOrderVos) {
+//            List<OrderDetailVo> orderDetails = goodsOrderVo.getOrderDetails();
+//            addGoodsPics(orderDetails);
+//        }
         retPage.setList(goodsOrderVos);
         resultData.setBody(retPage);
         return resultData;

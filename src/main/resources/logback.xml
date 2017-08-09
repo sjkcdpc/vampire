@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- 定义日志文件 输出位置 -->
-    <property name="logDir" value="/var/log/application/vampire" />
+    <property name="logDir" value="/data/var/log/application/vampire" />
 
     <property name="maxHistory" value="30" />
 
