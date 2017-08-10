@@ -533,9 +533,6 @@ public class OrderManager {
         }
         Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
-        //添加箱数
-        Integer cases = ((Double)Math.ceil(goodsPieces/30.0d)).intValue();
-        freightVo.setCases(cases);
         return freightVo;
     }
 
