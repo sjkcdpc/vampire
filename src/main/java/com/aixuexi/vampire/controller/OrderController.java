@@ -95,11 +95,6 @@ public class OrderController {
         }
         List<GoodsOrderVo> goodsOrderVos = baseMapper.mapAsList(page.getList(),GoodsOrderVo.class);
         dealGoodsOrder(goodsOrderVos);
-        //ruanyj 查询商品图片，放到web层处理，商品图片和订单没有关系
-        for(GoodsOrderVo goodsOrderVo:goodsOrderVos) {
-            List<OrderDetailVo> orderDetails = goodsOrderVo.getOrderDetails();
-            addGoodsPics(orderDetails);
-        }
         retPage.setList(goodsOrderVos);
         resultData.setBody(retPage);
         return resultData;
@@ -157,13 +152,6 @@ public class OrderController {
     public ResultData confirm() {
         ResultData resultData = new ResultData();
         ConfirmOrderVo conOrderVo = orderManager.confirmOrder(UserHandleUtil.getUserId(), UserHandleUtil.getInsId());
-        DecimalFormat df1 = new DecimalFormat("0.00");
-        conOrderVo.setBalanceDis(df1.format(conOrderVo.getBalance()));
-        conOrderVo.setGoodsAmountDis(df1.format(conOrderVo.getGoodsAmount()));
-        for(ConfirmGoodsVo cgv:conOrderVo.getGoodsItem()) {
-            cgv.setPriceDis(df1.format(cgv.getPrice()));
-            cgv.setTotalDis(df1.format(cgv.getTotal()));
-        }
         resultData.setBody(conOrderVo);
         return resultData;
     }
@@ -183,10 +171,6 @@ public class OrderController {
         ResultData resultData = new ResultData();
         FreightVo freightVo =orderManager.reloadFreight(UserHandleUtil.getUserId(), UserHandleUtil.getInsId(),
                 provinceId, goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds));
-        //ruanyj double展示保留两位小数
-        DecimalFormat df1 = new DecimalFormat("0.00");
-        freightVo.setBalanceDis(df1.format(freightVo.getBalance()));
-        freightVo.setGoodsAmountDis(df1.format(freightVo.getGoodsAmount()));
         resultData.setBody(freightVo);
         return resultData;
     }
@@ -249,8 +233,6 @@ public class OrderController {
     private void dealGoodsOrder(List<GoodsOrderVo> goodsOrderVos) {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                //ruanyj double展示保留两位小数
-                DecimalFormat df1 = new DecimalFormat("0.00");
                 // 订单总金额
                 goodsOrderVo.setPayAmount(CalculateUtil.add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
                 int goodsPieces = 0;
@@ -264,15 +246,8 @@ public class OrderController {
                     ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
                     orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
                     orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
-                    //格式化double类型的数据
-                    orderDetailVo.setPriceDis(orderDetailVo.getPrice()==null?"0.00":df1.format(orderDetailVo.getPrice()));
-                    orderDetailVo.setTotalDis(orderDetailVo.getTotal()==null?"0.00":df1.format(orderDetailVo.getTotal()));
                 }
                 goodsOrderVo.setGoodsPieces(goodsPieces);
-                //格式化double类型的数据
-                goodsOrderVo.setFreightDis(goodsOrderVo.getFreight()==null?"0.00":df1.format(goodsOrderVo.getFreight()));
-                goodsOrderVo.setConsumeAmountDis(goodsOrderVo.getConsumeAmount()==null?"0.00":df1.format(goodsOrderVo.getConsumeAmount()));
-                goodsOrderVo.setPayAmountDis(goodsOrderVo.getPayAmount()==null?"0.00":df1.format(goodsOrderVo.getPayAmount()));
             }
         }
     }
