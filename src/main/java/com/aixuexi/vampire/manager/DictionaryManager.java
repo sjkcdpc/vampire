@@ -1,5 +1,6 @@
 package com.aixuexi.vampire.manager;
 
+import com.aixuexi.vampire.util.Constants;
 import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by gaoxinzhong on 2017/6/2.
@@ -60,15 +62,17 @@ public class DictionaryManager {
     /**
      * 缓存字典
      */
-    private final LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder().build(new CacheLoader<String, List<DictionaryBo>>() {
-        @Override
-        public List<DictionaryBo> load(String key) throws Exception {
-            ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, key);
-            if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-                return apiResponse.getBody();
-            }
-            return null;
-        }
-    });
+    private final LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder()
+            .expireAfterWrite(Constants.CACHE_TIME, TimeUnit.SECONDS)
+            .build(new CacheLoader<String, List<DictionaryBo>>() {
+                @Override
+                public List<DictionaryBo> load(String key) throws Exception {
+                    ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, key);
+                    if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+                        return apiResponse.getBody();
+                    }
+                    return null;
+                }
+            });
 
 }
