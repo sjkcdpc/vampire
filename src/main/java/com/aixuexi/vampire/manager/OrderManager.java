@@ -344,16 +344,17 @@ public class OrderManager {
                 } catch (ParseException e) {
                     logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
                 }
-                if(curDate.before(updateTime))
-                {
+                if(curDate.before(updateTime)) {
                     apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,express,goodsPieces);
                 }
-                else
-                {
+                else {
                     apiResponse = orderServiceFacade.newCalFreight(provinceId, weight,express,goodsPieces);
                 }
 
                 logger.info("submitOrder --> freight : {}", apiResponse);
+                if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+                    throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+                }
                 HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
                 goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
             }
@@ -445,6 +446,9 @@ public class OrderManager {
         }
         else{
             apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
+        }
+        if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<HashMap<String, Object>> listMap = apiResponse.getBody();
         for (int i = 0; i < expressVoLists.size(); i++) {
