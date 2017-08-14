@@ -309,25 +309,44 @@ public class OrderManager {
         goodsOrder.setRemark(StringUtils.EMPTY);
         goodsOrder.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
         goodsOrder.setUserId(userId);
+        Date curDate = new Date();
+        ApiResponse<List<HashMap<String, Object>>> apiResponse ;
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+        Date updateTime= null;
+        try {
+            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+        } catch (ParseException e) {
+            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+        }
+        boolean beforeFlag = curDate.before(updateTime);
         boolean isFree = false; // 是否免物流费
-        if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-            if (goodsPieces >= 100) {
+        if(beforeFlag) {
+            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+                if (goodsPieces >= 100) {
+                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
+                    isFree = true;
+                } else if (goodsPieces >= 50) {
+                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
+                    isFree = true;
+                } else {
+                    // ruanyj 其他情况选择申通，不免运费
+                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
+                }
+            } else {
+                goodsOrder.setExpressCode(express);
+            }
+        }
+        else {
+            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)&&goodsPieces >= 100) {
                 goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
-                isFree = true;
-            } else if (goodsPieces >= 50) {
-                goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
                 isFree = true;
             }
             else {
-                // ruanyj 其他情况选择申通，不免运费
-                goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
+                goodsOrder.setExpressCode(express);
             }
-        } else {
-            goodsOrder.setExpressCode(express);
         }
         // 是否计算邮费
         if (isFree) {
-            // 选择德邦物流，goodsPieces >= 50， 邮费0。
             goodsOrder.setFreight(0D);
         } else {
             List<AddressDTO> addressDTOS = findAddressByIds(consignee.getAreaId());
@@ -335,16 +354,7 @@ public class OrderManager {
                 // 省ID
                 Integer provinceId = addressDTOS.get(0).getProvinceId();
                 // 计算邮费
-                Date curDate = new Date();
-                ApiResponse<List<HashMap<String, Object>>> apiResponse ;
-                SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-                Date updateTime= null;
-                try {
-                    updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-                } catch (ParseException e) {
-                    logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-                }
-                if(curDate.before(updateTime)) {
+                if(beforeFlag) {
                     apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,express,goodsPieces);
                 }
                 else {
