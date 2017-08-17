@@ -14,6 +14,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,7 +47,7 @@ public class AreaController {
      *
      * @return
      */
-    @RequestMapping(value = "/province")
+    @RequestMapping(value = "/province",method = RequestMethod.GET)
     public ResultData province() {
         ResultData resultData = new ResultData();
         try {
@@ -64,7 +65,7 @@ public class AreaController {
      * @param parentId 父级ID
      * @return
      */
-    @RequestMapping(value = "/cityArea")
+    @RequestMapping(value = "/cityArea",method = RequestMethod.GET)
     public ResultData city(@RequestParam Integer parentId) {
         ResultData resultData = new ResultData();
         try {

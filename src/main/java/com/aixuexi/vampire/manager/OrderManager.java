@@ -309,34 +309,34 @@ public class OrderManager {
         goodsOrder.setRemark(StringUtils.EMPTY);
         goodsOrder.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
         goodsOrder.setUserId(userId);
-        Date curDate = new Date();
         ApiResponse<List<HashMap<String, Object>>> apiResponse ;
-        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-        Date updateTime= null;
-        try {
-            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-        } catch (ParseException e) {
-            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-        }
-        boolean beforeFlag = curDate.before(updateTime);
         boolean isFree = false; // 是否免物流费
-        if(beforeFlag) {
-            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-                if (goodsPieces >= 100) {
-                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
-                    isFree = true;
-                } else if (goodsPieces >= 50) {
-                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
-                    isFree = true;
-                } else {
-                    // ruanyj 其他情况选择申通，不免运费
-                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
-                }
-            } else {
-                goodsOrder.setExpressCode(express);
-            }
-        }
-        else {
+//        Date curDate = new Date();
+//        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+//        Date updateTime= null;
+//        try {
+//            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+//        } catch (ParseException e) {
+//            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+//        }
+//        boolean beforeFlag = curDate.before(updateTime);
+//        if(beforeFlag) {
+//            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+//                if (goodsPieces >= 100) {
+//                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
+//                    isFree = true;
+//                } else if (goodsPieces >= 50) {
+//                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
+//                    isFree = true;
+//                } else {
+//                    // ruanyj 其他情况选择申通，不免运费
+//                    goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_SHENTONG);
+//                }
+//            } else {
+//                goodsOrder.setExpressCode(express);
+//            }
+//        }
+//        else {
             if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)&&goodsPieces >= 100) {
                 goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
                 isFree = true;
@@ -344,7 +344,7 @@ public class OrderManager {
             else {
                 goodsOrder.setExpressCode(express);
             }
-        }
+//        }
         // 是否计算邮费
         if (isFree) {
             goodsOrder.setFreight(0D);
@@ -354,12 +354,12 @@ public class OrderManager {
                 // 省ID
                 Integer provinceId = addressDTOS.get(0).getProvinceId();
                 // 计算邮费
-                if(beforeFlag) {
-                    apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,express,goodsPieces);
-                }
-                else {
+//                if(beforeFlag) {
+//                    apiResponse = orderServiceFacade.calculateFreight(provinceId, weight,express,goodsPieces);
+//                }
+//                else {
                     apiResponse = orderServiceFacade.newCalFreight(provinceId, weight,express,goodsPieces);
-                }
+//                }
 
                 logger.info("submitOrder --> freight : {}", apiResponse);
                 if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
@@ -440,23 +440,23 @@ public class OrderManager {
      */
     private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        Date curDate = new Date();
         ApiResponse<List<HashMap<String, Object>>> apiResponse;
-        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-        Date updateTime= null;
-        try {
-            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-        }
-        catch (ParseException e) {
-            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-        }
-        Boolean flag = curDate.before(updateTime);
-        if(flag) {
-            apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
-        }
-        else{
+//        Date curDate = new Date();
+//        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+//        Date updateTime= null;
+//        try {
+//            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+//        }
+//        catch (ParseException e) {
+//            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+//        }
+//        Boolean flag = curDate.before(updateTime);
+//        if(flag) {
+//            apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
+//        }
+//        else{
             apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
-        }
+//        }
         if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
@@ -470,17 +470,17 @@ public class OrderManager {
             confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
             confirmExpressVo.setRemark(map.get("remark").toString());
             if(confirmExpressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-                if(flag) {
-                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.DESC);
-                }
-                else {
+//                if(flag) {
+//                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.DESC);
+//                }
+//                else {
                     if(goodsPieces>=100) {
                         confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
                     }
                     else{
                         confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
                     }
-                }
+//                }
             }
         }
     }
@@ -655,14 +655,14 @@ public class OrderManager {
      */
     private void defaultExpressForConfirmOrder(List<ConfirmExpressVo> expressVos,Integer goodsPieces) {
 
-        Date curDate = new Date();
-        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-        Date updateTime= null;
-        try {
-            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-        } catch (ParseException e) {
-            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-        }
+//        Date curDate = new Date();
+//        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
+//        Date updateTime= null;
+//        try {
+//            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
+//        } catch (ParseException e) {
+//            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
+//        }
         for (ConfirmExpressVo expressVo : expressVos) {
             expressVo.setBeyondPrice(StringUtils.EMPTY);
             expressVo.setBeyondWeight(StringUtils.EMPTY);
@@ -670,17 +670,17 @@ public class OrderManager {
             expressVo.setTotalFreight(StringUtils.EMPTY);
             expressVo.setRemark(StringUtils.EMPTY);
             if(expressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-                if(curDate.before(updateTime)) {
-                    expressVo.setDesc(OrderConstant.LogisticsMode.DESC);
-                }
-                else {
+//                if(curDate.before(updateTime)) {
+//                    expressVo.setDesc(OrderConstant.LogisticsMode.DESC);
+//                }
+//                else {
                     if(goodsPieces>=100){
                         expressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
                     }
                     else{
                         expressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
                     }
-                }
+//                }
             }
         }
     }

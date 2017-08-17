@@ -76,14 +76,14 @@ public class GoodsController {
      *
      * @return
      */
-    @RequestMapping(value = "/getSubject")
+    @RequestMapping(value = "/getSubject",method = RequestMethod.GET)
     public ResultData getSubject(){
         ResultData resultData = new ResultData();
         ApiResponse<List<Integer>> response = goodsServiceFacade.querySubject();
 
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
-        logger.info("sort after : {}",productBos.toString());
+        //logger.info("sort after : {}",productBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
@@ -97,7 +97,7 @@ public class GoodsController {
      * @param subjectId
      * @return
      */
-    @RequestMapping(value = "/getPeriod")
+    @RequestMapping(value = "/getPeriod",method = RequestMethod.GET)
     public ResultData getPeriod(@RequestParam(required = false) Integer subjectId){
         ResultData resultData = new ResultData();
         ApiResponse<List<Integer>> response = goodsServiceFacade.queryPeriod(subjectId);
@@ -105,7 +105,7 @@ public class GoodsController {
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
         List<DictionaryBo> dictionaryBos = periods.getBody();
-        logger.info("sort before : {} ",dictionaryBos.toString());
+        //logger.info("sort before : {} ",dictionaryBos.toString());
         for(DictionaryBo db :dictionaryBos) {
             setSortId(db);
         }
@@ -115,7 +115,7 @@ public class GoodsController {
                 return o1.getOrderIndex().compareTo(o2.getOrderIndex());
             }
         });
-        logger.info("sort after :{}",dictionaryBos.toString());
+        //logger.info("sort after :{}",dictionaryBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(dictionaryBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
         //sort(conditionVos);
@@ -144,7 +144,7 @@ public class GoodsController {
      * @param periodId
      * @return
      */
-    @RequestMapping(value = "/getCategory")
+    @RequestMapping(value = "/getCategory",method = RequestMethod.GET)
     public ResultData getCategory(@RequestParam Integer subjectId,
                                   @RequestParam Integer periodId){
         ResultData resultData = new ResultData();
@@ -165,7 +165,7 @@ public class GoodsController {
      * @param categoryId
      * @return
      */
-    @RequestMapping(value = "/getBookVersionArea")
+    @RequestMapping(value = "/getBookVersionArea",method = RequestMethod.GET)
     public ResultData getBookVersionArea(@RequestParam Integer subjectId,
                                          @RequestParam Integer periodId,
                                          @RequestParam Integer categoryId){
@@ -198,7 +198,7 @@ public class GoodsController {
      * @param pageSize
      * @return
      */
-    @RequestMapping(value = "/getByGoodsName")
+    @RequestMapping(value = "/getByGoodsName",method = RequestMethod.GET)
     public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
                                       @RequestParam Integer pageSize) throws UnsupportedEncodingException {
         Integer insId = UserHandleUtil.getInsId();

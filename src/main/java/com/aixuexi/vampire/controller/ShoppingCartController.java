@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,7 +50,7 @@ public class ShoppingCartController {
      *
      * @return
      */
-    @RequestMapping(value = "/list")
+    @RequestMapping(value = "/list",method = RequestMethod.GET)
     public ResultData list() {
         ResultData resultData = new ResultData();
         List<ShoppingCartList> shoppingCartListList = shoppingCartServiceFacade.queryShoppingCartDetail(UserHandleUtil.getUserId());
@@ -79,7 +80,7 @@ public class ShoppingCartController {
      * @param num         数量
      * @return
      */
-    @RequestMapping(value = "/add")
+    @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
         if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE) {
