@@ -286,11 +286,11 @@ public class OrderManager {
         }
         goodsOrder.setOrderDetails(orderDetails);
         goodsOrder.setAreaId(consignee.getAreaId());
-        ApiResponse<AddressDTO> ad = areaApi.getProvinceCityById(consignee.getAreaId());
+        ApiResponse<List<AddressDTO>> ad = areaApi.findAddressByIds(consignee.getAreaId());
         goodsOrder.setConsigneeName(consignee.getName());
         goodsOrder.setConsigneePhone(consignee.getPhone());
         //ruanyj 收货人地址补全
-        AddressDTO add = ad.getBody();
+        AddressDTO add = ad.getBody().get(0);
         StringBuilder preAddress = new StringBuilder();
         if(add!=null) {
             preAddress.append(add.getProvince() == null ? "" : add.getProvince());
