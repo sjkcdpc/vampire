@@ -32,11 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +79,7 @@ public class OrderController {
      * @param pageSize  页码
      * @return
      */
-    @RequestMapping(value = "/list")
+    @RequestMapping(value = "/list",method = RequestMethod.GET)
     public ResultData list(@RequestParam Integer pageIndex, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
         Page<GoodsOrder> page = orderServiceFacade.selectGoodsOrderByIns(UserHandleUtil.getInsId(),
@@ -106,7 +108,7 @@ public class OrderController {
      * @param orderId 订单号
      * @return
      */
-    @RequestMapping(value = "/detail")
+    @RequestMapping(value = "/detail",method = RequestMethod.GET)
     public ResultData detail(@RequestParam String orderId) {
         ResultData resultData = new ResultData();
         GoodsOrder goodsOrder = orderServiceFacade.selectGoodsOrderById(orderId);
@@ -148,7 +150,7 @@ public class OrderController {
      *
      * @return
      */
-    @RequestMapping(value = "/confirm")
+    @RequestMapping(value = "/confirm",method = RequestMethod.GET)
     public ResultData confirm() {
         ResultData resultData = new ResultData();
         ConfirmOrderVo conOrderVo = orderManager.confirmOrder(UserHandleUtil.getUserId(), UserHandleUtil.getInsId());
@@ -163,7 +165,7 @@ public class OrderController {
      * @param goodsTypeIds 商品类型ID
      * @return
      */
-    @RequestMapping(value = "/freight")
+    @RequestMapping(value = "/freight",method = RequestMethod.GET)
     public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
         if(provinceId==null) {
             return ResultData.failed("收货人地址有误! ");
@@ -185,7 +187,7 @@ public class OrderController {
      * @param token        财务token
      * @return
      */
-    @RequestMapping(value = "/submit")
+    @RequestMapping(value = "/submit",method = RequestMethod.POST)
     public ResultData submit(@RequestParam Integer consigneeId, String receivePhone,
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         ResultData resultData = new ResultData();
