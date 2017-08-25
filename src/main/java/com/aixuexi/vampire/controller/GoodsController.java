@@ -82,7 +82,7 @@ public class GoodsController {
         ApiResponse<List<Integer>> response = goodsServiceFacade.querySubject();
 
         //调用获取名字接口
-        List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductList(response.getBody());
+        List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductListForMall(response.getBody());
         //logger.info("sort after : {}",productBos.toString());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
         conditionVos.add(0,getCommonConditionVo());
