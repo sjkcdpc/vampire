@@ -89,8 +89,8 @@ public class ShoppingCartController {
         if (CollectionUtils.isEmpty(apiResponse.getBody())) {
             return ResultData.failed("商品不存在！");
         }
-        if(num.intValue()>5000 || num.intValue()<1) {
-            return ResultData.failed("商品数量必须在1-5000之间！");
+        if(num.intValue()>9999 || num.intValue()<1) {
+            return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
         if(confirmGoodsVo.getStatus()!= GoodsConstant.Status.ON) {
@@ -110,8 +110,11 @@ public class ShoppingCartController {
             if(!ret){
                 return ResultData.failed("请勿操作过快！");
             }
-            int flag = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
-            if (flag == -2) {
+            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
+            if(addSCResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
+                return ResultData.failed(addSCResponse.getMessage());
+            }
+            if (addSCResponse.getBody() == -2) {
                 return ResultData.failed("购物车重复、请联系客服！");
             }
         }
@@ -144,6 +147,9 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/mod")
     public ResultData mod(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
+        if(num.intValue()>9999 || num.intValue()<1) {
+            return ResultData.failed("每笔订单中单品数量不超过9999!");
+        }
         int flag = shoppingCartServiceFacade.modNumShoppingCart(goodsId, goodsTypeId, num, UserHandleUtil.getUserId());
         return dealDelAndMod(flag);
     }

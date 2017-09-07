@@ -94,6 +94,12 @@ public class OrderManager {
         ConfirmOrderVo confirmOrderVo = new ConfirmOrderVo();
         // 1. 收货人地址
         List<ConsigneeVo> consigneeVos = findConsignee(insId);
+        for(ConsigneeVo consigneeVo : consigneeVos){
+            if(consigneeVo.getSystemDefault()==true){
+                confirmOrderVo.setDefCneeId(consigneeVo.getId());
+                break;
+            }
+        }
         confirmOrderVo.setConsignees(consigneeVos);
         // 2. 快递公司
         confirmOrderVo.setExpress(expressUtil.getExpress());

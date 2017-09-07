@@ -8,6 +8,7 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
+import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
@@ -46,7 +47,7 @@ public class ConsigneeController {
     public ResultData save(@RequestBody Consignee consignee) {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
-        int id = consigneeServiceFacade.insert(consignee);
+        int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(),consignee);
         resultData.setBody(getConsigneeVoById(id));
         return resultData;
     }
@@ -60,8 +61,10 @@ public class ConsigneeController {
     @RequestMapping(value = "/update")
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
-        consignee.setInstitutionId(UserHandleUtil.getInsId());
-        consigneeServiceFacade.update(consignee);
+        ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(),consignee);
+        if(apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
         if(cv==null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
@@ -81,12 +84,15 @@ public class ConsigneeController {
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
-        int res = consigneeServiceFacade.delete(id);
-        if(res<=0) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+        ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
-        else {
-            resultData.setBody(res);
+        Integer effectRows = apiResponse.getBody();
+        if (effectRows <= 0) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+        } else {
+            resultData.setBody(effectRows);
         }
         return resultData;
     }
@@ -116,5 +122,24 @@ public class ConsigneeController {
         return null;
     }
 
-
+    /**
+     * 设为默认地址
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/setDefault")
+    public ResultData setDefault(@RequestParam Integer id) {
+        ResultData resultData = new ResultData();
+        ApiResponse<Integer> apiResponse = consigneeServiceFacade.setDefault(UserHandleUtil.getInsId(),id);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
+        Integer effectRows = apiResponse.getBody();
+        if (effectRows <= 0) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+        } else {
+            resultData.setBody(effectRows);
+        }
+        return resultData;
+    }
 }
