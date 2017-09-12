@@ -13,6 +13,7 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
+import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
@@ -38,10 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 订单
@@ -112,9 +110,28 @@ public class OrderController {
     public ResultData detail(@RequestParam String orderId) {
         ResultData resultData = new ResultData();
         GoodsOrder goodsOrder = orderServiceFacade.selectGoodsOrderById(orderId);
-        Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
-        String express = expressMap.get(goodsOrder.getExpressCode());
-        goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
+        Set<Integer> specialStatus = new HashSet<>();
+        specialStatus.add(OrderConstant.Status.NON_DELIVERY);
+        specialStatus.add(OrderConstant.Status.CANCELLED);
+        specialStatus.add(OrderConstant.Status.PART_ON_THE_WAY);
+        if(specialStatus.contains(goodsOrder.getStatus())&&StringUtils.isBlank(goodsOrder.getLogistics())){
+            if(goodsOrder.getExpressCode().equals(OrderConstant.LogisticsMode.EXPRESS_SHUNFENG)){
+                goodsOrder.setExpressCode("顺丰速运");
+            }
+            else if(goodsOrder.getExpressCode().equals(OrderConstant.LogisticsMode.EXPRESS_SHENTONG)){
+                goodsOrder.setExpressCode("普通快递");
+            }
+            else if(goodsOrder.getExpressCode().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)){
+                goodsOrder.setExpressCode("物流");
+            }
+            else{
+                goodsOrder.setExpressCode("未知发货服务");
+            }
+        }else{
+            Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
+            String express = expressMap.get(goodsOrder.getExpressCode());
+            goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
+        }
         GoodsOrderVo goodsOrderVo = baseMapper.map(goodsOrder,GoodsOrderVo.class);;
         if(StringUtils.isNotBlank(goodsOrder.getLogistics())) {
             JSONObject logJson = (JSONObject) JSONObject.parse(goodsOrder.getLogistics());
