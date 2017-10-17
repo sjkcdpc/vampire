@@ -21,7 +21,6 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
 import com.gaosi.api.revolver.util.ExpressCodeUtil;
-import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.gaosi.api.vulcan.facade.GoodsPicServiceFacade;
@@ -32,7 +31,6 @@ import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -44,10 +42,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.*;
 
 
@@ -97,7 +91,6 @@ public class OrderController {
             return ResultData.failed(apiResponse.getMessage());
         }
         GoodsOrder goodsOrder = apiResponse.getBody();
-        logger.info("detail.GoodsOrder:{}", JsonUtil.objToJson(goodsOrder));
         if(!ExpressCodeUtil.convertExpressCode(goodsOrder)){
             Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
             String express = expressMap.get(goodsOrder.getExpressCode());
