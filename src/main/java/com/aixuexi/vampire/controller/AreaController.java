@@ -12,6 +12,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -30,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping(value = "/area")
 public class AreaController {
+
+    private final Logger logger = LoggerFactory.getLogger(AreaController.class);
 
     @Autowired
     private AreaApi areaApi;
@@ -52,9 +56,13 @@ public class AreaController {
         ResultData resultData = new ResultData();
         try {
             List<AreaBo> areaBos = cacheBuilderProvince.get(1);
-            resultData.setBody(baseMapper.mapAsList(areaBos, AreaVo.class));
+            List<AreaVo> areaVos = baseMapper.mapAsList(areaBos, AreaVo.class);
+
+            resultData.setBody(areaVos);
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            logger.error("获取省份信息失败", e);
+            resultData = ResultData.failed("获取省份信息失败");
         }
         return resultData;
     }
@@ -70,9 +78,13 @@ public class AreaController {
         ResultData resultData = new ResultData();
         try {
             List<AreaBo> areaBos = cacheBuilderCity.get(parentId);
-            resultData.setBody(baseMapper.mapAsList(areaBos, AreaVo.class));
+            List<AreaVo> areaVos = baseMapper.mapAsList(areaBos, AreaVo.class);
+
+            resultData.setBody(areaVos);
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            logger.error("获取市区信息失败", e);
+            resultData = ResultData.failed("获取市区信息失败");
         }
         return resultData;
     }

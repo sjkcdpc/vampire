@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    <bean id="springContextUtils" class="com.aixuexi.thor.reflection.SpringContextUtils" lazy-init="false"/>
+
+    <bean id="mqSmsProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
+        <property name="type" value="${ali.mq.type}"/>
+        <property name="accessKey" value="${ali.mq.accessKey}"/>
+        <property name="secretKey" value="${ali.mq.secretKey}"/>
+        <property name="suffix" value="${ali.mq.sms.producer.suffix}"/>
+        <property name="producerId" value="${ali.mq.sms.producer.producerId}"/>
+    </bean>
+
+    <bean id="mqMailProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
+        <property name="type" value="${ali.mq.type}"/>
+        <property name="accessKey" value="${ali.mq.accessKey}"/>
+        <property name="secretKey" value="${ali.mq.secretKey}"/>
+        <property name="suffix" value="${ali.mq.mail.producer.suffix}"/>
+        <property name="producerId" value="${ali.mq.mail.producer.producerId}"/>
+    </bean>
+
+</beans>

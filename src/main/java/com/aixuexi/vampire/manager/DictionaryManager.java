@@ -5,6 +5,7 @@ import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.model.Category;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -28,6 +29,27 @@ public class DictionaryManager {
     private DictionaryApi dictionaryApi;
 
     /**
+     * 根据类型和code查询类别名称
+     * @param type
+     * @param code
+     * @return
+     */
+    public String getCategory(String type, String code){
+        List<DictionaryBo> dictionaryBos = selectDictByType(type);
+        if (!CollectionUtils.isNotEmpty(dictionaryBos)) {
+            return null;
+        }
+
+        for (DictionaryBo dictionaryBo : dictionaryBos) {
+            if (dictionaryBo.getCode().equals(code)){
+                return dictionaryBo.getName();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 返回字典key,value
      *
      * @param type
@@ -36,11 +58,16 @@ public class DictionaryManager {
     public Map<String, String> selectDictMapByType(final String type) {
         Map<String, String> retMap = Maps.newHashMap();
         List<DictionaryBo> dictionaryBos = selectDictByType(type);
-        if (CollectionUtils.isNotEmpty(dictionaryBos)) {
-            for (DictionaryBo dictionaryBo : dictionaryBos) {
-                retMap.put(dictionaryBo.getCode(), dictionaryBo.getName());
-            }
+        if (!CollectionUtils.isNotEmpty(dictionaryBos)) {
+            return retMap;
         }
+
+        for (DictionaryBo dictionaryBo : dictionaryBos) {
+            String code = dictionaryBo.getCode();
+            String name = dictionaryBo.getName();
+            retMap.put(code, name);
+        }
+
         return retMap;
     }
 

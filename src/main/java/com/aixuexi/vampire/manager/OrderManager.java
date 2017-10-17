@@ -50,6 +50,8 @@ import java.util.Map;
 @Service("orderManager")
 public class OrderManager {
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private ConsigneeServiceFacade consigneeServiceFacade;
 
@@ -79,8 +81,6 @@ public class OrderManager {
 
     @Resource(name = "dictionaryManager")
     private DictionaryManager dictionaryManager;
-
-    private Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 核对订单信息
@@ -115,25 +115,31 @@ public class OrderManager {
         // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
-            goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
+            Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
+            Integer num = shoppingCartList.getNum();
+
+            goodsTypeIds.add(goodsTypeId);
+            goodsNum.put(goodsTypeId, num);
 
         }
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
             throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
-            goodsVo.setNum(goodsNum.get(goodsVo.getGoodsTypeId()));
+            Integer goodsTypeId = goodsVo.getGoodsTypeId();
+            Integer typeNum = goodsNum.get(goodsTypeId);
+            goodsVo.setNum(typeNum);
+            int num = goodsVo.getNum();
             // 数量*单价
-            goodsVo.setTotal(goodsVo.getNum() * goodsVo.getPrice());
+            goodsVo.setTotal(num * goodsVo.getPrice());
             if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
                 // 数量*单重量
-                weight += goodsVo.getNum() * goodsVo.getWeight();
+                weight += num * goodsVo.getWeight();
                 goodsAmount += goodsVo.getTotal();
-                goodsPieces += goodsVo.getNum();
+                goodsPieces += num;
             }
         }
         confirmOrderVo.setGoodsItem(goodsVos);
@@ -145,7 +151,7 @@ public class OrderManager {
         //calcFreight(provinceId, weight, confirmOrderVo.getExpress(),goodsPieces);
         // 5. 账户余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
-        if(rr==null)
+        if(rr == null)
         {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
         }
@@ -202,7 +208,8 @@ public class OrderManager {
         // ruanyj 测试环境是否发网的开关
         Institution insinfo = institutionService.getInsInfoById(insId);
         // 1测试机构 2试用机构 或者关闭发网开关 则不走发网
-        if ((insinfo!=null&&Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue())) || !expressUtil.getSyncToWms()) {
+        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()))
+                              || !expressUtil.getSyncToWms()) {
             syncToWms = false;
         }
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
@@ -240,7 +247,7 @@ public class OrderManager {
                                         Integer consigneeId, String receivePhone, String express) {
         // 收货人信息判断
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
-        if(consignee==null) {
+        if(consignee == null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
         // 订单
@@ -256,9 +263,11 @@ public class OrderManager {
         // 商品数量
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
-            goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
-            goodsPieces += shoppingCartList.getNum();
+            Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
+            Integer num = shoppingCartList.getNum();
+            goodsTypeIds.add(goodsTypeId);
+            goodsNum.put(goodsTypeId, num);
+            goodsPieces += num;
         }
         // 订单详情
         List<OrderDetail> orderDetails = Lists.newArrayList();
@@ -343,7 +352,7 @@ public class OrderManager {
 //            }
 //        }
 //        else {
-            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)&&goodsPieces >= 100) {
+            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL) && goodsPieces >= 100) {
                 goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
                 isFree = true;
             }
@@ -480,12 +489,8 @@ public class OrderManager {
 //                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.DESC);
 //                }
 //                else {
-                    if(goodsPieces>=100) {
-                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
-                    }
-                    else{
-                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
-                    }
+                String desc = (goodsPieces >= 100) ? OrderConstant.LogisticsMode.NEW_FREE_DESC : OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC;
+                confirmExpressVo.setDesc(desc);
 //                }
             }
         }
@@ -517,30 +522,39 @@ public class OrderManager {
             // 数量 goodsTypeIds - > num
             Map<Integer, Integer> goodsNum = Maps.newHashMap();
             for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-                goodsTypeIds.add(shoppingCartList.getGoodsTypeId());
-                goodsNum.put(shoppingCartList.getGoodsTypeId(), shoppingCartList.getNum());
+                Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
+                Integer num = shoppingCartList.getNum();
+
+                goodsTypeIds.add(goodsTypeId);
+                goodsNum.put(goodsTypeId, num);
             }
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
             if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
                 throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
             }
-            if (CollectionUtils.isEmpty(apiResponse.getBody())) {
+            List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
+            if (CollectionUtils.isEmpty(goodsVos)) {
                 throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
             }
-            List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
+            // List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             for (ConfirmGoodsVo goodsVo : goodsVos) {
                 if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
+                    Integer goodsTypeId = goodsVo.getGoodsTypeId();
+                    Integer goodsNumValue = goodsNum.get(goodsTypeId);
+                    Double unitWeight = goodsVo.getWeight();
                     // 数量*单重量
-                    weight += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getWeight();
+                    weight += goodsNumValue * unitWeight;
+
+                    Double price = goodsVo.getPrice();
                     // 数量*单价
-                    goodsAmount += goodsNum.get(goodsVo.getGoodsTypeId()) * goodsVo.getPrice();
-                    goodsPieces += goodsNum.get(goodsVo.getGoodsTypeId());
+                    goodsAmount += goodsNumValue * price;
+                    goodsPieces += goodsNumValue;
                 }
             }
         }
         // 计算邮费
-        calcFreight(provinceId, weight, confirmExpressVos,goodsPieces);
+        calcFreight(provinceId, weight, confirmExpressVos, goodsPieces);
         // set
         freightVo.setGoodsPieces(goodsPieces);
         freightVo.setGoodsWeight(weight);
@@ -548,7 +562,7 @@ public class OrderManager {
         freightVo.setExpress(confirmExpressVos);
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
-        if(rr==null) {
+        if(rr == null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Long remain = rr.getUsableRemain();
@@ -566,7 +580,7 @@ public class OrderManager {
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
+        if(apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
@@ -609,47 +623,51 @@ public class OrderManager {
      * @param goodsNum
      */
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos, Map<Integer, Integer> goodsNum) {
-        if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
-            List<ConfirmGoodsVo> offGoods = Lists.newArrayList();
-            List<String> barCodes = Lists.newArrayList();
-            // 1. 校验商品是否已经下架
+        if(!CollectionUtils.isNotEmpty(confirmGoodsVos)){
+            return;
+        }
+
+        List<ConfirmGoodsVo> offGoods = Lists.newArrayList();
+        List<String> barCodes = Lists.newArrayList();
+        // 1. 校验商品是否已经下架
+        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+            //ruanyj 商品编码为空校验
+            String barCode = confirmGoodsVo.getBarCode();
+            if(StringUtils.isBlank(barCode)) {
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空!");
+            }
+            barCodes.add(confirmGoodsVo.getBarCode());
+            if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
+                offGoods.add(confirmGoodsVo);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(offGoods)) {
+            throw new IllegalArgException(ExceptionCode.UNKNOWN,"存在已下架商品!");
+        }
+        if (expressUtil.getIsInventory()) {
+            // 2. 校验库存 {barCode, inventory}
+            boolean flag = false;
+            ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
+            // ruanyj 查询库存校验
+            if(apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
+                throw new IllegalArgException(ExceptionCode.UNKNOWN, "查询库存失败!");
+            }
+            Map<String, Integer> inventoryMap = apiResponse.getBody();
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-                //ruanyj 商品编码为空校验
-                if(StringUtils.isBlank(confirmGoodsVo.getBarCode())) {
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空!");
-                }
-                barCodes.add(confirmGoodsVo.getBarCode());
-                if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
-                    offGoods.add(confirmGoodsVo);
-                }
+                // 库存量
+                int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
+                // 购买数量
+                int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
+
+                if (num > inventory) {
+                    confirmGoodsVo.setStatus(2);
+                    confirmGoodsVo.setInventory(inventory);
+                    flag = true;
+                } // 库存不足
             }
-            if (CollectionUtils.isNotEmpty(offGoods)) {
-                throw new IllegalArgException(ExceptionCode.ARGUMENT_IS_ERROR_ERROR,String.valueOf(ExceptionCode.ARGUMENT_IS_ERROR_ERROR.getCode()));
-            }
-            if (expressUtil.getIsInventory()) {
-                // 2. 校验库存 {barCode, inventory}
-                boolean flag = false;
-                ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
-                // ruanyj 查询库存校验
-                if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, "查询库存失败");
-                }
-                Map<String, Integer> inventoryMap = apiResponse.getBody();
-                for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-                    // 库存量
-                    int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
-                    // 购买数量
-                    int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
-                    if (num > inventory) {
-                        confirmGoodsVo.setStatus(2);
-                        confirmGoodsVo.setInventory(inventory);
-                        flag = true;
-                    } // 库存不足
-                }
-                if (flag) {
-                    String jsonString = JSONObject.toJSONString(confirmGoodsVos);
-                    throw new IllegalArgumentException(jsonString);
-                }
+            if (flag) {
+                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
+                throw new IllegalArgumentException(jsonString);
             }
         }
     }
@@ -680,12 +698,8 @@ public class OrderManager {
 //                    expressVo.setDesc(OrderConstant.LogisticsMode.DESC);
 //                }
 //                else {
-                    if(goodsPieces>=100){
-                        expressVo.setDesc(OrderConstant.LogisticsMode.NEW_FREE_DESC);
-                    }
-                    else{
-                        expressVo.setDesc(OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC);
-                    }
+                String desc = (goodsPieces >= 100) ? OrderConstant.LogisticsMode.NEW_FREE_DESC : OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC;
+                expressVo.setDesc(desc);
 //                }
             }
         }

@@ -128,9 +128,11 @@ public class GoodsController {
      * @param db
      */
     private void setSortId(DictionaryBo db) {
-        if(StringUtils.isNotBlank(db.getCode())) {
-            if (periodMap.containsKey(db.getCode().trim())) {
-                db.setOrderIndex(periodMap.get(db.getCode().trim()));
+        String code = db.getCode();
+        if(StringUtils.isNotBlank(code)) {
+            String trimCode = code.trim();
+            if (periodMap.containsKey(trimCode)) {
+                db.setOrderIndex(periodMap.get(trimCode));
             } else {
                 db.setOrderIndex(db.getId());
             }
@@ -271,9 +273,9 @@ public class GoodsController {
     private void loadRelationName(List<GoodsVo> list, boolean isDtail){
         List<Integer> bookVersionIds = new ArrayList<>();
         List<Integer> examAreaIds = new ArrayList<>();
-        for (GoodsVo goodsVo: list) {
+        for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation:relationGoods) {
+            for (RelationGoodsVo relation : relationGoods) {
                 if (!relation.getBookVersion().equals(0)) {
                     bookVersionIds.add(relation.getBookVersion());
                 }
@@ -301,22 +303,24 @@ public class GoodsController {
         bookVersionMap = toBookVersionMap(bookVersionBos);
         examAreaMap = toExamAreaMap(examAreaBos);
 
-        for (GoodsVo goodsVo: list) {
+        for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation:relationGoods) {
-                if (!relation.getBookVersion().equals(0)) {
-                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
+            for (RelationGoodsVo relation : relationGoods) {
+                List<?> relationGoodsTypes = relation.getRelationGoodsType();
+
+                Integer bookVersionId = relation.getBookVersion();
+                if (!bookVersionId.equals(0)) {
+                    BookVersionBo bookVersion = bookVersionMap.get(bookVersionId);
                     relation.setRelationName(bookVersion.getName());
-                    List<?> relationGoodsTypes = relation.getRelationGoodsType();
 
                     if (CollectionUtils.isNotEmpty(relationGoodsTypes)) {
                         getRelationName(isDtail, relation, relationGoodsTypes);
                     }
-
                 }
-                if (!relation.getExamAreaId().equals(0)) {
-                    List<?> relationGoodsTypes = relation.getRelationGoodsType();
-                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
+
+                Integer examAreaId = relation.getExamAreaId();
+                if (!examAreaId.equals(0)) {
+                    ExamAreaBo examArea = examAreaMap.get(examAreaId);
                     relation.setRelationName(examArea.getName());
                     if (CollectionUtils.isNotEmpty(relationGoodsTypes)) {
                         getRelationName(isDtail, relation, relationGoodsTypes);
@@ -327,33 +331,32 @@ public class GoodsController {
     }
 
     private void getRelationName(boolean isDetail, RelationGoodsVo relation, List<?> relationGoodsTypes){
-        if (isDetail) {
-            List<GoodsTypeDetailVo> detailVos = baseMapper.mapAsList(relationGoodsTypes, GoodsTypeDetailVo.class);
-            relation.setRelationName(relation.getRelationName() + "(");
-            int i = 0;
-            for (GoodsTypeDetailVo detailVo: detailVos) {
-                if (i == 0) {
-                    relation.setRelationName(relation.getRelationName() + detailVo.getName());
-                }else {
-                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName());
-                }
-                i++;
+        // 由于有重复代码，用泛型替换
+        Class<? extends GoodsTypeCommonVo> clazz = isDetail ? GoodsTypeDetailVo.class : GoodsTypeListVo.class;
+
+        getRelationName(relation, relationGoodsTypes, clazz);
+    }
+
+    private <T extends GoodsTypeCommonVo> void getRelationName(RelationGoodsVo relation, List<?> relationGoodsTypes, Class<T> clazz){
+        List<T> detailVos = baseMapper.mapAsList(relationGoodsTypes, clazz);
+        // 将"+"形式的字符串拼接替换为stringbuilder
+        String preRelationName = relation.getRelationName();
+
+        StringBuilder relationNameBuilder = new StringBuilder();
+        relationNameBuilder.append(preRelationName);
+        relationNameBuilder.append("(");
+
+        int i = 0;
+        for (T detailVo: detailVos) {
+            String detailName = detailVo.getName();
+            if (i != 0) {
+                relationNameBuilder.append(",");
             }
-            relation.setRelationName(relation.getRelationName() + ")");
-        }else {
-            List<GoodsTypeListVo> detailVos = baseMapper.mapAsList(relationGoodsTypes, GoodsTypeListVo.class);
-            relation.setRelationName(relation.getRelationName() + "(");
-            int i = 0;
-            for (GoodsTypeListVo detailVo: detailVos) {
-                if (i == 0) {
-                    relation.setRelationName(relation.getRelationName() + detailVo.getName());
-                }else {
-                    relation.setRelationName(relation.getRelationName() + "," + detailVo.getName());
-                }
-                i++;
-            }
-            relation.setRelationName(relation.getRelationName() + ")");
+            relationNameBuilder.append(detailName);
+            i++;
         }
+        relationNameBuilder.append(")");
+        relation.setRelationName(relationNameBuilder.toString());
     }
 
     private String getScheme(Integer scheme){
@@ -362,40 +365,38 @@ public class GoodsController {
         return schemeBo.getName();
     }
 
-    public Map<Integer, BookVersionBo> toBookVersionMap(List<BookVersionBo> bookVersionBos){
+    private Map<Integer, BookVersionBo> toBookVersionMap(List<BookVersionBo> bookVersionBos){
         Map<Integer, BookVersionBo> map = new HashMap<>();
-        for (BookVersionBo bookVersionBo: bookVersionBos) {
+
+        for (BookVersionBo bookVersionBo : bookVersionBos) {
             if (map.containsKey(bookVersionBo.getId())) {
                 continue;
-            }else {
-                map.put(bookVersionBo.getId(), bookVersionBo);
             }
+            map.put(bookVersionBo.getId(), bookVersionBo);
         }
-
         return map;
     }
 
-    public Map<Integer, ExamAreaBo> toExamAreaMap(List<ExamAreaBo> examAreaBos){
+    private Map<Integer, ExamAreaBo> toExamAreaMap(List<ExamAreaBo> examAreaBos){
         Map<Integer, ExamAreaBo> map = new HashMap<>();
-        for (ExamAreaBo examAreaBo: examAreaBos) {
+
+        for (ExamAreaBo examAreaBo : examAreaBos) {
             if (map.containsKey(examAreaBo.getId())) {
                 continue;
-            }else {
-                map.put(examAreaBo.getId(), examAreaBo);
             }
+            map.put(examAreaBo.getId(), examAreaBo);
         }
-
         return map;
     }
 
-    public CommonConditionVo getCommonConditionVo(){
+    private CommonConditionVo getCommonConditionVo(){
         CommonConditionVo commonConditionVo = new CommonConditionVo();
         commonConditionVo.setId(0);
         commonConditionVo.setName("全部");
         return commonConditionVo;
     }
 
-    public void sort(List<CommonConditionVo> conditionVos){
+    private void sort(List<CommonConditionVo> conditionVos){
         Collections.sort(conditionVos, new Comparator<CommonConditionVo>() {
             @Override
             public int compare(CommonConditionVo o1, CommonConditionVo o2) {

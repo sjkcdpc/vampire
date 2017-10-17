@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.ws.rs.HEAD;
 import java.util.List;
 
 /**
@@ -46,9 +47,12 @@ public class ConsigneeController {
     @RequestMapping(value = "/save",method = RequestMethod.POST)
     public ResultData save(@RequestBody Consignee consignee) {
         ResultData resultData = new ResultData();
+
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(),consignee);
+
         resultData.setBody(getConsigneeVoById(id));
+
         return resultData;
     }
 
@@ -61,17 +65,19 @@ public class ConsigneeController {
     @RequestMapping(value = "/update")
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
+
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(),consignee);
         if(apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
             throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
+
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
-        if(cv==null) {
+
+        if(cv == null) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
-        else {
-            resultData.setBody(cv);
-        }
+        resultData.setBody(cv);
+
         return resultData;
     }
 
@@ -84,6 +90,7 @@ public class ConsigneeController {
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
+
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
@@ -94,6 +101,7 @@ public class ConsigneeController {
         } else {
             resultData.setBody(effectRows);
         }
+
         return resultData;
     }
     /**
@@ -105,21 +113,26 @@ public class ConsigneeController {
     private ConsigneeVo getConsigneeVoById(int id)
     {
         Consignee resConsignee = consigneeServiceFacade.selectById(id);
-        if(resConsignee!=null) {
-
-            ConsigneeVo consigneeVo = baseMapper.map(resConsignee, ConsigneeVo.class);
-            ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(consigneeVo.getAreaId());
-            if (CollectionUtils.isNotEmpty(apiResponse.getBody())) {
-                AddressDTO addressDTO = apiResponse.getBody().get(0);
-                consigneeVo.setProvinceId(addressDTO.getProvinceId());
-                consigneeVo.setProvince(addressDTO.getProvince());
-                consigneeVo.setCityId(addressDTO.getCityId());
-                consigneeVo.setCity(addressDTO.getCity());
-                consigneeVo.setArea(addressDTO.getDistrict());
-            }
-            return consigneeVo;
+        if(resConsignee == null) {
+            return null;
         }
-        return null;
+
+        ConsigneeVo consigneeVo = baseMapper.map(resConsignee, ConsigneeVo.class);
+
+        Integer areaId = consigneeVo.getAreaId();
+        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(areaId);
+
+        List<AddressDTO> body = apiResponse.getBody();
+        if (CollectionUtils.isNotEmpty(body)) {
+            AddressDTO addressDTO = body.get(0);
+
+            consigneeVo.setProvinceId(addressDTO.getProvinceId());
+            consigneeVo.setProvince(addressDTO.getProvince());
+            consigneeVo.setCityId(addressDTO.getCityId());
+            consigneeVo.setCity(addressDTO.getCity());
+            consigneeVo.setArea(addressDTO.getDistrict());
+        }
+        return consigneeVo;
     }
 
     /**

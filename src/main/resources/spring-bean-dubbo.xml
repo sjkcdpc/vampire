@@ -6,9 +6,11 @@
 		http://code.alibabatech.com/schema/dubbo 
 		http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
 
+
     <dubbo:application name="vampire"/>
-    <dubbo:registry address="${zookeeper}" transporter="curator"/>
+    <dubbo:registry address="${zookeeper}" transporter="curator" file="${catalina.home}/dubbo-registry/dubbo-registry.properties" />
     <dubbo:consumer check="false" filter="catTransaction"/>
+
 
     <!--帐号服务-->
     <dubbo:reference interface="com.gaosi.api.davincicode.AccountService" id="accountService"/>
@@ -25,23 +27,26 @@
 
     <!-- 订单中心相关接口 -->
     <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade" />
-
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.ItemOrderServiceFacade" id="itemOrderServiceFacade" />
     <!-- 在线商城相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade"/>
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade"/>
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemExtServiceFacade" id="mallItemExtServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.NailOrderServiceFacade" id="nailOrderServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallCategoryServiceFacade" id="mallCategoryServiceFacade" />
     <!--财务接口-->
     <!--<dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>-->
 
     <!--基础数据-->
-    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi"/>
-    <dubbo:reference interface="com.gaosi.api.basicdata.SchemeApi" id="schemeApi"/>
-    <dubbo:reference interface="com.gaosi.api.axxBank.service.FinancialAccountService" id="finAccService"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi" />
+    <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi" />
+    <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi" />
+    <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi" />
+    <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi" />
+    <dubbo:reference interface="com.gaosi.api.basicdata.SchemeApi" id="schemeApi"  />
+    <dubbo:reference interface="com.gaosi.api.axxBank.service.FinancialAccountService" id="finAccService"  />
 
     <!-- 机构服务 -->
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.InstitutionService" id="institutionService"/>

@@ -13,9 +13,10 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>1.2.7-RELEASE</avatar.version>
+        <avatar.version>1.3.53-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor.version>1.4.15-RELEASE</thor.version>
+        <thor-util.version>1.4.22-RELEASE</thor-util.version>
+        <transformers.version>1.0.10.4-RELEASE</transformers.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
@@ -29,7 +30,17 @@
         <dependency>
             <groupId>com.aixuexi</groupId>
             <artifactId>thor-util</artifactId>
-            <version>${thor.version}</version>
+            <version>${thor-util.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aixuexi</groupId>
+            <artifactId>transformers</artifactId>
+            <version>${transformers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>4.0.0</version>
         </dependency>
 
         <dependency>

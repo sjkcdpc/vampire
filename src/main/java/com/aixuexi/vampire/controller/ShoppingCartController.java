@@ -53,23 +53,34 @@ public class ShoppingCartController {
     @RequestMapping(value = "/list",method = RequestMethod.GET)
     public ResultData list() {
         ResultData resultData = new ResultData();
-        List<ShoppingCartList> shoppingCartListList = shoppingCartServiceFacade.queryShoppingCartDetail(UserHandleUtil.getUserId());
-        if (CollectionUtils.isNotEmpty(shoppingCartListList)) {
-            ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
-            int goodsPieces = 0;
-            double payAmount = 0;
-            List<ShoppingCartListVo> shoppingCartListVos = baseMapper.mapAsList(shoppingCartListList, ShoppingCartListVo.class);
-            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-                goodsPieces += shoppingCartListVo.getNum();
-                double total = CalculateUtil.mul(shoppingCartListVo.getNum().doubleValue(), shoppingCartListVo.getGoodsTypePrice());
-                shoppingCartListVo.setTotal(total);
-                payAmount += total;
-            }
-            shoppingCartVo.setGoodsPieces(goodsPieces);
-            shoppingCartVo.setPayAmount(payAmount);
-            shoppingCartVo.setShoppingCartListList(shoppingCartListVos);
-            resultData.setBody(shoppingCartVo);
+
+        Integer userId = UserHandleUtil.getUserId();
+        List<ShoppingCartList> shoppingCartListList = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        if (!CollectionUtils.isNotEmpty(shoppingCartListList)) {
+            return resultData;
         }
+
+        ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
+        int goodsPieces = 0;
+        double payAmount = 0;
+        List<ShoppingCartListVo> shoppingCartListVos = baseMapper.mapAsList(shoppingCartListList, ShoppingCartListVo.class);
+        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+            Integer num = shoppingCartListVo.getNum();
+            goodsPieces += num;
+
+            double numDouble = num.doubleValue();
+            double priceDouble = shoppingCartListVo.getGoodsTypePrice();
+
+            double total = CalculateUtil.mul(numDouble, priceDouble);
+            shoppingCartListVo.setTotal(total);
+
+            payAmount += total;
+        }
+        shoppingCartVo.setGoodsPieces(goodsPieces);
+        shoppingCartVo.setPayAmount(payAmount);
+        shoppingCartVo.setShoppingCartListList(shoppingCartListVos);
+        resultData.setBody(shoppingCartVo);
+
         return resultData;
     }
 
@@ -83,17 +94,19 @@ public class ShoppingCartController {
     @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
+        List<ConfirmGoodsVo> body = apiResponse.getBody();
         if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
         }
-        if (CollectionUtils.isEmpty(apiResponse.getBody())) {
+        if (CollectionUtils.isEmpty(body)) {
             return ResultData.failed("商品不存在！");
         }
+
         if(num.intValue()>9999 || num.intValue()<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
-        ConfirmGoodsVo confirmGoodsVo = apiResponse.getBody().get(0);
-        if(confirmGoodsVo.getStatus()!= GoodsConstant.Status.ON) {
+        ConfirmGoodsVo confirmGoodsVo = body.get(0);
+        if(confirmGoodsVo.getStatus() != GoodsConstant.Status.ON) {
             return ResultData.failed("商品已下架！");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
@@ -104,12 +117,15 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
         shoppingCartList.setWeight(confirmGoodsVo.getWeight());
-        String redisKey=Constants.PRE_SHOPPINGCART+UserHandleUtil.getUserId();
+
+        Integer userId = UserHandleUtil.getUserId();
+        String redisKey = Constants.PRE_SHOPPINGCART + userId;
         try {
             boolean ret = myJedisService.setnx(redisKey, "", 60);
             if(!ret){
                 return ResultData.failed("请勿操作过快！");
             }
+
             ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
             if(addSCResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
                 return ResultData.failed(addSCResponse.getMessage());
@@ -155,16 +171,15 @@ public class ShoppingCartController {
     }
 
     private ResultData dealDelAndMod(int flag) {
-        ResultData resultData = new ResultData();
         if (flag == -1) {
-            resultData.setStatus(ResultData.STATUS_ERROR);
-            resultData.setErrorMessage("购物车不存在数据、请刷新再试！");
+            return ResultData.failed("购物车不存在数据、请刷新再试！");
         } else if (flag == -2) {
-            resultData.setStatus(ResultData.STATUS_ERROR);
-            resultData.setErrorMessage("购物车重复、请联系客服！");
-        } else {
-            resultData.setBody(flag);
+            return ResultData.failed("购物车重复、请联系客服！");
         }
+
+        ResultData resultData = new ResultData();
+        resultData.setBody(flag);
+
         return resultData;
     }
 

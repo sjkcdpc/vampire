@@ -43,39 +43,36 @@ public class UserController {
             User user = userService.getUserById(UserSessionHandler.getId());
             if (null != user) {
                 Map<String, Object> result = Maps.newHashMap();
+                Integer institutionId = user.getInstitutionId();
                 result.put("username", user.getName());
                 result.put("userId", user.getId());
-                result.put("institutionId", user.getInstitutionId());
+                result.put("institutionId", institutionId);
                 result.put("telephone", user.getTelephone());
                 List<String> permissions = UserSessionHandler.getPermissions();
-                List<Integer> insIds= Lists.newArrayList();
-                insIds.add(user.getInstitutionId());
-                WhitelistCheck whitelistCheck=new WhitelistCheck();
+                List<Integer> insIds = Lists.newArrayList();
+                insIds.add(institutionId);
+                WhitelistCheck whitelistCheck = new WhitelistCheck();
                 whitelistCheck.setWhitelistType(WhitelistEnum.institution);
                 whitelistCheck.setCheckData(insIds);
-                List<WhitelistCheck> whitelistChecks= Lists.newArrayList();
+                List<WhitelistCheck> whitelistChecks = Lists.newArrayList();
                 whitelistChecks.add(whitelistCheck);
-                permissions=userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks);
+                permissions = userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks);
                 Map<String, Integer> menu = new HashMap<>();
                 for (String p : permissions) {
                     menu.put(p, 1);
                 }
                 // 高斯杯权限
-                if (userService.checkInstitutionHaveGsb(user.getInstitutionId())) {
+                if (userService.checkInstitutionHaveGsb(institutionId)) {
                     menu.put("gaosibei", 1);
                 }
                 result.put("menu", menu);
                 result.put("roles", UserSessionHandler.getRoles());
                 resultData.setBody(result);
             } else {
-                resultData.setBody(null);
-                resultData.setStatus(0);
-                resultData.setErrorMessage("user not exists, by userId : " + UserSessionHandler.getId());
+                resultData = ResultData.failed("user not exists, by userId : " + UserSessionHandler.getId());
             }
         } catch (Throwable e) {
-            resultData.setBody(null);
-            resultData.setStatus(0);
-            resultData.setErrorMessage(e.getMessage());
+            resultData = ResultData.failed(e.getMessage());
         }
         return resultData;
     }
