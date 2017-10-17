@@ -21,6 +21,7 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.model.OrderDetail;
 import com.gaosi.api.revolver.util.ExpressCodeUtil;
+import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.gaosi.api.vulcan.facade.GoodsPicServiceFacade;
@@ -96,6 +97,7 @@ public class OrderController {
             return ResultData.failed(apiResponse.getMessage());
         }
         GoodsOrder goodsOrder = apiResponse.getBody();
+        logger.info("detail.GoodsOrder:{}", JsonUtil.objToJson(goodsOrder));
         if(!ExpressCodeUtil.convertExpressCode(goodsOrder)){
             Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
             String express = expressMap.get(goodsOrder.getExpressCode());
