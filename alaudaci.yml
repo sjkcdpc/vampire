@@ -1,0 +1,6 @@
+version: "0.1.0"
+pre_ci_boot:
+  image: gaosi-gaosiedu.customerindex.alauda.cn:5000/maven
+  tag: latest
+ci:
+  - mvn clean package -Dmaven.test.skip -P docker

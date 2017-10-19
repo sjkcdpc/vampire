@@ -261,6 +261,12 @@
             </activation>
         </profile>
         <profile>
+            <id>docker</id>
+            <properties>
+                <package.environment>src/main/resources_docker</package.environment>
+            </properties>
+        </profile>
+        <profile>
             <id>onlinetest</id>
             <properties>
                 <package.environment>src/main/resources_onlinetest</package.environment>
