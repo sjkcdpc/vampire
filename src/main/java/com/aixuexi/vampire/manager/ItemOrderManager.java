@@ -1,11 +1,11 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.sms_mail.SMSConstant;
 import com.aixuexi.thor.util.Functions;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.constants.Dictionary;
 import com.gaosi.api.axxBank.model.BusinessResult;
@@ -68,13 +68,13 @@ public class ItemOrderManager {
         //查询当前机构账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr == null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Double consumeCount = nailOrderVo.getPrice() * itemCount;
         Double totalCount = consumeCount * 10000;//根据商品现价和数量计算花费
         Long remain = rr.getUsableRemain();
         if (totalCount.longValue() > remain) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
 
         ItemOrder itemOrder = new ItemOrder();
@@ -98,7 +98,7 @@ public class ItemOrderManager {
 
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "创建订单失败");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "创建订单失败");
         }
         String orderId = apiResponse.getBody();
         return orderId;
@@ -113,15 +113,15 @@ public class ItemOrderManager {
         //查询当前机构账号余额
         RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
         if(rr==null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         ItemOrder itemOrder = getOrderByOrderId(orderId);
         if (itemOrder.getStatus() == OrderConstant.Status.CANCELLED){// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
         }
         Double amount = AmountUtil.multiply(itemOrder.getConsumeCount(), 10000);//扩大10000倍
         if (amount.longValue() > rr.getUsableRemain()){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
         String optionDesc="订单号[order]"+orderId+"[/order]";
         CostAndRufundProxyHandler proxyHandler = new CostAndRufundProxyHandler(financialAccountService);
@@ -199,10 +199,10 @@ public class ItemOrderManager {
     public ItemOrder getOrderByOrderId(String orderId){
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
         if (itemOrderResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, itemOrderResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, itemOrderResponse.getMessage());
         }
         if (itemOrderResponse.getBody() == null){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "未查询到该订单");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "未查询到该订单");
         }
         return itemOrderResponse.getBody();
     }

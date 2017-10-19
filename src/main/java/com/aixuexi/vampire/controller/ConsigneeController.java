@@ -1,11 +1,10 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.ws.rs.HEAD;
 import java.util.List;
 
 /**
@@ -68,13 +66,13 @@ public class ConsigneeController {
 
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(),consignee);
         if(apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
 
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
 
         if(cv == null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
         resultData.setBody(cv);
 
@@ -93,11 +91,11 @@ public class ConsigneeController {
 
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         Integer effectRows = apiResponse.getBody();
         if (effectRows <= 0) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "该收货人不存在");
         } else {
             resultData.setBody(effectRows);
         }
@@ -145,11 +143,11 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.setDefault(UserHandleUtil.getInsId(),id);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         Integer effectRows = apiResponse.getBody();
         if (effectRows <= 0) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "该收货人不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "该收货人不存在");
         } else {
             resultData.setBody(effectRows);
         }

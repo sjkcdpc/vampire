@@ -1,8 +1,8 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -36,9 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +103,7 @@ public class OrderManager {
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
         List<Integer> goodsTypeIds = Lists.newArrayList();
         int goodsPieces = 0; // 商品总件数
@@ -125,7 +122,7 @@ public class OrderManager {
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
@@ -153,7 +150,7 @@ public class OrderManager {
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr == null)
         {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Long remain = rr.getUsableRemain();
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
@@ -184,14 +181,14 @@ public class OrderManager {
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr==null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         if (CollectionUtils.isEmpty(goodsTypeIds)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "所选商品不能为空");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "所选商品不能为空");
         }
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
 
         // 创建订单对象
@@ -201,7 +198,7 @@ public class OrderManager {
         Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
         Long remain = rr.getUsableRemain();
         if (amount.longValue() > remain) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "余额不足");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
         // 是否走发网
         Boolean syncToWms = true;
@@ -228,7 +225,7 @@ public class OrderManager {
             }
             return new OrderSuccessVo(apiResponse.getBody(), findTipsByExpress(express));
         } else {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "订单创建失败");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "订单创建失败");
         }
     }
 
@@ -248,7 +245,7 @@ public class OrderManager {
         // 收货人信息判断
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
         if(consignee == null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择收货地址");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
         // 订单
         GoodsOrder goodsOrder = new GoodsOrder();
@@ -274,10 +271,10 @@ public class OrderManager {
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if(listApiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
         }
         if (CollectionUtils.isEmpty(listApiResponse.getBody())) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在! ");
         }
         List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
         // 再次校验商品是否已下架，库存。
@@ -378,7 +375,7 @@ public class OrderManager {
 
                 logger.info("submitOrder --> freight : {}", apiResponse);
                 if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+                    throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
                 }
                 HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
                 goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
@@ -434,11 +431,11 @@ public class OrderManager {
         if(apiResponse!=null) {
             if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
                 if (CollectionUtils.isEmpty(apiResponse.getBody())) {
-                    throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+                    throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
                 }
                 return apiResponse.getBody();
             } else {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
             }
         }
         else{
@@ -473,7 +470,7 @@ public class OrderManager {
             apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
 //        }
         if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<HashMap<String, Object>> listMap = apiResponse.getBody();
         for (int i = 0; i < expressVoLists.size(); i++) {
@@ -515,7 +512,7 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
             shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
             if (CollectionUtils.isEmpty(shoppingCartLists)) {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }
             goodsTypeIds = Lists.newArrayList();
 
@@ -531,11 +528,11 @@ public class OrderManager {
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
             if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE) {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+                throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
             }
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             if (CollectionUtils.isEmpty(goodsVos)) {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, "商品不存在! ");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在! ");
             }
             // List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             for (ConfirmGoodsVo goodsVo : goodsVos) {
@@ -563,7 +560,7 @@ public class OrderManager {
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if(rr == null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
@@ -581,7 +578,7 @@ public class OrderManager {
         Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if(apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         if (CollectionUtils.isNotEmpty(goodsVos)) {
@@ -611,7 +608,7 @@ public class OrderManager {
                 tips = "我们将在2个工作日之内发货，预计7天内到货";
                 break;
             default:
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
         }
         return tips;
     }
@@ -634,7 +631,7 @@ public class OrderManager {
             //ruanyj 商品编码为空校验
             String barCode = confirmGoodsVo.getBarCode();
             if(StringUtils.isBlank(barCode)) {
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空!");
+                throw new BusinessException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName()+confirmGoodsVo.getGoodsTypeName()+"的SKU编码为空!");
             }
             barCodes.add(confirmGoodsVo.getBarCode());
             if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
@@ -642,7 +639,7 @@ public class OrderManager {
             }
         }
         if (CollectionUtils.isNotEmpty(offGoods)) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN,"存在已下架商品!");
+            throw new BusinessException(ExceptionCode.UNKNOWN,"存在已下架商品!");
         }
         if (expressUtil.getIsInventory()) {
             // 2. 校验库存 {barCode, inventory}
@@ -650,7 +647,7 @@ public class OrderManager {
             ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
             // ruanyj 查询库存校验
             if(apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
-                throw new IllegalArgException(ExceptionCode.UNKNOWN, "查询库存失败!");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "查询库存失败!");
             }
             Map<String, Integer> inventoryMap = apiResponse.getBody();
             for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {

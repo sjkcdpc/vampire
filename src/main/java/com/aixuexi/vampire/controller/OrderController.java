@@ -1,14 +1,11 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
-import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
-import com.aixuexi.vampire.util.Constants;
-import com.aixuexi.vampire.util.UserHandleUtil;
+import com.aixuexi.vampire.util.*;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
@@ -275,7 +272,7 @@ public class OrderController {
         Integer insId = UserHandleUtil.getInsId();
         Institution institution = institutionService.getInsInfoById(insId);
         if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
     }
 }

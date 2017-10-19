@@ -1,10 +1,10 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
-import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -262,7 +261,7 @@ public class GoodsController {
         Integer insId = UserHandleUtil.getInsId();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
         if (response.getRetCode()!= ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, response.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, response.getMessage());
         }
         GoodsVo goodsVo = response.getBody();
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));

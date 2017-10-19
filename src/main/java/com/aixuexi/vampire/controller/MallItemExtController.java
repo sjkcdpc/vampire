@@ -1,9 +1,9 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.except.IllegalArgException;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
@@ -52,12 +52,12 @@ public class MallItemExtController {
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
         ApiResponse<Page<MallItemNailVo>> apiResponse= mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
         if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         Page<MallItemNailVo> mallItemNailVoPage = apiResponse.getBody();
         List<Integer> ids = new ArrayList<>();
         if(CollectionUtils.isEmpty(mallItemNailVoPage.getList())){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "未查找到校长培训列表!");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "未查找到校长培训列表!");
         }
         for (MallItemNailVo mno : mallItemNailVoPage.getList()) {
             ids.add(mno.getMallItemId());
@@ -84,7 +84,7 @@ public class MallItemExtController {
         ResultData resultData = new ResultData();
         ApiResponse<MallItemNailVo> apiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId,MallItemConstant.ShelvesStatus.ON);
         if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         MallItemNailVo mallItemNailVo = apiResponse.getBody();
         //已报名数量查询
@@ -107,17 +107,17 @@ public class MallItemExtController {
     public ResultData  confirmMallItemNail(@RequestParam Integer mallItemId,@RequestParam Integer goodsPieces)
     {
         if(goodsPieces < 1){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "报名人数错误");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "报名人数错误");
         }
         ResultData resultData = new ResultData();
         ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId,goodsPieces);
         if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();
         RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
         if (rr == null) {
-            throw new IllegalArgException(ExceptionCode.UNKNOWN, "账户不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmMallItemNailVo.setBalance(balance);
