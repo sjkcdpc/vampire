@@ -3,6 +3,7 @@ package com.aixuexi.vampire.test;
 import com.aixuexi.thor.sms_mail.SMSConstant;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
+import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class MqTest {
         builder.setSignName(SMSConstant.SIGN_AIXUEXI)
                 .putParam("orderId", "110119120")
                 .setTemplateCode(SMSConstant.TEMPLATE_CODE_ORDER_UPDATE_FAIL_NOTIFY)
-                .addAllPhones(Arrays.asList(phones))
+                .addAllPhones(Lists.newArrayList(phones))
                 .setBusinessType(SMSConstant.BUSINESS_TYPE_ORDER_UPDATE_FAIL_NOTIFY);
         mqSmsProducer.send(builder);
     }

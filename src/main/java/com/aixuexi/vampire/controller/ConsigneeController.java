@@ -2,8 +2,8 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.exception.BusinessException;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.AreaApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
@@ -42,12 +42,12 @@ public class ConsigneeController {
      * @param consignee 收货地址
      * @return
      */
-    @RequestMapping(value = "/save",method = RequestMethod.POST)
+    @RequestMapping(value = "/save", method = RequestMethod.POST)
     public ResultData save(@RequestBody Consignee consignee) {
         ResultData resultData = new ResultData();
 
         consignee.setInstitutionId(UserHandleUtil.getInsId());
-        int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(),consignee);
+        int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(), consignee);
 
         resultData.setBody(getConsigneeVoById(id));
 
@@ -64,14 +64,14 @@ public class ConsigneeController {
     public ResultData update(Consignee consignee) {
         ResultData resultData = new ResultData();
 
-        ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(),consignee);
-        if(apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(), consignee);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
 
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
 
-        if(cv == null) {
+        if (cv == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
         resultData.setBody(cv);
@@ -102,16 +102,16 @@ public class ConsigneeController {
 
         return resultData;
     }
+
     /**
      * 返回新增或更新后的收货人信息
      *
      * @param id 收货人ID
      * @return
      */
-    private ConsigneeVo getConsigneeVoById(int id)
-    {
+    private ConsigneeVo getConsigneeVoById(int id) {
         Consignee resConsignee = consigneeServiceFacade.selectById(id);
-        if(resConsignee == null) {
+        if (resConsignee == null) {
             return null;
         }
 
@@ -135,13 +135,14 @@ public class ConsigneeController {
 
     /**
      * 设为默认地址
+     *
      * @param id
      * @return
      */
     @RequestMapping(value = "/setDefault")
     public ResultData setDefault(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
-        ApiResponse<Integer> apiResponse = consigneeServiceFacade.setDefault(UserHandleUtil.getInsId(),id);
+        ApiResponse<Integer> apiResponse = consigneeServiceFacade.setDefault(UserHandleUtil.getInsId(), id);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }

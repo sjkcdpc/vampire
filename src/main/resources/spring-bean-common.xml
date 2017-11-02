@@ -28,6 +28,23 @@
         <property name="syncToWms" value="${syncToWms}"/>
         <property name="isInventory" value="${isInventory}"/>
         <property name="freightUpdateTime" value="${freightUpdateTime}"/>
+        <property name="expressVos">
+            <list>
+                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
+                    <property name="code" value="${express1.key}"/>
+                    <property name="tips" value="${express1.tips}"/>
+                </bean>
+                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
+                    <property name="code" value="${express2.key}"/>
+                    <property name="tips" value="${express2.tips}"/>
+                </bean>
+                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
+                    <property name="code" value="${express3.key}"/>
+                    <property name="tips" value="${express3.tips}"/>
+                </bean>
+            </list>
+        </property>
+        <property name="splitTips" value="${splitTips}"/>
     </bean>
 
 </beans>

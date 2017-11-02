@@ -1,5 +1,6 @@
 package com.aixuexi.vampire.util;
 
+import com.gaosi.api.revolver.vo.ExpressVo;
 import com.gaosi.api.vulcan.vo.ConfirmExpressVo;
 
 import java.util.List;
@@ -8,7 +9,9 @@ import java.util.List;
  * Created by gaoxinzhong on 2017/5/16.
  */
 public class ExpressUtil {
-
+    /**
+     * 配送方式
+     */
     private List<ConfirmExpressVo> express;
 
     /**
@@ -21,7 +24,18 @@ public class ExpressUtil {
      */
     private Boolean isInventory;
 
+    /**
+     * 新运费更新时间
+     */
     private String freightUpdateTime;
+    /**
+     * 快递信息
+     */
+    private List<ExpressVo> expressVos;
+    /**
+     * 拆单提示
+     */
+    private String splitTips;
 
     public List<ConfirmExpressVo> getExpress() {
         return express;
@@ -53,5 +67,21 @@ public class ExpressUtil {
 
     public void setFreightUpdateTime(String freightUpdateTime) {
         this.freightUpdateTime = freightUpdateTime;
+    }
+
+    public List<ExpressVo> getExpressVos() {
+        return expressVos;
+    }
+
+    public void setExpressVos(List<ExpressVo> expressVos) {
+        this.expressVos = expressVos;
+    }
+
+    public String getSplitTips() {
+        return splitTips;
+    }
+
+    public void setSplitTips(String splitTips) {
+        this.splitTips = splitTips;
     }
 }

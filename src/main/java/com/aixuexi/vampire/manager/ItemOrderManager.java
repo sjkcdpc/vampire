@@ -60,14 +60,15 @@ public class ItemOrderManager {
 
     /**
      * 订单提交
+     *
      * @param nailOrderVo 商品
-     * @param itemCount 商品数量
+     * @param itemCount   商品数量
      * @return
      */
-    public String submit(NailOrderVo nailOrderVo, Integer itemCount, Integer insId){
+    public String submit(NailOrderVo nailOrderVo, Integer itemCount, Integer insId) {
         //查询当前机构账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
-        if(rr == null) {
+        if (rr == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         Double consumeCount = nailOrderVo.getPrice() * itemCount;
@@ -92,12 +93,12 @@ public class ItemOrderManager {
         itemOrderDetail.setItemName(nailOrderVo.getName());
         itemOrderDetail.setItemPrice(nailOrderVo.getPrice());
         itemOrderDetail.setItemCount(itemCount);
-        itemOrderDetail.setDiscount(nailOrderVo.getOriginalPrice()- nailOrderVo.getPrice());
+        itemOrderDetail.setDiscount(nailOrderVo.getOriginalPrice() - nailOrderVo.getPrice());
         itemOrderDetail.setBusinessId("nail");
         itemOrderDetails.add(itemOrderDetail);
 
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "创建订单失败");
         }
         String orderId = apiResponse.getBody();
@@ -106,24 +107,25 @@ public class ItemOrderManager {
 
     /**
      * 订单支付
+     *
      * @param orderId
      * @return
      */
-    public void pay(String orderId, String token){
+    public void pay(String orderId, String token) {
         //查询当前机构账号余额
         RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if(rr==null) {
+        if (rr == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
         ItemOrder itemOrder = getOrderByOrderId(orderId);
-        if (itemOrder.getStatus() == OrderConstant.Status.CANCELLED){// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
+        if (itemOrder.getStatus() == OrderConstant.Status.CANCELLED) {// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
             throw new BusinessException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
         }
         Double amount = AmountUtil.multiply(itemOrder.getConsumeCount(), 10000);//扩大10000倍
-        if (amount.longValue() > rr.getUsableRemain()){
+        if (amount.longValue() > rr.getUsableRemain()) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
-        String optionDesc="订单号[order]"+orderId+"[/order]";
+        String optionDesc = "订单号[order]" + orderId + "[/order]";
         CostAndRufundProxyHandler proxyHandler = new CostAndRufundProxyHandler(financialAccountService);
         CostProxyParams proxyParams = new CostProxyParams();
         proxyParams.setInsId(UserHandleUtil.getInsId());
@@ -134,50 +136,52 @@ public class ItemOrderManager {
         proxyParams.setOptionItemEnum(Dictionary.OptionItemEnum.PX_DEDUCT_LAND);
         proxyParams.setToken(token);
         proxyParams.setOptionDesc(optionDesc);
-        proxyHandler.CostAidou(proxyParams,this.financialOperation(orderId));
+        proxyHandler.CostAidou(proxyParams, this.financialOperation(orderId));
         updateOrderStatus(orderId);
         logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
     }
 
     /**
      * 财务扣款操作
+     *
      * @param orderId
      * @return
      */
-    private Functions.Function0<BusinessResult> financialOperation(final String orderId){
+    private Functions.Function0<BusinessResult> financialOperation(final String orderId) {
         return new Functions.Function0<BusinessResult>() {
             @Override
-            public BusinessResult apply(){
-                return new BusinessResult(orderId,null);
+            public BusinessResult apply() {
+                return new BusinessResult(orderId, null);
             }
         };
     }
 
     /**
      * 付款后更新订单状态
+     *
      * @param orderId
      */
-    private void updateOrderStatus(String orderId){
+    private void updateOrderStatus(String orderId) {
         boolean flag = true;
         try {
             int retry_num = 0;
             while (retry_num < 3) {//重试三次
                 ApiResponse<?> apiResponse = itemOrderServiceFacade.updateOrderStatus(orderId, OrderConstant.Status.COMPLETED);
-                if (apiResponse == null || apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
+                if (apiResponse == null || apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
                     //更新状态失败，重试次数累加。
-                    retry_num ++;
+                    retry_num++;
                     //等待100毫秒后重试
                     Thread.sleep(100);
-                }else {
+                } else {
                     flag = false;
                     break;
                 }
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error("orderId=[{}] pay success, but updateStatus failed for {}.", orderId, e);
-        }finally {
+        } finally {
             //重试三次更新状态均失败，打印错误日志。(发短信通知)
-            if (flag){
+            if (flag) {
                 logger.error("orderId=[{}] pay success, but updateStatus failed.", orderId);
                 String[] phones = phoneStr.split(",");
                 SmsSend.SmsSendObject.Builder builder = SmsSend.SmsSendObject.newBuilder();
@@ -193,15 +197,16 @@ public class ItemOrderManager {
 
     /**
      * 根据订单号查询订单
+     *
      * @param orderId
      * @return
      */
-    public ItemOrder getOrderByOrderId(String orderId){
+    public ItemOrder getOrderByOrderId(String orderId) {
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
-        if (itemOrderResponse.getRetCode() != ApiRetCode.SUCCESS_CODE){
+        if (itemOrderResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, itemOrderResponse.getMessage());
         }
-        if (itemOrderResponse.getBody() == null){
+        if (itemOrderResponse.getBody() == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "未查询到该订单");
         }
         return itemOrderResponse.getBody();

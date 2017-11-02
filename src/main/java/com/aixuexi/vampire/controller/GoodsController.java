@@ -10,6 +10,7 @@ import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.revolver.facade.InvServiceFacade;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.vo.*;
@@ -59,6 +60,9 @@ public class GoodsController {
     private BaseMapper baseMapper;
 
     private Map<String,Integer> periodMap = new HashMap<>();
+
+    @Resource
+    private InvServiceFacade invServiceFacade;
 
     @PostConstruct
     private void init(){
@@ -244,10 +248,32 @@ public class GoodsController {
         conditionVo.setPageSize(pageSize);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
-
         loadRelationName(page.getList(), false);
+        loadGoodsInventory(page.getList());
         resultData.setBody(page);
         return resultData;
+    }
+
+    /**
+     * 补全商品库存信息
+     * @param goodsVoList
+     */
+    private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
+        Set<String> barCodeList = new HashSet<>();
+        for(GoodsVo goodsVo : goodsVoList){
+            List<GoodsTypeCommonVo> typeCommonVos = ( List<GoodsTypeCommonVo>)goodsVo.getGoodsGrades();
+            for(GoodsTypeCommonVo typeCommonVo:typeCommonVos){
+                barCodeList.add(typeCommonVo.getBarCode());
+            }
+        }
+        ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<String>(barCodeList));
+        Map<String, Integer> invMap = apiResponse.getBody();
+        for(GoodsVo goodsVo : goodsVoList){
+            List<GoodsTypeCommonVo> typeCommonVos = ( List<GoodsTypeCommonVo>)goodsVo.getGoodsGrades();
+            for(GoodsTypeCommonVo typeCommonVo:typeCommonVos){
+                typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+            }
+        }
     }
 
     /**
@@ -266,6 +292,7 @@ public class GoodsController {
         GoodsVo goodsVo = response.getBody();
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         loadRelationName(Lists.newArrayList(goodsVo), true);
+        loadGoodsInventory(Lists.newArrayList(goodsVo));
         return ResultData.successed(response.getBody());
     }
 

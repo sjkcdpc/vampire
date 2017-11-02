@@ -19,7 +19,10 @@ import com.gaosi.api.vulcan.vo.ConfirmMallItemNailVo;
 import com.gaosi.api.vulcan.vo.MallItemNailVo;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -42,21 +45,20 @@ public class MallItemExtController {
     @Resource
     private FinancialAccountService finAccService;
 
-    @RequestMapping(value = "/nail",method = RequestMethod.GET)
-    public ResultData queryMallItemNailList(@RequestParam Integer pageNum,@RequestParam Integer pageSize)
-    {
+    @RequestMapping(value = "/nail", method = RequestMethod.GET)
+    public ResultData queryMallItemNailList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
         QueryCriteria queryCriteria = new QueryCriteria();
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
-        ApiResponse<Page<MallItemNailVo>> apiResponse= mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        ApiResponse<Page<MallItemNailVo>> apiResponse = mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         Page<MallItemNailVo> mallItemNailVoPage = apiResponse.getBody();
         List<Integer> ids = new ArrayList<>();
-        if(CollectionUtils.isEmpty(mallItemNailVoPage.getList())){
+        if (CollectionUtils.isEmpty(mallItemNailVoPage.getList())) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "未查找到校长培训列表!");
         }
         for (MallItemNailVo mno : mallItemNailVoPage.getList()) {
@@ -78,18 +80,17 @@ public class MallItemExtController {
         return resultData;
     }
 
-    @RequestMapping(value = "/nail/detail",method = RequestMethod.GET)
-    public ResultData queryMallItemNailDetail(@RequestParam Integer mallItemId)
-    {
+    @RequestMapping(value = "/nail/detail", method = RequestMethod.GET)
+    public ResultData queryMallItemNailDetail(@RequestParam Integer mallItemId) {
         ResultData resultData = new ResultData();
-        ApiResponse<MallItemNailVo> apiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId,MallItemConstant.ShelvesStatus.ON);
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        ApiResponse<MallItemNailVo> apiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId, MallItemConstant.ShelvesStatus.ON);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         MallItemNailVo mallItemNailVo = apiResponse.getBody();
         //已报名数量查询
         ApiResponse<List<ItemOrderStatisVo>> apiResponse1 = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(mallItemNailVo.getMallItemId()));
-        if (apiResponse1.getRetCode() != ApiRetCode.SUCCESS_CODE){
+        if (apiResponse1.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed("查询已报名数量失败");
         }
         List<ItemOrderStatisVo> itemOrderStatisVos = apiResponse1.getBody();
@@ -103,15 +104,15 @@ public class MallItemExtController {
         resultData.setBody(mallItemNailVo);
         return resultData;
     }
-    @RequestMapping(value = "/nail/confirm",method = RequestMethod.GET)
-    public ResultData  confirmMallItemNail(@RequestParam Integer mallItemId,@RequestParam Integer goodsPieces)
-    {
-        if(goodsPieces < 1){
+
+    @RequestMapping(value = "/nail/confirm", method = RequestMethod.GET)
+    public ResultData confirmMallItemNail(@RequestParam Integer mallItemId, @RequestParam Integer goodsPieces) {
+        if (goodsPieces < 1) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "报名人数错误");
         }
         ResultData resultData = new ResultData();
-        ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId,goodsPieces);
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId, goodsPieces);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();

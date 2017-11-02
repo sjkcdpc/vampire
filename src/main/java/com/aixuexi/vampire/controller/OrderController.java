@@ -5,7 +5,9 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
-import com.aixuexi.vampire.util.*;
+import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.Constants;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
@@ -15,20 +17,15 @@ import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
+import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.model.GoodsOrder;
-import com.gaosi.api.revolver.model.OrderDetail;
-import com.gaosi.api.revolver.util.ExpressCodeUtil;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
-import com.gaosi.api.revolver.vo.OrderDetailVo;
-import com.gaosi.api.vulcan.facade.GoodsPicServiceFacade;
-import com.gaosi.api.vulcan.model.GoodsPic;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
+import com.gaosi.api.revolver.vo.OrderFollowVo;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +36,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -64,12 +64,13 @@ public class OrderController {
     private InstitutionService institutionService;
 
     @Resource
-    private GoodsPicServiceFacade goodsPicServiceFacade;
+    private TaskProducerApi taskProducerApi;
+
+    @Resource
+    private SubOrderServiceFacade subOrderServiceFacade;
 
     @Resource
     private BaseMapper baseMapper;
-    @Resource
-    private TaskProducerApi taskProducerApi;
 
     /**
      * 订单详情
@@ -77,50 +78,21 @@ public class OrderController {
      * @param orderId 订单号
      * @return
      */
-    @RequestMapping(value = "/detail",method = RequestMethod.GET)
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData detail(@RequestParam String orderId) {
-        if (StringUtils.isBlank(orderId)){
+        if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数错误");
         }
-        ApiResponse<GoodsOrder> apiResponse = orderServiceFacade.getGoodsOrderById(orderId);
+        ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
         //响应错误直接返回
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
         }
-        GoodsOrder goodsOrder = apiResponse.getBody();
-        if(!ExpressCodeUtil.convertExpressCode(goodsOrder)){
-            Map<String, String> expressMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
-            String express = expressMap.get(goodsOrder.getExpressCode());
-            goodsOrder.setExpressCode(express == null ? "未知发货服务" : express);
-        }
-        GoodsOrderVo goodsOrderVo = baseMapper.map(goodsOrder,GoodsOrderVo.class);;
-        dealGoodsOrder(goodsOrderVo);
-        List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
-        addGoodsPics(orderDetailVos);
+        GoodsOrderVo goodsOrderVo = apiResponse.getBody();
+        List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
+        // 订单详情需要加载图片
+        orderManager.dealGoodsOrderVos(goodsOrderVos, true);
         return ResultData.successed(goodsOrderVo);
-    }
-    /**
-     * ruanyj 添加商品图片
-     */
-    private void addGoodsPics(List<OrderDetailVo> orderDetailVos) {
-        if (CollectionUtils.isNotEmpty(orderDetailVos)) {
-            List<Integer> goodsIds = Lists.newArrayList();
-            for (OrderDetailVo orderDetailVo : orderDetailVos) {
-                Integer goodsId = orderDetailVo.getGoodsId();
-                goodsIds.add(goodsId);
-            }
-            // goodsId -> goodsPics
-            List<GoodsPic> allGoodsPics = goodsPicServiceFacade.findGoodsPicByGoodsIds(goodsIds).getBody();
-            Map<Integer, List<GoodsPic>> picMap = CollectionCommonUtil.groupByList(allGoodsPics,"getGoodsId",Integer.class);
-            for (OrderDetailVo orderDetailVo : orderDetailVos) {
-                Integer goodsId = orderDetailVo.getGoodsId();
-                List<GoodsPic> singleGoodsPics = picMap.get(goodsId);
-                if(singleGoodsPics!=null){
-                    Collections.sort(singleGoodsPics);
-                }
-                orderDetailVo.setGoodsPics(singleGoodsPics);
-            }
-        }
     }
 
     /**
@@ -128,7 +100,7 @@ public class OrderController {
      *
      * @return
      */
-    @RequestMapping(value = "/confirm",method = RequestMethod.GET)
+    @RequestMapping(value = "/confirm", method = RequestMethod.GET)
     public ResultData confirm() {
         ResultData resultData = new ResultData();
 
@@ -147,9 +119,9 @@ public class OrderController {
      * @param goodsTypeIds 商品类型ID
      * @return
      */
-    @RequestMapping(value = "/freight",method = RequestMethod.GET)
+    @RequestMapping(value = "/freight", method = RequestMethod.GET)
     public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
-        if(provinceId == null) {
+        if (provinceId == null) {
             return ResultData.failed("收货人地址有误! ");
         }
         ResultData resultData = new ResultData();
@@ -173,7 +145,7 @@ public class OrderController {
      * @param token        财务token
      * @return
      */
-    @RequestMapping(value = "/submit",method = RequestMethod.POST)
+    @RequestMapping(value = "/submit", method = RequestMethod.POST)
     public ResultData submit(@RequestParam Integer consigneeId, String receivePhone,
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
@@ -198,14 +170,14 @@ public class OrderController {
             return resultData;
         }
         //发送消息
-        try{
-            Map<String, Object> map =new HashMap<>();
+        try {
+            Map<String, Object> map = new HashMap<>();
             map.put("insId", UserHandleUtil.getInsId());
             map.put("userId", UserHandleUtil.getUserId());
             map.put("taskCode", "84FA0A9E96C086F232108FA87A711301");
             taskProducerApi.headMasterProducer(map);
-        }catch (Exception e){
-            logger.error("创建订单后,发送消息失败",e);
+        } catch (Exception e) {
+            logger.error("创建订单后,发送消息失败", e);
         }
 
         return resultData;
@@ -213,12 +185,13 @@ public class OrderController {
 
     /**
      * 确认收货
+     *
      * @param orderId
      * @return
      */
-    @RequestMapping(value = "/receive",method = RequestMethod.POST)
-    public ResultData receive(@RequestParam String orderId){
-        if (StringUtils.isBlank(orderId)){
+    @RequestMapping(value = "/receive", method = RequestMethod.POST)
+    public ResultData receive(@RequestParam String orderId) {
+        if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数不能为空");
         }
         GoodsOrder goodsOrder = new GoodsOrder();
@@ -226,7 +199,7 @@ public class OrderController {
         goodsOrder.setStatus(OrderConstant.Status.COMPLETED);
         ApiResponse<?> apiResponse = orderServiceFacade.updateOrder(goodsOrder);
         //响应错误直接返回
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE){
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
         }
         return ResultData.successed();
@@ -244,28 +217,30 @@ public class OrderController {
     }
 
     /**
-     * 计算订单总件数/总金额等信息
-     * @param goodsOrderVo
+     * 订单跟踪
+     *
+     * @param orderId
+     * @return
      */
-    private void dealGoodsOrder(GoodsOrderVo goodsOrderVo){
-        // 订单总金额
-        goodsOrderVo.setPayAmount(CalculateUtil.add(goodsOrderVo.getConsumeAmount(), goodsOrderVo.getFreight()));
-        //商品总件数
-        int goodsPieces = 0;
-        List<Integer> goodsTypeIds = Lists.newArrayList();
-        for (OrderDetail orderDetail : goodsOrderVo.getOrderDetails()) {
-            goodsPieces += orderDetail.getNum();
-            if (orderDetail.getGoodTypeId() != null) goodsTypeIds.add(orderDetail.getGoodTypeId());
+    @RequestMapping(value = "/logistics", method = RequestMethod.GET)
+    public ResultData getLogisticsData(@RequestParam String orderId) {
+        ApiResponse<?> apiResponse;
+        if (orderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
+            apiResponse = subOrderServiceFacade.getSubGoodsOrderById(orderId);
+        } else {
+            apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
         }
-        Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = orderManager.findGoodsByTypeIds(goodsTypeIds);
-        for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
-            ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
-            orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
-            orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
+        //响应错误直接返回
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            return ResultData.failed(apiResponse.getMessage());
         }
-        goodsOrderVo.setGoodsPieces(goodsPieces);
+        OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
+        Map<String, String> expressNameMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
+        orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()));
+        return ResultData.successed(orderFollowVo);
     }
-    /**
+
+    /*
      * 验证是否试用机构
      */
     private void validateInsType() {

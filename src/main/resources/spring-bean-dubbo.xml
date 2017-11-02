@@ -28,6 +28,8 @@
     <!-- 订单中心相关接口 -->
     <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ItemOrderServiceFacade" id="itemOrderServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.InvServiceFacade" id="invServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
     <!-- 在线商城相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
@@ -36,8 +38,7 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemExtServiceFacade" id="mallItemExtServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.NailOrderServiceFacade" id="nailOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallCategoryServiceFacade" id="mallCategoryServiceFacade" />
-    <!--财务接口-->
-    <!--<dubbo:reference interface="com.aixuexi.account.api.AxxBankService" id="axxBankService"/>-->
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPeriodServiceFacade" id="goodsPeriodServiceFacade" />
 
     <!--基础数据-->
     <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi" />
