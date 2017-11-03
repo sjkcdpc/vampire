@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public ResultData handleBusinessException(BusinessException e) {
-        logger.error("handleBusinessException : " + e.getMessage(), e);
+        logger.warn("handleBusinessException : " + e.getMessage(), e);
         return ResultData.failed(e.getMessage());
     }
 
