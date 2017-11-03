@@ -235,16 +235,12 @@ public class OrderManager {
         ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrder, token, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
-            logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
-            try {
-                List<Integer> shoppingCartListIds = Lists.newArrayList();
-                for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-                    shoppingCartListIds.add(shoppingCartList.getId());
-                }
-                shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
-            } catch (Throwable e) {
-                logger.error("submitOrder --> clearShoppingCart fail, orderId : {}", apiResponse.getBody());
+            logger.info("submitOrder --> simpleGoodsOrderVo : {}", simpleGoodsOrderVo);
+            List<Integer> shoppingCartListIds = Lists.newArrayList();
+            for (ShoppingCartList shoppingCartList : shoppingCartLists) {
+                shoppingCartListIds.add(shoppingCartList.getId());
             }
+            shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
             return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), getTipsByExpress(express), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
         } else {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
@@ -361,7 +357,6 @@ public class OrderManager {
                 // 省ID
                 Integer provinceId = addressDTOS.get(0).getProvinceId();
                 apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, express, goodsPieces);
-                logger.info("submitOrder --> freight : {}", apiResponse);
                 if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
                     throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
                 }
