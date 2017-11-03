@@ -261,17 +261,23 @@ public class GoodsController {
     private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
         Set<String> barCodeList = new HashSet<>();
         for(GoodsVo goodsVo : goodsVoList){
-            List<GoodsTypeCommonVo> typeCommonVos = ( List<GoodsTypeCommonVo>)goodsVo.getGoodsGrades();
-            for(GoodsTypeCommonVo typeCommonVo:typeCommonVos){
-                barCodeList.add(typeCommonVo.getBarCode());
+            if(CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                    barCodeList.add(typeCommonVo.getBarCode());
+                }
             }
         }
-        ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<String>(barCodeList));
-        Map<String, Integer> invMap = apiResponse.getBody();
-        for(GoodsVo goodsVo : goodsVoList){
-            List<GoodsTypeCommonVo> typeCommonVos = ( List<GoodsTypeCommonVo>)goodsVo.getGoodsGrades();
-            for(GoodsTypeCommonVo typeCommonVo:typeCommonVos){
-                typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+        if(CollectionUtils.isNotEmpty(barCodeList)) {
+            ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<String>(barCodeList));
+            Map<String, Integer> invMap = apiResponse.getBody();
+            for (GoodsVo goodsVo : goodsVoList) {
+                if(CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+                    }
+                }
             }
         }
     }
