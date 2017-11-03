@@ -62,10 +62,10 @@ public class UserController {
                     menu.put(p, 1);
                 }
                 // 高斯杯权限
-              /*  if (userService.checkInstitutionHaveGsb(institutionId)) {
+                if (userService.checkInstitutionHaveGsb(institutionId)) {
                     menu.put("gaosibei", 1);
-                }*/
-                menu.put("gaosibei", 1);
+                }
+//                menu.put("gaosibei", 1);
                 result.put("menu", menu);
                 result.put("roles", UserSessionHandler.getRoles());
                 resultData.setBody(result);
