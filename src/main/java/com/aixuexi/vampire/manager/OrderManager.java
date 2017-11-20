@@ -658,12 +658,12 @@ public class OrderManager {
                     // 拆单的处理子订单
                     List<SubGoodsOrderVo> subGoodsOrderVos = goodsOrderVo.getSubGoodsOrderVos();
                     for (SubGoodsOrderVo subGoodsOrderVo : subGoodsOrderVos) {
-                        goodsTypeIds = CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodTypeId",Integer.class);
-                        goodsIds = CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodsId",Integer.class);
+                        goodsTypeIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodTypeId",Integer.class));
+                        goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodsId",Integer.class));
                     }
                 }else {
-                    goodsTypeIds = CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodTypeId",Integer.class);
-                    goodsIds = CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class);
+                    goodsTypeIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodTypeId",Integer.class));
+                    goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class));
                 }
             }
             Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = this.findGoodsByTypeIds(new ArrayList<>(goodsTypeIds));
