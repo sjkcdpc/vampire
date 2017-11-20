@@ -16,11 +16,14 @@ import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.OrderConstant;
+import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
+import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
@@ -54,13 +57,13 @@ public class OrderController {
     @Resource(name = "orderManager")
     private OrderManager orderManager;
 
-    @Autowired
+    @Resource
     private OrderServiceFacade orderServiceFacade;
 
     @Resource(name = "dictionaryManager")
     private DictionaryManager dictionaryManager;
 
-    @Autowired
+    @Resource
     private InstitutionService institutionService;
 
     @Resource
@@ -68,6 +71,9 @@ public class OrderController {
 
     @Resource
     private SubOrderServiceFacade subOrderServiceFacade;
+
+    @Resource
+    private ExpressServiceFacade expressServiceFacade;
 
     @Resource
     private BaseMapper baseMapper;
@@ -114,13 +120,13 @@ public class OrderController {
 
     /**
      * 计算运费
-     *
-     * @param provinceId   省ID
-     * @param goodsTypeIds 商品类型ID
+     * @param provinceId 省id
+     * @param areaId 区id
+     * @param goodsTypeIds 商品类型id
      * @return
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
-    public ResultData freight(@RequestParam Integer provinceId, Integer[] goodsTypeIds) {
+    public ResultData freight(@RequestParam Integer provinceId,@RequestParam Integer areaId, Integer[] goodsTypeIds) {
         if (provinceId == null) {
             return ResultData.failed("收货人地址有误! ");
         }
@@ -130,7 +136,7 @@ public class OrderController {
         Integer insId = UserHandleUtil.getInsId();
         List<Integer> goodsTypeIdList = (goodsTypeIds == null) ? null : Lists.newArrayList(goodsTypeIds);
 
-        FreightVo freightVo = orderManager.reloadFreight(userId, insId, provinceId, goodsTypeIdList);
+        FreightVo freightVo = orderManager.reloadFreight(userId, insId, provinceId,areaId, goodsTypeIdList);
         resultData.setBody(freightVo);
         return resultData;
     }
@@ -230,13 +236,18 @@ public class OrderController {
         } else {
             apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
         }
-        //响应错误直接返回
+        //查询订单跟踪响应错误
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
         }
         OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
-        Map<String, String> expressNameMap = dictionaryManager.selectDictMapByType(Constants.DELIVERY_COMPANY_DICT_TYPE);
-        orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()));
+        ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
+        //查询快递信息响应错误
+        if (expressResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            return ResultData.failed(expressResponse.getMessage());
+        }
+        Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(),"getCode",String.class) ;
+        orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
         return ResultData.successed(orderFollowVo);
     }
 

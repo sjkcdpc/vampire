@@ -1,8 +1,14 @@
 package com.aixuexi.vampire.util;
 
+import com.gaosi.api.revolver.constant.ExpressConstant;
+import com.gaosi.api.vulcan.vo.ConfirmExpressVo;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by gaoxinzhong on 2017/6/2.
@@ -13,11 +19,6 @@ public final class Constants {
      * 快递公司字典TYPE
      */
     public static final String DELIVERY_COMPANY_DICT_TYPE = "DELIVERY_COMPANY";
-
-    /**
-     * 库存销售模式
-     */
-    public static final String MALL_SALES_MODEL = "mall_sales_mode";
 
     //机构类型 0 正式 1测试机构 2试用机构 3外研英语机构
     public static final List<Integer> INS_TYPES = Lists.newArrayList(1, 2);
@@ -37,4 +38,25 @@ public final class Constants {
 
     //订单详情中商品名称拼接的分隔符
     public static final String ORDERDETAIL_NAME_DIV ="-";
+
+    /**
+     * 配送方式
+     */
+    public static final List<ConfirmExpressVo> EXPRESS_TYPE = new ArrayList<>();
+    static{
+        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.SHUNFENG.getCode(),ExpressConstant.Express.SHUNFENG.getName(), StringUtils.EMPTY));
+        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.PUKUAI.getCode(),ExpressConstant.Express.PUKUAI.getName(), StringUtils.EMPTY));
+        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.WULIU.getCode(),ExpressConstant.Express.WULIU.getName(), StringUtils.EMPTY));
+    }
+
+    /**
+     * 学期映射
+     */
+    public final static Map<Integer, Integer> PERIOD_MAP = new HashMap<>();
+    static {
+        PERIOD_MAP.put(1, 8);//春 1000
+        PERIOD_MAP.put(2, 4);//暑 0100
+        PERIOD_MAP.put(3, 2);//秋 0010
+        PERIOD_MAP.put(4, 1);//寒 0001
+    }
 }

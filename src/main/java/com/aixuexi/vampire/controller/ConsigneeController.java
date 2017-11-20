@@ -5,19 +5,17 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.basicdata.AreaApi;
+import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 /**
  * 收货地址管理
@@ -30,8 +28,8 @@ public class ConsigneeController {
     @Autowired
     private ConsigneeServiceFacade consigneeServiceFacade;
 
-    @Autowired
-    private AreaApi areaApi;
+    @Resource
+    private DistrictApi districtApi;
 
     @Resource
     private BaseMapper baseMapper;
@@ -118,12 +116,9 @@ public class ConsigneeController {
         ConsigneeVo consigneeVo = baseMapper.map(resConsignee, ConsigneeVo.class);
 
         Integer areaId = consigneeVo.getAreaId();
-        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(areaId);
-
-        List<AddressDTO> body = apiResponse.getBody();
-        if (CollectionUtils.isNotEmpty(body)) {
-            AddressDTO addressDTO = body.get(0);
-
+        ApiResponse<AddressDTO> apiResponse = districtApi.getAncestryById(areaId);
+        AddressDTO addressDTO = apiResponse.getBody();
+        if (addressDTO != null) {
             consigneeVo.setProvinceId(addressDTO.getProvinceId());
             consigneeVo.setProvince(addressDTO.getProvince());
             consigneeVo.setCityId(addressDTO.getCityId());

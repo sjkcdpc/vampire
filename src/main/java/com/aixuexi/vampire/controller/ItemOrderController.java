@@ -23,18 +23,19 @@ import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallCategoryServiceFacade;
-import com.gaosi.api.vulcan.facade.NailOrderServiceFacade;
+import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
+import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
 import com.gaosi.api.vulcan.model.MallCategory;
+import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
+import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.vulcan.vo.CategoryVo;
-import com.gaosi.api.vulcan.vo.NailOrderVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -60,19 +61,19 @@ public class ItemOrderController {
     @Resource(name = "orderManager")
     private OrderManager orderManager;
 
-    @Autowired
+    @Resource
     private FinancialAccountService finAccService;
 
-    @Autowired
+    @Resource
     private OrderServiceFacade orderServiceFacade;
 
-    @Autowired
+    @Resource
     private ItemOrderServiceFacade itemOrderServiceFacade;
 
-    @Autowired
-    private NailOrderServiceFacade nailOrderServiceFacade;
+    @Resource
+    private MallItemExtServiceFacade mallItemExtServiceFacade;
 
-    @Autowired
+    @Resource
     private MallCategoryServiceFacade mallCategoryServiceFacade;
 
     @Resource(name = "dictionaryManager")
@@ -104,7 +105,7 @@ public class ItemOrderController {
             //默认加载教材订单列表
             queryItemOrderDto.setCategoryId(MallItemConstant.Category.JCZB.getId());
         }
-        if (queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.LDPXSC.getId())) {
+        if (queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.LDPXSC.getId())||queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.DZFW.getId())) {
             return queryLDPXSC(queryItemOrderDto);
         }
         if (queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.JCZB.getId())) {
@@ -174,7 +175,7 @@ public class ItemOrderController {
 
 
     /**
-     * 提交订单
+     * 钉子提交订单
      *
      * @param itemId
      * @param itemCount
@@ -187,21 +188,18 @@ public class ItemOrderController {
             return ResultData.failed("参数错误");
         }
         //根据商品id查询商品
-        ApiResponse<NailOrderVo> voApiResponse = nailOrderServiceFacade.queryMallItemNail(itemId);
+        ApiResponse<MallItemNailVo> voApiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(itemId,MallItemConstant.ShelvesStatus.ON);
         if (voApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(voApiResponse.getMessage());
         }
         if (voApiResponse.getBody() == null) {
             return ResultData.failed("未查询到该校长培训");
         }
-        NailOrderVo nailOrderVo = voApiResponse.getBody();
-        if (nailOrderVo.getShelvesStatus() == MallItemConstant.ShelvesStatus.OFF) {
-            return ResultData.failed("该校长培训已下架");
-        }
-        if (nailOrderVo.getSignUpStatus() == MallItemConstant.SignUpStatus.NO_START) {
+        MallItemNailVo mallItemNailVo = voApiResponse.getBody();
+        if (mallItemNailVo.getSignUpStatus() == MallItemConstant.SignUpStatus.NO_START) {
             return ResultData.failed("报名未开始");
         }
-        if (nailOrderVo.getSignUpStatus() == MallItemConstant.SignUpStatus.FINISHED) {
+        if (mallItemNailVo.getSignUpStatus() == MallItemConstant.SignUpStatus.FINISHED) {
             return ResultData.failed("报名已结束");
         }
         //已报名数量查询
@@ -210,19 +208,42 @@ public class ItemOrderController {
             return ResultData.failed("查询已报名数量失败");
         }
         //仅在限制报名人数时做判断
-        if (nailOrderVo.getSignUpNum() > 0) {
+        if (mallItemNailVo.getSignUpNum() > 0) {
             List<ItemOrderStatisVo> itemOrderStatisVos = apiResponse.getBody();
             Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
             int signedUpNum = map.get(itemId).getSignedTotal();
             //计算剩余数量
-            int remain = nailOrderVo.getSignUpNum() - signedUpNum;
+            int remain = mallItemNailVo.getSignUpNum() - signedUpNum;
             if (remain < itemCount) {
                 int overCount = itemCount - remain;
                 return ResultData.failed("超过报名数量:" + overCount);
             }
         }
+        MallItem mallItem = baseMapper.map(mallItemNailVo,MallItem.class);
+        String orderId = itemOrderManager.submit(mallItem, itemCount, UserHandleUtil.getInsId(),mallItemNailVo.getPrice(),mallItemNailVo.getOriginalPrice());
+        return ResultData.successed(orderId);
+    }
 
-        String orderId = itemOrderManager.submit(nailOrderVo, itemCount, UserHandleUtil.getInsId());
+    /**
+     * 定制服务提交订单
+     *
+     * @param itemId
+     * @param itemCount
+     * @return
+     */
+    @RequestMapping(value = "/customService/submit", method = RequestMethod.POST)
+    public ResultData customServiceSubmit(@RequestParam Integer itemId, @RequestParam Integer itemCount) {
+        logger.info("userId=[{}] customServiceSubmit, itemId=[{}], itemCount=[{}].", UserSessionHandler.getId(), itemId, itemCount);
+        if (itemId == null || itemCount == null) {
+            return ResultData.failed("参数错误");
+        }
+        ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(itemId,itemCount);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            return ResultData.failed(apiResponse.getMessage());
+        }
+        ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
+        MallItem mallItem = baseMapper.map(confirmCustomServiceVo,MallItem.class);
+        String orderId = itemOrderManager.submit(mallItem, itemCount, UserHandleUtil.getInsId(),confirmCustomServiceVo.getPrice(),confirmCustomServiceVo.getPrice());
         return ResultData.successed(orderId);
     }
 

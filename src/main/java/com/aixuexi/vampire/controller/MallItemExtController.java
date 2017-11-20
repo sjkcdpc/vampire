@@ -14,9 +14,9 @@ import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
+import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.ConfirmMallItemNailVo;
-import com.gaosi.api.vulcan.vo.MallItemNailVo;
+import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -124,6 +124,48 @@ public class MallItemExtController {
         confirmMallItemNailVo.setBalance(balance);
 
         resultData.setBody(confirmMallItemNailVo);
+        return resultData;
+    }
+
+    @RequestMapping(value = "/customService", method = RequestMethod.GET)
+    public ResultData queryCustomServiceList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
+        ResultData resultData = new ResultData();
+        QueryCriteria queryCriteria = new QueryCriteria();
+        queryCriteria.setPageNum(pageNum);
+        queryCriteria.setPageSize(pageSize);
+        queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
+        queryCriteria.setCategoryId(MallItemConstant.Category.DZFW.getId());
+        ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria,UserHandleUtil.getInsId());
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
+        Page<MallItemCustomServiceVo> customServiceVoPage = apiResponse.getBody();
+        if (CollectionUtils.isEmpty(customServiceVoPage.getList())) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "未查找到定制服务列表!");
+        }
+        resultData.setBody(customServiceVoPage);
+        return resultData;
+    }
+
+    @RequestMapping(value = "/customService/confirm", method = RequestMethod.GET)
+    public ResultData confirmCustomService(@RequestParam Integer mallItemId,@RequestParam Integer goodsPieces ){
+        if (goodsPieces < 1) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "商品数量错误");
+        }
+        ResultData resultData = new ResultData();
+        ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(mallItemId, goodsPieces);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
+        ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
+        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
+        if (rr == null) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
+        }
+        Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
+        confirmCustomServiceVo.setBalance(balance);
+
+        resultData.setBody(confirmCustomServiceVo);
         return resultData;
     }
 }

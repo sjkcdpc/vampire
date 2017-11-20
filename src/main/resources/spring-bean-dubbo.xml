@@ -30,18 +30,18 @@
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ItemOrderServiceFacade" id="itemOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.InvServiceFacade" id="invServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.ExpressServiceFacade" id="expressServiceFacade" />
     <!-- 在线商城相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemExtServiceFacade" id="mallItemExtServiceFacade" />
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.NailOrderServiceFacade" id="nailOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallCategoryServiceFacade" id="mallCategoryServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPeriodServiceFacade" id="goodsPeriodServiceFacade" />
 
     <!--基础数据-->
-    <dubbo:reference interface="com.gaosi.api.basicdata.AreaApi" id="areaApi" />
+    <dubbo:reference id="districtApi" interface="com.gaosi.api.basicdata.DistrictApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi" />
@@ -51,6 +51,7 @@
 
     <!-- 机构服务 -->
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.InstitutionService" id="institutionService"/>
+    <dubbo:reference interface="com.gaosi.api.independenceDay.service.GroupInstitutionService" id="groupInstitutionService"/>
     <dubbo:reference interface="com.gaosi.api.warcraft.mq.TaskProducerApi" id="taskProducerApi"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.UserService" id="userServiceIndependenceDay"  />
 </beans>

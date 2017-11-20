@@ -17,12 +17,17 @@ import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.constant.OrderConstant;
+import com.gaosi.api.revolver.constant.PayTypeConstant;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.model.ItemOrderDetail;
 import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
-import com.gaosi.api.vulcan.vo.NailOrderVo;
+import com.gaosi.api.vulcan.constant.MallItemConstant;
+import com.gaosi.api.vulcan.model.MallItem;
+import com.gaosi.api.vulcan.model.MallItemSku;
+import com.gaosi.api.vulcan.model.MallSku;
+import com.gaosi.api.vulcan.vo.MallItemVo;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,17 +66,17 @@ public class ItemOrderManager {
     /**
      * 订单提交
      *
-     * @param nailOrderVo 商品
+     * @param mallItem 商品
      * @param itemCount   商品数量
      * @return
      */
-    public String submit(NailOrderVo nailOrderVo, Integer itemCount, Integer insId) {
+    public String submit(MallItem mallItem, Integer itemCount, Integer insId ,Double price,Double originalPrice) {
         //查询当前机构账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if (rr == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
-        Double consumeCount = nailOrderVo.getPrice() * itemCount;
+        Double consumeCount = price * itemCount;
         Double totalCount = consumeCount * 10000;//根据商品现价和数量计算花费
         Long remain = rr.getUsableRemain();
         if (totalCount.longValue() > remain) {
@@ -83,18 +88,18 @@ public class ItemOrderManager {
         itemOrder.setUserId(UserHandleUtil.getUserId());
         itemOrder.setConsigneeName(UserSessionHandler.getUsername());//虚拟商品没有收货人，默认收货人为当前用户
         itemOrder.setStatus(OrderConstant.Status.NO_PAY);//只要提交订单就是待支付，确认支付后再更改状态
-        itemOrder.setCategoryId(nailOrderVo.getCategoryId());
+        itemOrder.setCategoryId(mallItem.getCategoryId());
         itemOrder.setConsumeCount(consumeCount);
 
         //订单详情拼接
         List<ItemOrderDetail> itemOrderDetails = Lists.newArrayList();
         ItemOrderDetail itemOrderDetail = new ItemOrderDetail();
-        itemOrderDetail.setItemId(nailOrderVo.getId());
-        itemOrderDetail.setItemName(nailOrderVo.getName());
-        itemOrderDetail.setItemPrice(nailOrderVo.getPrice());
+        itemOrderDetail.setItemId(mallItem.getId());
+        itemOrderDetail.setItemName(mallItem.getName());
+        itemOrderDetail.setItemPrice(price);
         itemOrderDetail.setItemCount(itemCount);
-        itemOrderDetail.setDiscount(nailOrderVo.getOriginalPrice() - nailOrderVo.getPrice());
-        itemOrderDetail.setBusinessId("nail");
+        itemOrderDetail.setDiscount(originalPrice - price);
+        itemOrderDetail.setBusinessId(MallItemConstant.Category.getCode(mallItem.getCategoryId()));
         itemOrderDetails.add(itemOrderDetail);
 
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
@@ -133,7 +138,7 @@ public class ItemOrderManager {
         proxyParams.setDiscount(100);
         proxyParams.setOperatorId(UserHandleUtil.getUserId());
         proxyParams.setOperatorType(1);
-        proxyParams.setOptionItemEnum(Dictionary.OptionItemEnum.PX_DEDUCT_LAND);
+        proxyParams.setOptionItemEnum(PayTypeConstant.PayType.getOptionItemEnum(itemOrder.getCategoryId()));
         proxyParams.setToken(token);
         proxyParams.setOptionDesc(optionDesc);
         proxyHandler.CostAidou(proxyParams, this.financialOperation(orderId));

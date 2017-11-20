@@ -9,7 +9,7 @@ import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.basicdata.AreaApi;
+import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
@@ -18,9 +18,10 @@ import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
+import com.gaosi.api.revolver.dto.QueryExpressPriceDto;
+import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.revolver.model.OrderDetail;
-import com.gaosi.api.revolver.util.ExpressCodeUtil;
+import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.*;
@@ -65,8 +66,8 @@ public class OrderManager {
     @Autowired
     private FinancialAccountService finAccService;
 
-    @Autowired
-    private AreaApi areaApi;
+    @Resource
+    private DistrictApi districtApi;
 
     @Autowired
     private GoodsServiceFacade goodsServiceFacade;
@@ -92,14 +93,9 @@ public class OrderManager {
     @Resource
     private GoodsPeriodServiceFacade goodsPeriodServiceFacade;
 
-    private final static Map<Integer, Integer> periodMap = new HashMap<>();//学期映射
+    @Resource
+    private ExpressServiceFacade expressServiceFacade;
 
-    static {
-        periodMap.put(1, 8);//春 1000
-        periodMap.put(2, 4);//暑 0100
-        periodMap.put(3, 2);//秋 0010
-        periodMap.put(4, 1);//寒 0001
-    }
 
     /**
      * 核对订单信息
@@ -121,16 +117,13 @@ public class OrderManager {
         }
         confirmOrderVo.setConsignees(consigneeVos);
         // 2. 快递公司
-        confirmOrderVo.setExpress(expressUtil.getExpress());
+        confirmOrderVo.setExpress(new ArrayList<>(Constants.EXPRESS_TYPE));
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
         List<Integer> goodsTypeIds = Lists.newArrayList();
-        int goodsPieces = 0; // 商品总件数
-        double goodsAmount = 0; // 总金额
-        double weight = 0; // 商品重量
         // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartList shoppingCartList : shoppingCartLists) {
@@ -146,6 +139,9 @@ public class OrderManager {
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
+        int goodsPieces = 0; // 商品总件数
+        double goodsAmount = 0; // 总金额
+        double weight = 0; // 商品重量
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         for (ConfirmGoodsVo goodsVo : goodsVos) {
             Integer goodsTypeId = goodsVo.getGoodsTypeId();
@@ -164,10 +160,7 @@ public class OrderManager {
         confirmOrderVo.setGoodsItem(goodsVos);
         confirmOrderVo.setGoodsPieces(goodsPieces);
         confirmOrderVo.setGoodsAmount(goodsAmount);
-        // 计算邮费
-        // Integer provinceId = 0;
-        // if (CollectionUtils.isNotEmpty(consigneeVos)) provinceId = consigneeVos.get(0).getProvinceId();
-        //calcFreight(provinceId, weight, confirmOrderVo.getExpress(),goodsPieces);
+        confirmOrderVo.setGoodsWeight(weight);
         // 5. 账户余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if (rr == null) {
@@ -178,8 +171,6 @@ public class OrderManager {
         // 6. 获取token
         confirmOrderVo.setToken(finAccService.getTokenForFinancial());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
-        // 清空之前计算的邮费
-        defaultExpressForConfirmOrder(confirmOrderVo.getExpress(), goodsPieces);
         return confirmOrderVo;
     }
 
@@ -213,10 +204,10 @@ public class OrderManager {
         }
 
         // 创建订单对象
-        GoodsOrderVo goodsOrder = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
-        logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrder));
+        GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
+        logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrderVo));
         // 支付金额 = 商品金额 + 邮费
-        Double amount = (goodsOrder.getConsumeAmount() + goodsOrder.getFreight()) * 10000;
+        Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
         Long remain = rr.getUsableRemain();
         if (amount.longValue() > remain) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
@@ -232,16 +223,16 @@ public class OrderManager {
         }
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
         // 创建订单
-        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrder, token, syncToWms);
+        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token, syncToWms);
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
-            logger.info("submitOrder --> simpleGoodsOrderVo : {}", simpleGoodsOrderVo);
+            logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
             List<Integer> shoppingCartListIds = Lists.newArrayList();
             for (ShoppingCartList shoppingCartList : shoppingCartLists) {
                 shoppingCartListIds.add(shoppingCartList.getId());
             }
             shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
-            return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), getTipsByExpress(express), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
+            return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
         } else {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
@@ -266,7 +257,7 @@ public class OrderManager {
             throw new BusinessException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
         // 订单
-        GoodsOrderVo goodsOrder = new GoodsOrderVo();
+        GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
         // 商品类型ID
         List<Integer> goodsTypeIds = Lists.newArrayList();
         // 商品件数
@@ -315,58 +306,57 @@ public class OrderManager {
             orderDetails.add(orderDetail);
         }
         handlePeriod(orderDetails);
-        goodsOrder.setOrderDetailVos(orderDetails);
-        goodsOrder.setAreaId(consignee.getAreaId());
-        ApiResponse<List<AddressDTO>> ad = areaApi.findAddressByIds(consignee.getAreaId());
-        goodsOrder.setConsigneeName(consignee.getName());
-        goodsOrder.setConsigneePhone(consignee.getPhone());
+        goodsOrderVo.setOrderDetailVos(orderDetails);
+        goodsOrderVo.setAreaId(consignee.getAreaId());
+        ApiResponse<AddressDTO> ad = districtApi.getAncestryById(consignee.getAreaId());
+        goodsOrderVo.setConsigneeName(consignee.getName());
+        goodsOrderVo.setConsigneePhone(consignee.getPhone());
         //ruanyj 收货人地址补全
-        AddressDTO add = ad.getBody().get(0);
+        AddressDTO add = ad.getBody();
         StringBuilder preAddress = new StringBuilder();
         if (add != null) {
-            preAddress.append(add.getProvince() == null ? "" : add.getProvince());
-            preAddress.append(add.getCity() == null ? "" : add.getCity());
-            preAddress.append(add.getDistrict() == null ? "" : add.getDistrict());
+            preAddress.append(add.getProvince() == null ? StringUtils.EMPTY : add.getProvince());
+            preAddress.append(add.getCity() == null ? StringUtils.EMPTY : add.getCity());
+            preAddress.append(add.getDistrict() == null ? StringUtils.EMPTY : add.getDistrict());
         }
         if (StringUtils.isBlank(preAddress.toString())) {
-            goodsOrder.setConsigneeAddress(consignee.getAddress());
+            goodsOrderVo.setConsigneeAddress(consignee.getAddress());
         } else {
-            goodsOrder.setConsigneeAddress(preAddress.toString() + " " + consignee.getAddress());
+            goodsOrderVo.setConsigneeAddress(preAddress.toString() + " " + consignee.getAddress());
         }
-        goodsOrder.setConsumeAmount(goodsAmount); // 商品总金额
-        goodsOrder.setInstitutionId(insId);
-        goodsOrder.setRemark(StringUtils.EMPTY);
-        goodsOrder.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
-        goodsOrder.setUserId(userId);
-        ApiResponse<List<HashMap<String, Object>>> apiResponse;
-        boolean isFree = false; // 是否免物流费
-        if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL) && goodsPieces >= 100) {
-            goodsOrder.setExpressCode(OrderConstant.LogisticsMode.EXPRESS_DBWL);
-            isFree = true;
-        } else {
-            goodsOrder.setExpressCode(express);
-        }
+        goodsOrderVo.setConsumeAmount(goodsAmount); // 商品总金额
+        goodsOrderVo.setInstitutionId(insId);
+        goodsOrderVo.setRemark(StringUtils.EMPTY);
+        goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
+        goodsOrderVo.setUserId(userId);
+        goodsOrderVo.setExpressCode(express);
+
         //设置配送方式
-        goodsOrder.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
-        // 是否计算邮费
-        if (isFree) {
-            goodsOrder.setFreight(0D);
-        } else {
-            List<AddressDTO> addressDTOS = findAddressByIds(consignee.getAreaId());
-            if (!CollectionUtils.isEmpty(addressDTOS)) {
-                // 省ID
-                Integer provinceId = addressDTOS.get(0).getProvinceId();
-                apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, express, goodsPieces);
-                if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-                    throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-                }
-                HashMap<String, Object> freightMap = apiResponse.getBody().get(0);
-                goodsOrder.setFreight(Double.valueOf(freightMap.get("totalFreight").toString()));
+        goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
+        Map<Integer, AddressDTO> addressDTOMap = findAddressByIds(Lists.newArrayList(consignee.getAreaId()));
+        AddressDTO addressDTO = addressDTOMap.get(consignee.getAreaId());
+        if (addressDTO != null) {
+            // 省ID
+            Integer provinceId = addressDTO.getProvinceId();
+            // 区ID
+            Integer areaId = addressDTO.getDistrictId();
+            Map<String, Integer> expressMap = new HashMap<>();
+            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+                expressMap.put(express, areaId);
+            } else {
+                expressMap.put(express, provinceId);
             }
+            ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
+            logger.info("submitOrder --> freight : {}", apiResponse);
+            if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+                throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+            }
+            ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
+            goodsOrderVo.setFreight(Double.valueOf(expressFreightVo.getTotalFreight()));
+            // 订单提交成功时，快递时效提示
+            goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
         }
-        //TODO判断是否拆单
-        goodsOrder.setSplitNum(1);
-        return goodsOrder;
+        return goodsOrderVo;
     }
 
     /**
@@ -396,12 +386,12 @@ public class OrderManager {
                             if (startTime.isAfter(endTime)) {//开始日期大于结束日期,表示跨年
                                 if (startTime.isBeforeNow() || endTime.isAfterNow()) {//如果满足其实任一条件
                                     Integer period = goodsPeriod.getPeriod();
-                                    allPeriod = allPeriod | periodMap.get(period);
+                                    allPeriod = allPeriod | Constants.PERIOD_MAP.get(period);
                                 }
                             } else {
                                 if (startTime.isBeforeNow() && endTime.isAfterNow()) {//如果在该学期设定的时间段中
                                     Integer period = goodsPeriod.getPeriod();
-                                    allPeriod = allPeriod | periodMap.get(period);
+                                    allPeriod = allPeriod | Constants.PERIOD_MAP.get(period);
                                 }
                             }
                         }
@@ -426,26 +416,17 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(consignees)) {
             List<ConsigneeVo> consigneeVos = baseMapper.mapAsList(consignees, ConsigneeVo.class);
             // 区ids
-            Integer[] areaIds = new Integer[consigneeVos.size()];
-            for (int i = 0; i < consigneeVos.size(); i++) {
-                areaIds[i] = consigneeVos.get(i).getAreaId();
+            Set<Integer> areaIds = CollectionCommonUtil.getFieldSetByObjectList(consigneeVos, "getAreaId", Integer.class);
+            Map<Integer, AddressDTO> addressDTOMap = findAddressByIds(areaIds);
+            for (ConsigneeVo consigneeVo : consigneeVos) {
+                AddressDTO addressDTO = addressDTOMap.get(consigneeVo.getAreaId());
+                consigneeVo.setProvinceId(addressDTO.getProvinceId());
+                consigneeVo.setProvince(addressDTO.getProvince());
+                consigneeVo.setCityId(addressDTO.getCityId());
+                consigneeVo.setCity(addressDTO.getCity());
+                consigneeVo.setArea(addressDTO.getDistrict());
             }
-            List<AddressDTO> addressDTOS = findAddressByIds(areaIds);
-            if (!CollectionUtils.isEmpty(addressDTOS)) {
-                Map<Integer, AddressDTO> addressMap = Maps.newHashMap();
-                for (AddressDTO addressDTO : addressDTOS) {
-                    addressMap.put(addressDTO.getDistrictId(), addressDTO);
-                }
-                for (ConsigneeVo consigneeVo : consigneeVos) {
-                    AddressDTO addressDTO = addressMap.get(consigneeVo.getAreaId());
-                    consigneeVo.setProvinceId(addressDTO.getProvinceId());
-                    consigneeVo.setProvince(addressDTO.getProvince());
-                    consigneeVo.setCityId(addressDTO.getCityId());
-                    consigneeVo.setCity(addressDTO.getCity());
-                    consigneeVo.setArea(addressDTO.getDistrict());
-                }
-                return consigneeVos;
-            }
+            return consigneeVos;
         }
         return Lists.newArrayList();
     }
@@ -453,24 +434,15 @@ public class OrderManager {
     /**
      * 批量查询省市区
      *
-     * @param ids 区ID
+     * @param areaIds 区ID
      * @return
      */
-    private List<AddressDTO> findAddressByIds(Integer... ids) {
-        ApiResponse<List<AddressDTO>> apiResponse = areaApi.findAddressByIds(ids);
-        //确认订单时，查不到收货人地址不抛异常
-        if (apiResponse != null) {
-            if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-                if (CollectionUtils.isEmpty(apiResponse.getBody())) {
-                    throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
-                }
-                return apiResponse.getBody();
-            } else {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
-            }
-        } else {
-            return null;
+    private Map<Integer,AddressDTO> findAddressByIds(Collection<Integer> areaIds) {
+        ApiResponse<Map<Integer, AddressDTO>> apiResponse = districtApi.getAncestryMapByIds(areaIds);
+        if (apiResponse != null && apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+            return apiResponse.getBody();
         }
+        throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
     }
 
     /**
@@ -480,46 +452,27 @@ public class OrderManager {
      * @param weight         商品重量
      * @param expressVoLists 物流信息
      */
-    private void calcFreight(Integer provinceId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
+    private void calcFreight(Integer provinceId,Integer areaId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        ApiResponse<List<HashMap<String, Object>>> apiResponse;
-//        Date curDate = new Date();
-//        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-//        Date updateTime= null;
-//        try {
-//            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-//        }
-//        catch (ParseException e) {
-//            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-//        }
-//        Boolean flag = curDate.before(updateTime);
-//        if(flag) {
-//            apiResponse = orderServiceFacade.calculateFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS,goodsPieces);
-//        }
-//        else{
-        apiResponse = orderServiceFacade.newCalFreight(provinceId, weight, OrderConstant.LogisticsMode.EXPRESS, goodsPieces);
-//        }
+        Map<String,Integer> expressMap = new HashMap<>();
+        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_SHUNFENG,provinceId);
+        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_SHENTONG,provinceId);
+        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_DBWL,areaId);
+        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
-        List<HashMap<String, Object>> listMap = apiResponse.getBody();
-        for (int i = 0; i < expressVoLists.size(); i++) {
-            ConfirmExpressVo confirmExpressVo = expressVoLists.get(i);
-            HashMap<String, Object> map = listMap.get(i);
-            confirmExpressVo.setFirstFreight(map.get("firstFreight").toString());
-            confirmExpressVo.setBeyondPrice(map.get("beyondPrice").toString());
-            confirmExpressVo.setBeyondWeight(map.get("beyondWeight").toString());
-            confirmExpressVo.setTotalFreight(map.get("totalFreight").toString());
-            confirmExpressVo.setRemark(map.get("remark").toString());
-            if (confirmExpressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-//                if(flag) {
-//                        confirmExpressVo.setDesc(OrderConstant.LogisticsMode.DESC);
-//                }
-//                else {
-                String desc = (goodsPieces >= 100) ? OrderConstant.LogisticsMode.NEW_FREE_DESC : OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC;
-                confirmExpressVo.setDesc(desc);
-//                }
-            }
+        List<ExpressFreightVo> expressFreightVos = apiResponse.getBody();
+        Map<String,ExpressFreightVo> expressFreightVoMap = CollectionCommonUtil.toMapByList(expressFreightVos,"getExpressCode",String.class);
+        for (ConfirmExpressVo confirmExpressVo:expressVoLists) {
+            ExpressFreightVo expressFreightVo = expressFreightVoMap.get(confirmExpressVo.getCode());
+            confirmExpressVo.setFirstFreight(expressFreightVo.getFirstFreight());
+            confirmExpressVo.setBeyondPrice(expressFreightVo.getBeyondPrice());
+            confirmExpressVo.setTotalBeyondWeight(expressFreightVo.getTotalBeyondWeight());
+            confirmExpressVo.setTotalFreight(expressFreightVo.getTotalFreight());
+            confirmExpressVo.setRemark(expressFreightVo.getRemark());
+            String aging = MessageFormat.format(expressUtil.getAging(),expressFreightVo.getAging());
+            confirmExpressVo.setAging(aging);
         }
     }
 
@@ -532,9 +485,8 @@ public class OrderManager {
      * @param goodsTypeIds 商品类型ID
      * @return
      */
-    public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId, List<Integer> goodsTypeIds) {
+    public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId,Integer areaId, List<Integer> goodsTypeIds) {
         FreightVo freightVo = new FreightVo();
-        List<ConfirmExpressVo> confirmExpressVos = expressUtil.getExpress();
         List<ShoppingCartList> shoppingCartLists = null;
         int goodsPieces = 0; // 商品总件数
         double weight = 0; // 重量
@@ -564,7 +516,6 @@ public class OrderManager {
             if (CollectionUtils.isEmpty(goodsVos)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在! ");
             }
-            // List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             for (ConfirmGoodsVo goodsVo : goodsVos) {
                 if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
                     Integer goodsTypeId = goodsVo.getGoodsTypeId();
@@ -580,8 +531,9 @@ public class OrderManager {
                 }
             }
         }
+        List<ConfirmExpressVo> confirmExpressVos = new ArrayList<>(Constants.EXPRESS_TYPE);
         // 计算邮费
-        calcFreight(provinceId, weight, confirmExpressVos, goodsPieces);
+        calcFreight(provinceId,areaId, weight, confirmExpressVos, goodsPieces);
         // set
         freightVo.setGoodsPieces(goodsPieces);
         freightVo.setGoodsWeight(weight);
@@ -622,7 +574,7 @@ public class OrderManager {
      * @param goodsIds
      * @return
      */
-    public Map<Integer, List<GoodsPic>> getPicByGoodsIds(List<Integer> goodsIds) {
+    public Map<Integer, List<GoodsPic>> findPicByGoodsIds(List<Integer> goodsIds) {
         ApiResponse<List<GoodsPic>> apiResponse = goodsPicServiceFacade.findGoodsPicByGoodsIds(goodsIds);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
@@ -633,21 +585,6 @@ public class OrderManager {
             picMap = CollectionCommonUtil.groupByList(goodsPics, "getGoodsId", Integer.class);
         }
         return picMap;
-    }
-
-    /**
-     * 根据不同的express提示信息
-     *
-     * @param expressCode
-     * @return
-     */
-    private String getTipsByExpress(String expressCode) {
-        Map<String, ExpressVo> expressVoMap = CollectionCommonUtil.toMapByList(expressUtil.getExpressVos(), "getCode", String.class);
-        String tips = expressVoMap.get(expressCode).getTips();
-        if (StringUtils.isBlank(tips)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "请选择发货服务方式");
-        }
-        return tips;
     }
 
     /**
@@ -692,65 +629,6 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(offGoods)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "存在已下架商品!");
         }
-        if (expressUtil.getIsInventory()) {
-            // 2. 校验库存 {barCode, inventory}
-            boolean flag = false;
-            ApiResponse<Map<String, Integer>> apiResponse = orderServiceFacade.queryInventory(barCodes);
-            // ruanyj 查询库存校验
-            if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "查询库存失败!");
-            }
-            Map<String, Integer> inventoryMap = apiResponse.getBody();
-            for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-                // 库存量
-                int inventory = inventoryMap.get(confirmGoodsVo.getBarCode());
-                // 购买数量
-                int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
-
-                if (num > inventory) {
-                    confirmGoodsVo.setStatus(2);
-                    confirmGoodsVo.setInventory(inventory);
-                    flag = true;
-                } // 库存不足
-            }
-            if (flag) {
-                String jsonString = JSONObject.toJSONString(confirmGoodsVos);
-                throw new IllegalArgumentException(jsonString);
-            }
-        }
-    }
-
-    /**
-     * 处理完成，每次需要清空
-     *
-     * @param expressVos
-     */
-    private void defaultExpressForConfirmOrder(List<ConfirmExpressVo> expressVos, Integer goodsPieces) {
-
-//        Date curDate = new Date();
-//        SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//小写的mm表示的是分钟
-//        Date updateTime= null;
-//        try {
-//            updateTime = sdf.parse(expressUtil.getFreightUpdateTime());
-//        } catch (ParseException e) {
-//            logger.error("updateTime : {} ParseException {} ",expressUtil.getFreightUpdateTime(),e.getMessage());
-//        }
-        for (ConfirmExpressVo expressVo : expressVos) {
-            expressVo.setBeyondPrice(StringUtils.EMPTY);
-            expressVo.setBeyondWeight(StringUtils.EMPTY);
-            expressVo.setFirstFreight(StringUtils.EMPTY);
-            expressVo.setTotalFreight(StringUtils.EMPTY);
-            expressVo.setRemark(StringUtils.EMPTY);
-            if (expressVo.getKey().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-//                if(curDate.before(updateTime)) {
-//                    expressVo.setDesc(OrderConstant.LogisticsMode.DESC);
-//                }
-//                else {
-                String desc = (goodsPieces >= 100) ? OrderConstant.LogisticsMode.NEW_FREE_DESC : OrderConstant.LogisticsMode.NEW_NOT_SUP_DESC;
-                expressVo.setDesc(desc);
-//                }
-            }
-        }
     }
 
     /**
@@ -762,47 +640,96 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             Set<Integer> goodsTypeIds = Sets.newHashSet();
             Set<Integer> goodsIds = Sets.newHashSet();
+            // 查询快递时效的条件
+            List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
+            // 订单中物流方式下的目的地ID
+            Set<Integer> areaIds = Sets.newHashSet();
             // 准备工作,防止多次调用微服务
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+                QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
+                queryExpressPriceDto.setExpressId(Integer.parseInt(goodsOrderVo.getExpressType()));
+                queryExpressPriceDto.setDestAreaId(goodsOrderVo.getAreaId());
+                queryExpressPriceDtoList.add(queryExpressPriceDto);
+                // 获取订单中非物流的目的地ID
+                if(!goodsOrderVo.getExpressType().equals(ExpressConstant.Express.WULIU.getId().toString())){
+                    areaIds.add(goodsOrderVo.getAreaId());
+                }
                 if (goodsOrderVo.getSplitNum() > 1){
                     // 拆单的处理子订单
                     List<SubGoodsOrderVo> subGoodsOrderVos = goodsOrderVo.getSubGoodsOrderVos();
                     for (SubGoodsOrderVo subGoodsOrderVo : subGoodsOrderVos) {
-                        for (SubOrderDetailVo subOrderDetailVo : subGoodsOrderVo.getSubOrderDetailVos()) {
-                            goodsTypeIds.add(subOrderDetailVo.getGoodTypeId());
-                            goodsIds.add(subOrderDetailVo.getGoodsId());
-                        }
+                        goodsTypeIds = CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodTypeId",Integer.class);
+                        goodsIds = CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodsId",Integer.class);
                     }
                 }else {
-                    for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
-                        goodsTypeIds.add(orderDetailVo.getGoodTypeId());
-                        goodsIds.add(orderDetailVo.getGoodsId());
-                    }
+                    goodsTypeIds = CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodTypeId",Integer.class);
+                    goodsIds = CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class);
                 }
             }
-            Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = this.findGoodsByTypeIds(new ArrayList<Integer>(goodsTypeIds));
+            Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = this.findGoodsByTypeIds(new ArrayList<>(goodsTypeIds));
             Map<Integer, List<GoodsPic>> picMap = null;
             if (needDetail) {
                 // 订单详情查看需要获取图片
-                picMap = this.getPicByGoodsIds(new ArrayList<Integer>(goodsIds));
+                picMap = this.findPicByGoodsIds(new ArrayList<>(goodsIds));
+            }
+            // 查询区ID对应的省ID
+            Map<Integer, AddressDTO> provinceIdMap = new HashMap<>();
+            if(CollectionUtils.isNotEmpty(areaIds)) {
+                provinceIdMap = findAddressByIds(new ArrayList<>(areaIds));
+                // 把顺丰和普快递的目的地ID重置为省ID
+                for (QueryExpressPriceDto queryExpressPriceDto : queryExpressPriceDtoList) {
+                    if (provinceIdMap.containsKey(queryExpressPriceDto.getDestAreaId())&&
+                            !queryExpressPriceDto.getExpressId().equals(ExpressConstant.Express.WULIU.getId())) {
+                        queryExpressPriceDto.setDestAreaId(provinceIdMap.get(queryExpressPriceDto.getDestAreaId()).getProvinceId());
+                    }
+                }
+            }
+            // 获取快递时效
+            ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
+            Map<Integer,ExpressPrice> expressPriceMap = new HashMap<>();
+            if(apiResponse.getRetCode()==ApiRetCode.SUCCESS_CODE&&CollectionUtils.isNotEmpty(apiResponse.getBody())){
+                List<ExpressPrice> expressPriceList = apiResponse.getBody();
+                expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
             }
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                this.dealGoodsOrderVo(goodsOrderVo, confirmGoodsVoMap, picMap);
+                this.dealGoodsOrderVo(goodsOrderVo, confirmGoodsVoMap, picMap,expressPriceMap,provinceIdMap);
             }
         }
     }
 
     /**
-     * 计算订单订单详情中的重量/小计等信息
+     * 补充订单中的重量，小计，图片，时效
      * @param goodsOrderVo
      * @param confirmGoodsVoMap
+     * @param picMap
+     * @param expressPriceMap
+     * @param provinceIdMap
      */
-    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap, Map<Integer, List<GoodsPic>> picMap){
+    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap,
+                                  Map<Integer, List<GoodsPic>> picMap,Map<Integer,ExpressPrice> expressPriceMap,
+                                  Map<Integer,AddressDTO> provinceIdMap){
+        String expressType = goodsOrderVo.getExpressType();
+        Integer districtId ;
+        // 非物流方式的订单，需要查询目的地的省ID
+        if(!expressType.equals(ExpressConstant.Express.WULIU.getId().toString())&&
+                provinceIdMap.containsKey(goodsOrderVo.getAreaId())){
+            districtId = provinceIdMap.get(goodsOrderVo.getAreaId()).getProvinceId();
+        }else{
+            districtId = goodsOrderVo.getAreaId();
+        }
+        String unionKey = goodsOrderVo.getExpressType()+districtId;
+        // 重置时效信息
+        if(expressPriceMap.containsKey(unionKey)){
+            goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips()+","+
+                    MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging()) );
+        }
         //拆单需要处理子订单
         if (goodsOrderVo.getSplitNum() > 1){
             // 拆单的去除父订单多余数据
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
+                // 将子订单的时效重置为父订单更新后的时效
+                subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips()+goodsOrderVo.getWarehouseTips());
                 dealSubGoodsOrderVo(subGoodsOrderVo, confirmGoodsVoMap, picMap);
             }
         }else {

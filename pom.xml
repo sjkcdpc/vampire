@@ -13,7 +13,7 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>1.3.81-RELEASE</avatar.version>
+        <avatar.version>1.4.9-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor-util.version>1.4.22-RELEASE</thor-util.version>
         <transformers.version>1.0.10.4-RELEASE</transformers.version>

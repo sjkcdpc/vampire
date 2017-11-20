@@ -6,45 +6,11 @@
 
     <!-- 快递公司 -->
     <bean id="expressUtil" scope="singleton" class="com.aixuexi.vampire.util.ExpressUtil">
-        <property name="express">
-            <list>
-                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
-                    <property name="key" value="${express1.key}"/>
-                    <property name="name" value="${express1.name}"/>
-                    <property name="desc" value="${express1.desc}"/>
-                </bean>
-                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
-                    <property name="key" value="${express2.key}"/>
-                    <property name="name" value="${express2.name}"/>
-                    <property name="desc" value="${express2.desc}"/>
-                </bean>
-                <bean class="com.gaosi.api.vulcan.vo.ConfirmExpressVo">
-                    <property name="key" value="${express3.key}"/>
-                    <property name="name" value="${express3.name}"/>
-                    <!--<property name="desc" value="${express3.desc}"/>-->
-                </bean>
-            </list>
-        </property>
         <property name="syncToWms" value="${syncToWms}"/>
-        <property name="isInventory" value="${isInventory}"/>
         <property name="freightUpdateTime" value="${freightUpdateTime}"/>
-        <property name="expressVos">
-            <list>
-                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
-                    <property name="code" value="${express1.key}"/>
-                    <property name="tips" value="${express1.tips}"/>
-                </bean>
-                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
-                    <property name="code" value="${express2.key}"/>
-                    <property name="tips" value="${express2.tips}"/>
-                </bean>
-                <bean class="com.gaosi.api.revolver.vo.ExpressVo">
-                    <property name="code" value="${express3.key}"/>
-                    <property name="tips" value="${express3.tips}"/>
-                </bean>
-            </list>
-        </property>
         <property name="splitTips" value="${splitTips}"/>
+        <property name="aging" value="${aging}"/>
+        <property name="expressTips" value="${expressTips}"/>
     </bean>
 
 </beans>

@@ -13,6 +13,7 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -260,22 +261,23 @@ public class GoodsController {
      */
     private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
         Set<String> barCodeList = new HashSet<>();
-        for(GoodsVo goodsVo : goodsVoList){
-            if(CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+        for (GoodsVo goodsVo : goodsVoList) {
+            if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
                 List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
-                    barCodeList.add(typeCommonVo.getBarCode());
-                }
+                barCodeList = CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class);
             }
         }
         if(CollectionUtils.isNotEmpty(barCodeList)) {
             ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<String>(barCodeList));
-            Map<String, Integer> invMap = apiResponse.getBody();
-            for (GoodsVo goodsVo : goodsVoList) {
-                if(CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
-                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+            // 查询库存成功
+            if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
+                Map<String, Integer> invMap = apiResponse.getBody();
+                for (GoodsVo goodsVo : goodsVoList) {
+                    if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                        List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                        for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                            typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+                        }
                     }
                 }
             }
