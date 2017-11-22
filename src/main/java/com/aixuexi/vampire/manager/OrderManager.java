@@ -117,7 +117,8 @@ public class OrderManager {
         }
         confirmOrderVo.setConsignees(consigneeVos);
         // 2. 快递公司
-        confirmOrderVo.setExpress(new ArrayList<>(Constants.EXPRESS_TYPE));
+        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
+        confirmOrderVo.setExpress(confirmExpressVos);
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
@@ -531,7 +532,7 @@ public class OrderManager {
                 }
             }
         }
-        List<ConfirmExpressVo> confirmExpressVos = new ArrayList<>(Constants.EXPRESS_TYPE);
+        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
         // 计算邮费
         calcFreight(provinceId,areaId, weight, confirmExpressVos, goodsPieces);
         // set
