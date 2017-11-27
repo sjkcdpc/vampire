@@ -15,11 +15,6 @@ import java.util.Map;
  */
 public final class Constants {
 
-    /**
-     * 快递公司字典TYPE
-     */
-    public static final String DELIVERY_COMPANY_DICT_TYPE = "DELIVERY_COMPANY";
-
     //机构类型 0 正式 1测试机构 2试用机构 3外研英语机构
     public static final List<Integer> INS_TYPES = Lists.newArrayList(1, 2);
 

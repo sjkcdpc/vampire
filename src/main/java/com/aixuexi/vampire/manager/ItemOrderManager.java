@@ -9,8 +9,10 @@ import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.constants.Dictionary;
 import com.gaosi.api.axxBank.model.BusinessResult;
+import com.gaosi.api.axxBank.model.CgFinancialResult;
 import com.gaosi.api.axxBank.model.CostProxyParams;
 import com.gaosi.api.axxBank.model.RemainResult;
+import com.gaosi.api.axxBank.service.ChangeCostProxyHandler;
 import com.gaosi.api.axxBank.service.CostAndRufundProxyHandler;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.common.constants.ApiRetCode;
@@ -131,7 +133,7 @@ public class ItemOrderManager {
             throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
         String optionDesc = "订单号[order]" + orderId + "[/order]";
-        CostAndRufundProxyHandler proxyHandler = new CostAndRufundProxyHandler(financialAccountService);
+        ChangeCostProxyHandler proxyHandler = new ChangeCostProxyHandler(financialAccountService);
         CostProxyParams proxyParams = new CostProxyParams();
         proxyParams.setInsId(UserHandleUtil.getInsId());
         proxyParams.setAmount(amount.longValue());
@@ -141,9 +143,15 @@ public class ItemOrderManager {
         proxyParams.setOptionItemEnum(PayTypeConstant.PayType.getOptionItemEnum(itemOrder.getCategoryId()));
         proxyParams.setToken(token);
         proxyParams.setOptionDesc(optionDesc);
-        proxyHandler.CostAidou(proxyParams, this.financialOperation(orderId));
-        updateOrderStatus(orderId);
-        logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
+        BusinessResult businessResult = proxyHandler.costAidou(proxyParams, this.financialOperation(orderId));
+        CgFinancialResult cgFinancialResult = businessResult.getCgFinancialResult();
+        if (cgFinancialResult.getStatus().equals(1)) {
+            updateOrderStatus(orderId);
+            logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
+        } else {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "扣费失败！错误码：" +
+                    cgFinancialResult.getErrorCode().getValue());
+        }
     }
 
     /**
