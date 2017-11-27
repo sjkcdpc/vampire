@@ -264,7 +264,7 @@ public class GoodsController {
         for (GoodsVo goodsVo : goodsVoList) {
             if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
                 List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                barCodeList = CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class);
+                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class));
             }
         }
         if(CollectionUtils.isNotEmpty(barCodeList)) {
