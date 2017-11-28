@@ -227,6 +227,7 @@ public class GoodsController {
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
         loadRelationName(page.getList(), false);
+        loadGoodsInventory(page.getList());
         resultData.setBody(page);
 
         return resultData;
