@@ -181,11 +181,21 @@ public class GoodsController {
             //查询教材版本
             ApiResponse<List<Integer>> response = goodsServiceFacade.queryBookVersion(subjectId, periodId);
             ApiResponse<List<BookVersionBo>> bookVersion = bookVersionApi.findByBookVersionIds(response.getBody());
+            if (bookVersion.getRetCode() != ApiRetCode.SUCCESS_CODE || CollectionUtils.isEmpty(bookVersion.getBody())) {
+                logger.error("Get BookVersion Failed ,subjectId :{},periodId : {},categoryId : {}, UserId : {} " +
+                        ",InsId : {}", subjectId, periodId, categoryId, UserHandleUtil.getUserId(), UserHandleUtil.getInsId());
+                throw new BusinessException(ExceptionCode.UNKNOWN, "查询教材版本失败");
+            }
             conditionVos = baseMapper.mapAsList(bookVersion.getBody(), CommonConditionVo.class);
         }else if (categoryId.equals(GoodsConstant.GoodsCategory.AREA.getValue())) {
             //按考区分
             ApiResponse<List<Integer>> response = goodsServiceFacade.queryArea(subjectId, periodId);
             ApiResponse<List<ExamAreaBo>> examArea = examAreaApi.findByExamAreaIds(response.getBody());
+            if (examArea.getRetCode() != ApiRetCode.SUCCESS_CODE || CollectionUtils.isEmpty(examArea.getBody())) {
+                logger.error("Get AreaVersion Failed ,subjectId :{},periodId : {},categoryId : {}, UserId : {} " +
+                        ",InsId : {}", subjectId, periodId, categoryId, UserHandleUtil.getUserId(), UserHandleUtil.getInsId());
+                throw new BusinessException(ExceptionCode.UNKNOWN, "查询考区分类失败");
+            }
             conditionVos = baseMapper.mapAsList(examArea.getBody(), CommonConditionVo.class);
         }
 
@@ -298,7 +308,6 @@ public class GoodsController {
             throw new BusinessException(ExceptionCode.UNKNOWN, response.getMessage());
         }
         GoodsVo goodsVo = response.getBody();
-        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         loadRelationName(Lists.newArrayList(goodsVo), true);
         loadGoodsInventory(Lists.newArrayList(goodsVo));
         return ResultData.successed(response.getBody());

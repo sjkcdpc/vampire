@@ -10,8 +10,11 @@ import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
+import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by gaoxinzhong on 2017/5/24.
@@ -33,14 +37,17 @@ import java.util.List;
 @RequestMapping(value = "/shoppingCart")
 public class ShoppingCartController {
 
-    @Autowired
+    @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
-    @Autowired
+    @Resource
     private GoodsServiceFacade goodsServiceFacade;
 
-    @Autowired
+    @Resource
     private MyJedisService myJedisService;
+
+    @Resource
+    private GoodsTypeServiceFacade goodsTypeServiceFacade;
 
     @Resource
     private BaseMapper baseMapper;
@@ -59,7 +66,13 @@ public class ShoppingCartController {
         if (!CollectionUtils.isNotEmpty(shoppingCartListList)) {
             return resultData;
         }
-
+        List<Integer> goodTypeIds = CollectionCommonUtil.getFieldListByObjectList(shoppingCartListList,"getGoodsTypeId",Integer.class);
+        ApiResponse<List<GoodsType>> apiResponse = goodsTypeServiceFacade.findGoodsTypeByIds(goodTypeIds);
+        if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE||CollectionUtils.isEmpty(apiResponse.getBody())){
+            return ResultData.failed(apiResponse.getMessage());
+        }
+        List<GoodsType> goodsTypeList = apiResponse.getBody();
+        Map<Integer,GoodsType> goodsTypeMap = CollectionCommonUtil.toMapByList(goodsTypeList,"getId",Integer.class);
         ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
         int goodsPieces = 0;
         double payAmount = 0;
@@ -75,6 +88,8 @@ public class ShoppingCartController {
             shoppingCartListVo.setTotal(total);
 
             payAmount += total;
+            int minNum = goodsTypeMap.get(shoppingCartListVo.getGoodsTypeId()).getMinNum();
+            shoppingCartListVo.setCustom(minNum>0);
         }
         shoppingCartVo.setGoodsPieces(goodsPieces);
         shoppingCartVo.setPayAmount(payAmount);
@@ -108,6 +123,9 @@ public class ShoppingCartController {
         ConfirmGoodsVo confirmGoodsVo = body.get(0);
         if(confirmGoodsVo.getStatus() != GoodsConstant.Status.ON) {
             return ResultData.failed("商品已下架！");
+        }
+        if(confirmGoodsVo.getMinNum()>0 && num % confirmGoodsVo.getMinNum()!= 0){
+            return ResultData.failed("定制商品数量有误！");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setGoodsId(confirmGoodsVo.getGoodsId());

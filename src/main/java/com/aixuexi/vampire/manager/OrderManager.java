@@ -737,7 +737,9 @@ public class OrderManager {
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
-                orderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
+                if (confirmGoodsVo != null && confirmGoodsVo.getWeight() != null) {
+                    orderDetailVo.setWeight(confirmGoodsVo.getWeight());
+                }
                 orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
                 if (null != picMap){
                     List<GoodsPic> subPicList = picMap.get(orderDetailVo.getGoodsId());
@@ -760,7 +762,9 @@ public class OrderManager {
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
             ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(subOrderDetailVo.getGoodTypeId());
-            subOrderDetailVo.setWeight(confirmGoodsVo == null ? 0 : confirmGoodsVo.getWeight());
+            if (confirmGoodsVo != null && confirmGoodsVo.getWeight() != null) {
+                subOrderDetailVo.setWeight(confirmGoodsVo.getWeight());
+            }
             subOrderDetailVo.setTotal(CalculateUtil.mul(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
             consumeAmount = CalculateUtil.add(consumeAmount,subOrderDetailVo.getTotal());
             if (null != picMap){

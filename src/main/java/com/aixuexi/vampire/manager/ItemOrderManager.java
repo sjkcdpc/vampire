@@ -133,7 +133,7 @@ public class ItemOrderManager {
             throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
         String optionDesc = "订单号[order]" + orderId + "[/order]";
-        ChangeCostProxyHandler proxyHandler = new ChangeCostProxyHandler(financialAccountService);
+        CostAndRufundProxyHandler proxyHandler = new CostAndRufundProxyHandler(financialAccountService);
         CostProxyParams proxyParams = new CostProxyParams();
         proxyParams.setInsId(UserHandleUtil.getInsId());
         proxyParams.setAmount(amount.longValue());
@@ -143,15 +143,9 @@ public class ItemOrderManager {
         proxyParams.setOptionItemEnum(PayTypeConstant.PayType.getOptionItemEnum(itemOrder.getCategoryId()));
         proxyParams.setToken(token);
         proxyParams.setOptionDesc(optionDesc);
-        BusinessResult businessResult = proxyHandler.costAidou(proxyParams, this.financialOperation(orderId));
-        CgFinancialResult cgFinancialResult = businessResult.getCgFinancialResult();
-        if (cgFinancialResult.getStatus().equals(1)) {
-            updateOrderStatus(orderId);
-            logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
-        } else {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "扣费失败！错误码：" +
-                    cgFinancialResult.getErrorCode().getValue());
-        }
+        proxyHandler.CostAidou(proxyParams, this.financialOperation(orderId));
+        updateOrderStatus(orderId);
+        logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
     }
 
     /**
