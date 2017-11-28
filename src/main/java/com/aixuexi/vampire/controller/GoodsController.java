@@ -309,6 +309,7 @@ public class GoodsController {
             throw new BusinessException(ExceptionCode.UNKNOWN, response.getMessage());
         }
         GoodsVo goodsVo = response.getBody();
+        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         loadRelationName(Lists.newArrayList(goodsVo), true);
         loadGoodsInventory(Lists.newArrayList(goodsVo));
         return ResultData.successed(response.getBody());
