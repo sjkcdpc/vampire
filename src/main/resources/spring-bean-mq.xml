@@ -1,22 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
-<beans>
-    <bean id="springContextUtils" class="com.aixuexi.thor.reflection.SpringContextUtils" lazy-init="false"/>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="mqSmsProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
-        <property name="type" value="${ali.mq.type}"/>
-        <property name="accessKey" value="${ali.mq.accessKey}"/>
-        <property name="secretKey" value="${ali.mq.secretKey}"/>
-        <property name="suffix" value="${ali.mq.sms.producer.suffix}"/>
-        <property name="producerId" value="${ali.mq.sms.producer.producerId}"/>
+        <property name="environment" value="${transformers.environment}"/>
     </bean>
 
     <bean id="mqMailProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
-        <property name="type" value="${ali.mq.type}"/>
-        <property name="accessKey" value="${ali.mq.accessKey}"/>
-        <property name="secretKey" value="${ali.mq.secretKey}"/>
-        <property name="suffix" value="${ali.mq.mail.producer.suffix}"/>
-        <property name="producerId" value="${ali.mq.mail.producer.producerId}"/>
+        <property name="environment" value="${transformers.environment}"/>
     </bean>
 
 </beans>
