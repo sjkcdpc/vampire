@@ -35,7 +35,7 @@ public class AccessVerifyFilter implements Filter {
             chain.doFilter(request, response);
             return;
         }
-        //throw new IllegalArgException(ExceptionCode.UNKNOWN, "无权访问");
+        throw new IllegalArgException(ExceptionCode.UNKNOWN, "无权访问");
     }
 
     @Override

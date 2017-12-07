@@ -24,7 +24,6 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
-import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.*;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.model.GoodsPeriod;
@@ -258,6 +257,8 @@ public class OrderManager {
         if (consignee == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
+        // 订单
+        GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
         // 商品类型ID
         List<Integer> goodsTypeIds = Lists.newArrayList();
         // 商品件数
@@ -306,9 +307,6 @@ public class OrderManager {
             orderDetails.add(orderDetail);
         }
         handlePeriod(orderDetails);
-        // 订单
-        GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
-        goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
         goodsOrderVo.setOrderDetailVos(orderDetails);
         goodsOrderVo.setAreaId(consignee.getAreaId());
         ApiResponse<AddressDTO> ad = districtApi.getAncestryById(consignee.getAreaId());
