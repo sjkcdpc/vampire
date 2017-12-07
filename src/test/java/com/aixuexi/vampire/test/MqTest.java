@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Arrays;
-
 /**
  * @Description:消息队列测试
  * @Author: liuxinyun
@@ -25,7 +23,7 @@ import java.util.Arrays;
 public class MqTest {
 
     @Autowired(required = false)
-    private ONSMQProducer mqSmsProducer;
+    private ONSMQProducer mqProducer;
 
     @Value("${order_update_fail_receive_phone}")
     private String phoneStr;
@@ -39,6 +37,6 @@ public class MqTest {
                 .setTemplateCode(SMSConstant.TEMPLATE_CODE_ORDER_UPDATE_FAIL_NOTIFY)
                 .addAllPhones(Lists.newArrayList(phones))
                 .setBusinessType(SMSConstant.BUSINESS_TYPE_ORDER_UPDATE_FAIL_NOTIFY);
-        mqSmsProducer.send(builder);
+        mqProducer.send(builder);
     }
 }

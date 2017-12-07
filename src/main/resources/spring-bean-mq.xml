@@ -3,11 +3,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="mqSmsProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
-        <property name="environment" value="${transformers.environment}"/>
-    </bean>
-
-    <bean id="mqMailProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
+    <bean id="mqProducer" class="com.aixuexi.transformers.mq.MQProducerFactoryBean">
         <property name="environment" value="${transformers.environment}"/>
     </bean>
 

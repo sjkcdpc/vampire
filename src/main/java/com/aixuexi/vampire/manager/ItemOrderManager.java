@@ -7,13 +7,10 @@ import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.axxBank.constants.Dictionary;
 import com.gaosi.api.axxBank.model.BusinessResult;
-import com.gaosi.api.axxBank.model.CgFinancialResult;
 import com.gaosi.api.axxBank.model.CostProxyParams;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.ChangeCostProxyHandler;
-import com.gaosi.api.axxBank.service.CostAndRufundProxyHandler;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
@@ -27,9 +24,6 @@ import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.model.MallItem;
-import com.gaosi.api.vulcan.model.MallItemSku;
-import com.gaosi.api.vulcan.model.MallSku;
-import com.gaosi.api.vulcan.vo.MallItemVo;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +54,7 @@ public class ItemOrderManager {
     private ItemOrderServiceFacade itemOrderServiceFacade;
 
     @Autowired(required = false)
-    private ONSMQProducer mqSmsProducer;
+    private ONSMQProducer mqProducer;
 
     @Value("${order_update_fail_receive_phone}")
     private String phoneStr;
@@ -203,7 +197,7 @@ public class ItemOrderManager {
                         .setTemplateCode(SMSConstant.TEMPLATE_CODE_ORDER_UPDATE_FAIL_NOTIFY)
                         .addAllPhones(Arrays.asList(phones))
                         .setBusinessType(SMSConstant.BUSINESS_TYPE_ORDER_UPDATE_FAIL_NOTIFY);
-                mqSmsProducer.send(builder);
+                mqProducer.send(builder);
             }
         }
     }
