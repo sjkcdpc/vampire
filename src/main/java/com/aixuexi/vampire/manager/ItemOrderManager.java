@@ -142,8 +142,8 @@ public class ItemOrderManager {
             updateOrderStatus(orderId);
             logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
         } else {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "订单扣费失败，错误码：" +
-                    businessResult.getCgFinancialResult().getErrorCode());
+            throw new BusinessException(ExceptionCode.UNKNOWN, "订单扣费失败，错误信息：" +
+                    businessResult.getCgFinancialResult().getMessage());
         }
 
     }

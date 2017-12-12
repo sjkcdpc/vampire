@@ -2,11 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.redis.MyJedisService;
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
-import com.aixuexi.vampire.util.Constants;
-import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.common.constants.ApiRetCode;
+import com.aixuexi.vampire.util.*;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
@@ -20,7 +16,6 @@ import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -63,14 +58,12 @@ public class ShoppingCartController {
 
         Integer userId = UserHandleUtil.getUserId();
         List<ShoppingCartList> shoppingCartListList = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        if (!CollectionUtils.isNotEmpty(shoppingCartListList)) {
+        if (CollectionUtils.isEmpty(shoppingCartListList)) {
             return resultData;
         }
         List<Integer> goodTypeIds = CollectionCommonUtil.getFieldListByObjectList(shoppingCartListList,"getGoodsTypeId",Integer.class);
         ApiResponse<List<GoodsType>> apiResponse = goodsTypeServiceFacade.findGoodsTypeByIds(goodTypeIds);
-        if(apiResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE||CollectionUtils.isEmpty(apiResponse.getBody())){
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         List<GoodsType> goodsTypeList = apiResponse.getBody();
         Map<Integer,GoodsType> goodsTypeMap = CollectionCommonUtil.toMapByList(goodsTypeList,"getId",Integer.class);
         ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
@@ -109,10 +102,8 @@ public class ShoppingCartController {
     @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
+        ApiResponseCheck.check(apiResponse);
         List<ConfirmGoodsVo> body = apiResponse.getBody();
-        if (apiResponse.getRetCode()!= ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
         if (CollectionUtils.isEmpty(body)) {
             return ResultData.failed("商品不存在！");
         }
@@ -145,12 +136,7 @@ public class ShoppingCartController {
             }
 
             ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
-            if(addSCResponse.getRetCode()!=ApiRetCode.SUCCESS_CODE){
-                return ResultData.failed(addSCResponse.getMessage());
-            }
-            if (addSCResponse.getBody() == -2) {
-                return ResultData.failed("购物车重复、请联系客服！");
-            }
+            ApiResponseCheck.check(addSCResponse);
         }
         finally {
             myJedisService.del(redisKey);
