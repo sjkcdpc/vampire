@@ -301,7 +301,7 @@ public class GoodsController {
         ApiResponseCheck.check(response);
         GoodsVo goodsVo = response.getBody();
         if (goodsVo == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在");
+            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在!");
         }
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         dealGoodsVo(Lists.newArrayList(goodsVo));
