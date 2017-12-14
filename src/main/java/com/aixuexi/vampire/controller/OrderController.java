@@ -156,37 +156,27 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
-        ResultData resultData = new ResultData();
-        try {
-            validateInsType(); // 试用机构不能下单
 
-            Integer userId = UserHandleUtil.getUserId();
-            Integer insId = UserHandleUtil.getInsId();
-            List<Integer> goodsTypeIdList = goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds);
+        validateInsType(); // 试用机构不能下单
+        Integer userId = UserHandleUtil.getUserId();
+        Integer insId = UserHandleUtil.getInsId();
+        List<Integer> goodsTypeIdList = goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds);
 
-            OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId,
-                    receivePhone, express, goodsTypeIdList, token);
+        OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId,
+                receivePhone, express, goodsTypeIdList, token);
 
-            resultData.setBody(orderSuccessVo);
-        } catch (IllegalArgumentException e) {
-            //查询库存失败时抛出,前端要求status为normal
-            String jsonString = e.getMessage();
-            resultData.setBody(JSONObject.parseArray(jsonString, ConfirmGoodsVo.class));
-            resultData.setStatus(ResultData.STATUS_NORMAL);
-            return resultData;
-        }
         //发送消息
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("insId", UserHandleUtil.getInsId());
-            map.put("userId", UserHandleUtil.getUserId());
+            map.put("insId", insId);
+            map.put("userId", userId);
             map.put("taskCode", "84FA0A9E96C086F232108FA87A711301");
             taskProducerApi.headMasterProducer(map);
         } catch (Exception e) {
             logger.error("创建订单后,发送消息失败", e);
         }
 
-        return resultData;
+        return ResultData.successed(orderSuccessVo);
     }
 
     /**

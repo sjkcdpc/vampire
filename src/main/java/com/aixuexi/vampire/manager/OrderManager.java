@@ -214,11 +214,10 @@ public class OrderManager {
         if (amount.longValue() > remain) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
         }
-        // 是否走发网
+        // 是否同步到WMS
         Boolean syncToWms = true;
-        // ruanyj 测试环境是否发网的开关
         Institution insinfo = institutionService.getInsInfoById(insId);
-        // 1测试机构 2试用机构 或者关闭发网开关 则不走发网
+        // 1测试机构 2试用机构 或者关闭同步开关 则不同步到WMS
         if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()))
                 || !expressUtil.getSyncToWms()) {
             syncToWms = false;
@@ -275,19 +274,20 @@ public class OrderManager {
             goodsNum.put(goodsTypeId, num);
             goodsPieces += num;
         }
-        // 订单详情
-        List<OrderDetailVo> orderDetails = Lists.newArrayList();
+
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
         if (listApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
         }
-        if (CollectionUtils.isEmpty(listApiResponse.getBody())) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在! ");
-        }
         List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
-        // 再次校验商品是否已下架，库存。
+        if (CollectionUtils.isEmpty(goodsVos)) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在");
+        }
+        // 校验商品是否已下架、条形码是否为空。
         validateGoods(goodsVos, goodsNum);
+        // 订单详情
+        List<OrderDetailVo> orderDetails = Lists.newArrayList();
         for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {
             int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
             confirmGoodsVo.setNum(num);
@@ -311,17 +311,18 @@ public class OrderManager {
         goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
         goodsOrderVo.setOrderDetailVos(orderDetails);
         goodsOrderVo.setAreaId(consignee.getAreaId());
-        ApiResponse<AddressDTO> ad = districtApi.getAncestryById(consignee.getAreaId());
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
         //ruanyj 收货人地址补全
-        AddressDTO add = ad.getBody();
-        StringBuilder preAddress = new StringBuilder();
-        if (add != null) {
-            preAddress.append(add.getProvince() == null ? StringUtils.EMPTY : add.getProvince());
-            preAddress.append(add.getCity() == null ? StringUtils.EMPTY : add.getCity());
-            preAddress.append(add.getDistrict() == null ? StringUtils.EMPTY : add.getDistrict());
+        ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
+        AddressDTO address = addressDTOApiResponse.getBody();
+        if (address == null){
+            throw new RuntimeException("收货人地址查询失败，请联系管理员");
         }
+        StringBuilder preAddress = new StringBuilder();
+        preAddress.append(address.getProvince() == null ? StringUtils.EMPTY : address.getProvince());
+        preAddress.append(address.getCity() == null ? StringUtils.EMPTY : address.getCity());
+        preAddress.append(address.getDistrict() == null ? StringUtils.EMPTY : address.getDistrict());
         if (StringUtils.isBlank(preAddress.toString())) {
             goodsOrderVo.setConsigneeAddress(consignee.getAddress());
         } else {
@@ -336,29 +337,25 @@ public class OrderManager {
 
         //设置配送方式
         goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
-        Map<Integer, AddressDTO> addressDTOMap = findAddressByIds(Lists.newArrayList(consignee.getAreaId()));
-        AddressDTO addressDTO = addressDTOMap.get(consignee.getAreaId());
-        if (addressDTO != null) {
-            // 省ID
-            Integer provinceId = addressDTO.getProvinceId();
-            // 区ID
-            Integer areaId = addressDTO.getDistrictId();
-            Map<String, Integer> expressMap = new HashMap<>();
-            if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-                expressMap.put(express, areaId);
-            } else {
-                expressMap.put(express, provinceId);
-            }
-            ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
-            logger.info("submitOrder --> freight : {}", apiResponse);
-            if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-            }
-            ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
-            goodsOrderVo.setFreight(Double.valueOf(expressFreightVo.getTotalFreight()));
-            // 订单提交成功时，快递时效提示
-            goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
+        // 省ID
+        Integer provinceId = address.getProvinceId();
+        // 区ID
+        Integer areaId = address.getDistrictId();
+        Map<String, Integer> expressMap = new HashMap<>();
+        if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
+            expressMap.put(express, areaId);
+        } else {
+            expressMap.put(express, provinceId);
         }
+        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
+        logger.info("submitOrder --> freight : {}", apiResponse);
+        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        }
+        ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
+        goodsOrderVo.setFreight(Double.valueOf(expressFreightVo.getTotalFreight()));
+        // 订单提交成功时，快递时效提示
+        goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
         return goodsOrderVo;
     }
 
@@ -372,15 +369,15 @@ public class OrderManager {
         List<GoodsPeriod> goodsPeriodList = goodsPeriodServiceFacade.findByGoodsId(goodsIds).getBody();
         Map<Integer, List<GoodsPeriod>> goodsPeriodMap = CollectionCommonUtil.groupByList(goodsPeriodList, "getGoodsId", Integer.class);
 
+        DateTime now = new DateTime();
+        DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("MM月dd日");
         for (OrderDetailVo orderDetailVo : orderDetailVos) {
             List<GoodsPeriod> goodsPeriods = goodsPeriodMap.get(orderDetailVo.getGoodsId());
             Integer allPeriod = 0;
             if (CollectionUtils.isNotEmpty(goodsPeriods)) {
                 try {
-                    DateTime now = new DateTime();
                     for (GoodsPeriod goodsPeriod : goodsPeriods) {
                         if (StringUtils.isNotBlank(goodsPeriod.getStartTime())) {
-                            DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("MM月dd日");
                             DateTime startTime = DateTime.parse(goodsPeriod.getStartTime(), dateTimeFormatter);
                             DateTime endTime = DateTime.parse(goodsPeriod.getEndTime(), dateTimeFormatter);
                             //将年份设置为当年（忽略年份对判断的影响）
@@ -517,7 +514,7 @@ public class OrderManager {
             }
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
             if (CollectionUtils.isEmpty(goodsVos)) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在! ");
+                throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在");
             }
             for (ConfirmGoodsVo goodsVo : goodsVos) {
                 if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
@@ -605,32 +602,21 @@ public class OrderManager {
     }
 
     /**
-     * 校验库存和是否下架
+     * 校验商品
      *
      * @param confirmGoodsVos
      * @param goodsNum
      */
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos, Map<Integer, Integer> goodsNum) {
-        if (!CollectionUtils.isNotEmpty(confirmGoodsVos)) {
-            return;
-        }
-
-        List<ConfirmGoodsVo> offGoods = Lists.newArrayList();
-        List<String> barCodes = Lists.newArrayList();
-        // 1. 校验商品是否已经下架
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             //ruanyj 商品编码为空校验
             String barCode = confirmGoodsVo.getBarCode();
             if (StringUtils.isBlank(barCode)) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName() + confirmGoodsVo.getGoodsTypeName() + "的SKU编码为空!");
+                throw new BusinessException(ExceptionCode.UNKNOWN, confirmGoodsVo.getGoodsName() + confirmGoodsVo.getGoodsTypeName() + "的条形码为空");
             }
-            barCodes.add(confirmGoodsVo.getBarCode());
             if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
-                offGoods.add(confirmGoodsVo);
+                throw new BusinessException(ExceptionCode.UNKNOWN, "存在已下架商品");
             }
-        }
-        if (CollectionUtils.isNotEmpty(offGoods)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "存在已下架商品!");
         }
     }
 
