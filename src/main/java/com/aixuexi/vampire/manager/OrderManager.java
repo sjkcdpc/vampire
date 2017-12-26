@@ -689,7 +689,7 @@ public class OrderManager {
             }
             // 获取快递时效
             ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
-            Map<Integer,ExpressPrice> expressPriceMap = new HashMap<>();
+            Map<String,ExpressPrice> expressPriceMap = new HashMap<>();
             if(apiResponse.getRetCode()==ApiRetCode.SUCCESS_CODE&&CollectionUtils.isNotEmpty(apiResponse.getBody())){
                 List<ExpressPrice> expressPriceList = apiResponse.getBody();
                 expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
@@ -709,7 +709,7 @@ public class OrderManager {
      * @param provinceIdMap
      */
     private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap,
-                                  Map<Integer, List<GoodsPic>> picMap,Map<Integer,ExpressPrice> expressPriceMap,
+                                  Map<Integer, List<GoodsPic>> picMap,Map<String,ExpressPrice> expressPriceMap,
                                   Map<Integer,AddressDTO> provinceIdMap){
         String expressType = goodsOrderVo.getExpressType();
         Integer districtId ;
@@ -720,11 +720,13 @@ public class OrderManager {
         }else{
             districtId = goodsOrderVo.getAreaId();
         }
+
+        // 时效
+        String aging = StringUtils.EMPTY;
+        // 获取时效时效信息
         String unionKey = goodsOrderVo.getExpressType()+districtId;
-        // 重置时效信息
         if(expressPriceMap.containsKey(unionKey)){
-            goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips()+","+
-                    MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging()) );
+            aging = MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging());
         }
         //拆单需要处理子订单
         if (goodsOrderVo.getSplitNum() > 1){
@@ -732,10 +734,11 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips()+goodsOrderVo.getWarehouseTips());
+                subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
                 dealSubGoodsOrderVo(subGoodsOrderVo, confirmGoodsVoMap, picMap);
             }
         }else {
+            goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
