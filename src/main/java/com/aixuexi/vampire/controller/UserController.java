@@ -15,6 +15,8 @@ import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.vo.MallItemCustomServiceVo;
+import com.gaosi.api.zootropolis.BsAuthorityService;
+import com.gaosi.api.zootropolis.util.ConstantUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
@@ -41,6 +43,8 @@ public class UserController {
     private MallItemExtServiceFacade mallItemExtServiceFacade;
     @Resource
     private GroupInstitutionService groupInstitutionService;
+    @Resource
+    private BsAuthorityService bsAuthorityService;
 
     /**
      * 用户信息
@@ -85,10 +89,22 @@ public class UserController {
                 for (String p : permissions) {
                     menu.put(p, 1);
                 }
-                // 高斯杯权限
-                if (userService.checkInstitutionHaveGsb(institutionId)) {
-                    menu.put("gaosibei", 1);
+
+                /** 杯赛权限 */
+                List<String> beisaiAuthority = bsAuthorityService.getBeisaiAuthority(user.getInstitutionId());
+                /** 调用zootropolis服务，判断高思杯和思泉杯权限 */
+                if(!beisaiAuthority.contains(ConstantUtil.BS_AUTHORITY)){
+                    menu.remove(ConstantUtil.BS_AUTHORITY);
+                    menu.remove(ConstantUtil.SQB_AUTHORITY);
+                } else {
+                    if(beisaiAuthority.contains(ConstantUtil.GSB_AUTHORITY)){
+                        menu.put(ConstantUtil.GSB_AUTHORITY,1);
+                    }
+                    if(!beisaiAuthority.contains(ConstantUtil.SQB_AUTHORITY)){
+                        menu.remove(ConstantUtil.SQB_AUTHORITY);
+                    }
                 }
+
                 result.put("menu", menu);
                 result.put("roles", UserSessionHandler.getRoles());
                 resultData.setBody(result);
