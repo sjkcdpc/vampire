@@ -54,6 +54,5 @@
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.GroupInstitutionService" id="groupInstitutionService"/>
     <dubbo:reference interface="com.gaosi.api.warcraft.mq.TaskProducerApi" id="taskProducerApi"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.UserService" id="userServiceIndependenceDay"  />
-    <!-- zootropolis 杯赛权限服务 -->
-    <dubbo:reference id="bsAuthorityService" interface="com.gaosi.api.zootropolis.BsAuthorityService"/>
+
 </beans>
