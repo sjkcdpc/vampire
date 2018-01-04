@@ -81,12 +81,7 @@ public class UserController {
                 whitelistCheck.setCheckData(insIds);
                 List<WhitelistCheck> whitelistChecks = Lists.newArrayList();
                 whitelistChecks.add(whitelistCheck);
-                /** 获取杯赛权限 */
-                List<String> cups = userService.checkInstitutionHaveCup(institutionId);
-                if(cups != null) {
-                    permissions.addAll(cups);
-                }
-                permissions = userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks);
+                permissions = userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks,institutionId);
                 Map<String, Integer> menu = new HashMap<>();
                 for (String p : permissions) {
                     menu.put(p, 1);
