@@ -42,6 +42,7 @@ public class UserController {
     @Resource
     private GroupInstitutionService groupInstitutionService;
 
+
     /**
      * 用户信息
      *
@@ -80,15 +81,12 @@ public class UserController {
                 whitelistCheck.setCheckData(insIds);
                 List<WhitelistCheck> whitelistChecks = Lists.newArrayList();
                 whitelistChecks.add(whitelistCheck);
-                permissions = userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks);
+                permissions = userServiceIndependenceDay.filterPermissions(permissions, Constant.WHITELISTBUSINESS_HEADMASTER, whitelistChecks,institutionId);
                 Map<String, Integer> menu = new HashMap<>();
                 for (String p : permissions) {
                     menu.put(p, 1);
                 }
-                // 高斯杯权限
-                if (userService.checkInstitutionHaveGsb(institutionId)) {
-                    menu.put("gaosibei", 1);
-                }
+
                 result.put("menu", menu);
                 result.put("roles", UserSessionHandler.getRoles());
                 resultData.setBody(result);
