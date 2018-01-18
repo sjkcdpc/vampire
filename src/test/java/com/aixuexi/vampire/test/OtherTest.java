@@ -1,9 +1,12 @@
 package com.aixuexi.vampire.test;
 
 
-import com.gaosi.api.revolver.model.GoodsOrder;
-import com.gaosi.api.revolver.util.ExpressCodeUtil;
+import com.aixuexi.thor.response.ResultData;
 import com.gaosi.api.vulcan.model.GoodsPic;
+import com.gaosi.api.vulcan.vo.CommonConditionVo;
+import com.gaosi.api.vulcan.vo.GoodsConditionVo;
+import com.google.common.collect.Lists;
+import net.sf.json.JSONObject;
 import org.junit.Test;
 
 import java.util.*;

@@ -14,6 +14,7 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.model.GoodsFilterCondition;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -65,6 +66,9 @@ public class GoodsController {
 
     @Resource
     private InvServiceFacade invServiceFacade;
+
+    @Resource
+    private SubjectApi subjectApi;
 
     @PostConstruct
     private void init(){
@@ -251,6 +255,172 @@ public class GoodsController {
         conditionVo.setVeId(veId);
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
+        ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
+        ApiResponseCheck.check(response);
+        Page<GoodsVo> page = response.getBody();
+        dealGoodsVo(Lists.newArrayList(page.getList()));
+        resultData.setBody(page);
+        return resultData;
+    }
+
+    /**
+     * 获取科目品牌以及学科的筛选条件
+     * @return
+     */
+    @RequestMapping(value = "/partQueryCondition", method = RequestMethod.GET)
+    public ResultData partQueryCondition(){
+        // 获取教材筛选条件的ID集合
+        ApiResponse<GoodsFilterCondition> conditionResponse =
+                goodsServiceFacade.queryGoodsFilterCondition(new ReqGoodsConditionVo());
+        ApiResponseCheck.check(conditionResponse);
+        GoodsFilterCondition goodsFilterCondition = conditionResponse.getBody();
+        // 科目筛选条件
+        List<CommonConditionVo> subjects = querySubjectCondition(goodsFilterCondition.getSubjectIds());
+        // 查询学科详情
+        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(goodsFilterCondition.getSubjectProductIds());
+        Map<Integer, List<SubjectProductBo>> subjectProductBoMap = CollectionCommonUtil.groupByList(
+                subjectProductList, "getSubjectId", Integer.class);
+        // 将学科筛选条件作为科目筛选条件的子条件
+        for (CommonConditionVo subject : subjects) {
+            if(subjectProductBoMap.containsKey(subject.getId())) {
+                List<CommonConditionVo> subjectProducts = baseMapper.mapAsList(
+                        subjectProductBoMap.get(subject.getId()), CommonConditionVo.class);
+                subjectProducts.add(0, addAllCondition());
+                subject.setChildConditions(subjectProducts);
+            }
+        }
+        return ResultData.successed(subjects);
+    }
+
+    /**
+     * 获取全部筛选条件
+     * @return
+     */
+    @RequestMapping(value = "/queryCondition", method = RequestMethod.GET)
+    public ResultData queryCondition(ReqGoodsConditionVo reqGoodsConditionVo) {
+        // 获取教材筛选条件的ID集合
+        ApiResponse<GoodsFilterCondition> conditionResponse =
+                goodsServiceFacade.queryGoodsFilterCondition(reqGoodsConditionVo);
+        ApiResponseCheck.check(conditionResponse);
+        GoodsFilterCondition goodsFilterCondition = conditionResponse.getBody();
+        // 全部筛选条件
+        List<CommonConditionVo> allCondition = new ArrayList<>();
+        // 科目筛选条件
+        List<CommonConditionVo> subjects = querySubjectCondition(goodsFilterCondition.getSubjectIds());
+        allCondition.add(new CommonConditionVo(0,"科目",subjects));
+        // 学科筛选条件
+        List<CommonConditionVo> subjectProducts = querySubjectProductCondition(goodsFilterCondition.getSubjectProductIds());
+        allCondition.add(new CommonConditionVo(1,"学科",subjectProducts));
+        // 体系筛选条件
+        List<CommonConditionVo> schemes = querySchemeCondition(goodsFilterCondition.getSchemeIds());
+        allCondition.add(new CommonConditionVo(2,"学科体系",schemes));
+        // 学期筛选条件
+        List<CommonConditionVo> periods = queryPeriodCondition(goodsFilterCondition.getPeriodIds());
+        allCondition.add(new CommonConditionVo(3,"适用学期",periods));
+        // 匹配条件
+        List<CommonConditionVo> categoty = new ArrayList<>();
+        if(CollectionUtils.isNotEmpty(goodsFilterCondition.getBookVersionIds())) {
+            List<CommonConditionVo> bookVersions = queryBookVersionCondition(goodsFilterCondition.getBookVersionIds());
+            categoty.add(new CommonConditionVo(1, "匹配公立教材",bookVersions));
+        }
+        if(CollectionUtils.isNotEmpty(goodsFilterCondition.getExamAreaIds())) {
+            List<CommonConditionVo> examAreas = queryExamAreaCondition(goodsFilterCondition.getExamAreaIds());
+            categoty.add(new CommonConditionVo(2, "匹配当地考区", examAreas));
+        }
+        allCondition.add(new CommonConditionVo(4,"匹配条件",categoty));
+        return ResultData.successed(allCondition);
+    }
+
+    /**
+     * 查询科目筛选条件
+     * @param subjectIds
+     * @return
+     */
+    private List<CommonConditionVo> querySubjectCondition(List<Integer> subjectIds){
+        // 查询科目详情
+        ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(subjectIds);
+        ApiResponseCheck.check(subjectResponse);
+        List<SubjectBo> subjectBos = subjectResponse.getBody();
+        // 科目列表
+        List<CommonConditionVo> subjects = baseMapper.mapAsList(subjectBos,CommonConditionVo.class);
+        return subjects;
+    }
+
+    /**
+     * 获取学科筛选条件
+     * @param subjectProductIds
+     * @return
+     */
+    private List<CommonConditionVo> querySubjectProductCondition(List<Integer> subjectProductIds){
+        // 查询学科详情
+        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(subjectProductIds);
+        // 学科列表
+        List<CommonConditionVo> subjectProducts = baseMapper.mapAsList(subjectProductList,CommonConditionVo.class);
+        subjectProducts.add(0, addAllCondition());
+        return subjectProducts;
+    }
+
+    /**
+     * 获取体系筛选条件
+     * @param schmeIds
+     * @return
+     */
+    private List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds){
+        // 查询体系详情
+        ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(schmeIds);
+        ApiResponseCheck.check(schemeResponse);
+        List<SchemeBo> schemeBos = schemeResponse.getBody();
+        List<CommonConditionVo> schemes =  baseMapper.mapAsList(schemeBos,CommonConditionVo.class);
+        schemes.add(0, addAllCondition());
+        return schemes;
+    }
+
+    /**
+     * 获取学期筛选条件
+     * @param periodIds
+     * @return
+     */
+    private List<CommonConditionVo> queryPeriodCondition(List<Integer> periodIds){
+        ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(periodIds);
+        ApiResponseCheck.check(periodResponse);
+        List<DictionaryBo> dictionaryBos = periodResponse.getBody();
+        List<CommonConditionVo> periods = baseMapper.mapAsList(dictionaryBos,CommonConditionVo.class);
+        periods.add(0,addAllCondition());
+        return periods;
+    }
+
+    /**
+     * 获取教材版本筛选条件
+     * @param bookVersionIds
+     * @return
+     */
+    private List<CommonConditionVo> queryBookVersionCondition(List<Integer> bookVersionIds){
+        ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
+        ApiResponseCheck.check(bookVersionResponse);
+        List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
+        List<CommonConditionVo> bookVersions = baseMapper.mapAsList(bookVersionBos,CommonConditionVo.class);
+        bookVersions.add(0,addAllCondition());
+        return bookVersions;
+    }
+
+    /**
+     * 获取考区版本筛选条件
+     * @param examAreaIds
+     * @return
+     */
+    private List<CommonConditionVo> queryExamAreaCondition(List<Integer> examAreaIds){
+        List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(examAreaIds);
+        List<CommonConditionVo> examAreas = baseMapper.mapAsList(examAreaBos,CommonConditionVo.class);
+        examAreas.add(0,addAllCondition());
+        return examAreas;
+    }
+
+
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
+    public ResultData queryList(ReqGoodsConditionVo reqGoodsConditionVo){
+        Integer insId = UserHandleUtil.getInsId();
+        ResultData resultData = new ResultData();
+        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         ApiResponseCheck.check(response);
         Page<GoodsVo> page = response.getBody();
