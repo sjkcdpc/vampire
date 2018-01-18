@@ -215,10 +215,9 @@ public class GoodsController {
     @RequestMapping(value = "/getByGoodsName",method = RequestMethod.GET)
     public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
                                       @RequestParam Integer pageSize) throws UnsupportedEncodingException {
-        Integer insId = UserHandleUtil.getInsId();
         ResultData resultData = new ResultData();
-        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
-        conditionVo.setInsId(insId);
+        ReqGoodsConditionVo conditionVo = new ReqGoodsConditionVo();
+        conditionVo.setInstitutionId(UserHandleUtil.getInsId());
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
         conditionVo.setGoodsName(goodName);
@@ -245,14 +244,18 @@ public class GoodsController {
     public ResultData queryGoodsList(@RequestParam Integer sid, @RequestParam Integer pid,
                                      @RequestParam Integer vtId, @RequestParam Integer veId,
                                      @RequestParam Integer pageNum, @RequestParam Integer pageSize){
-        Integer insId = UserHandleUtil.getInsId();
         ResultData resultData = new ResultData();
-        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
-        conditionVo.setInsId(insId);
-        conditionVo.setSid(sid);
-        conditionVo.setPid(pid);
-        conditionVo.setVtId(vtId);
-        conditionVo.setVeId(veId);
+        ReqGoodsConditionVo conditionVo = new ReqGoodsConditionVo();
+        conditionVo.setInstitutionId(UserHandleUtil.getInsId());
+        conditionVo.setSubjectProductId(sid);
+        conditionVo.setPeriodId(pid);
+        conditionVo.setCategoryId(vtId);
+        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.BOOKVERSION)) {
+            conditionVo.setBookVersionId(veId);
+        }
+        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.AREA)){
+            conditionVo.setExamAreaId(veId);
+        }
         conditionVo.setPageNum(pageNum);
         conditionVo.setPageSize(pageSize);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
@@ -418,15 +421,12 @@ public class GoodsController {
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResultData queryList(ReqGoodsConditionVo reqGoodsConditionVo){
-        Integer insId = UserHandleUtil.getInsId();
-        ResultData resultData = new ResultData();
-        RequestGoodsConditionVo conditionVo = new RequestGoodsConditionVo();
-        ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
+        reqGoodsConditionVo.setInstitutionId(UserHandleUtil.getInsId());
+        ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(reqGoodsConditionVo);
         ApiResponseCheck.check(response);
         Page<GoodsVo> page = response.getBody();
         dealGoodsVo(Lists.newArrayList(page.getList()));
-        resultData.setBody(page);
-        return resultData;
+        return ResultData.successed(page);
     }
 
     /**
