@@ -3,6 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.exception.BusinessException;
@@ -67,8 +68,8 @@ public class GoodsController {
     @Resource
     private InvServiceFacade invServiceFacade;
 
-    @Resource
-    private SubjectApi subjectApi;
+    @Resource(name = "goodsManager")
+    private GoodsManager goodsManager;
 
     @PostConstruct
     private void init(){
@@ -93,7 +94,7 @@ public class GoodsController {
         //调用获取名字接口
         List<SubjectProductBo> productBos = subjectProductApi.findSubjectProductListForMall(response.getBody());
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(productBos, CommonConditionVo.class);
-        conditionVos.add(0, addAllCondition());
+        conditionVos.add(0, goodsManager.addAllCondition());
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -122,7 +123,7 @@ public class GoodsController {
             }
         });
         List<CommonConditionVo> conditionVos = baseMapper.mapAsList(dictionaryBos, CommonConditionVo.class);
-        conditionVos.add(0, addAllCondition());
+        conditionVos.add(0, goodsManager.addAllCondition());
         resultData.setBody(conditionVos);
         return resultData;
     }
@@ -157,7 +158,7 @@ public class GoodsController {
         ApiResponse<List<CommonConditionVo>> response = goodsServiceFacade.queryCategory(subjectId, periodId);
         List<CommonConditionVo> categoryVos = response.getBody();
         //解决没有考区和没有教材版本的情况
-        categoryVos.add(addAllCondition());
+        categoryVos.add(goodsManager.addAllCondition());
         sort(categoryVos);
         resultData.setBody(categoryVos);
         return resultData;
@@ -198,7 +199,7 @@ public class GoodsController {
             }
             conditionVos = baseMapper.mapAsList(examArea.getBody(), CommonConditionVo.class);
         }
-        conditionVos.add(addAllCondition());
+        conditionVos.add(goodsManager.addAllCondition());
         sort(conditionVos);
         resultData.setBody(conditionVos);
         return resultData;
@@ -278,9 +279,9 @@ public class GoodsController {
         ApiResponseCheck.check(conditionResponse);
         GoodsFilterCondition goodsFilterCondition = conditionResponse.getBody();
         // 科目筛选条件
-        List<CommonConditionVo> subjects = querySubjectCondition(goodsFilterCondition.getSubjectIds());
+        List<CommonConditionVo> subjects = goodsManager.querySubjectCondition(goodsFilterCondition.getSubjectIds());
         // 查询学科详情
-        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(goodsFilterCondition.getSubjectProductIds());
+        List<SubjectProductBo> subjectProductList = goodsManager.querySubjectProduct(goodsFilterCondition.getSubjectProductIds());
         Map<Integer, List<SubjectProductBo>> subjectProductBoMap = CollectionCommonUtil.groupByList(
                 subjectProductList, "getSubjectId", Integer.class);
         // 将学科筛选条件作为科目筛选条件的子条件
@@ -288,7 +289,7 @@ public class GoodsController {
             if(subjectProductBoMap.containsKey(subject.getId())) {
                 List<CommonConditionVo> subjectProducts = baseMapper.mapAsList(
                         subjectProductBoMap.get(subject.getId()), CommonConditionVo.class);
-                subjectProducts.add(0, addAllCondition());
+                subjectProducts.add(0, goodsManager.addAllCondition());
                 subject.setChildConditions(subjectProducts);
             }
         }
@@ -309,25 +310,25 @@ public class GoodsController {
         // 全部筛选条件
         List<CommonConditionVo> allCondition = new ArrayList<>();
         // 科目筛选条件
-        List<CommonConditionVo> subjects = querySubjectCondition(goodsFilterCondition.getSubjectIds());
+        List<CommonConditionVo> subjects = goodsManager.querySubjectCondition(goodsFilterCondition.getSubjectIds());
         allCondition.add(new CommonConditionVo(0,"科目",subjects));
         // 学科筛选条件
-        List<CommonConditionVo> subjectProducts = querySubjectProductCondition(goodsFilterCondition.getSubjectProductIds());
+        List<CommonConditionVo> subjectProducts = goodsManager.querySubjectProductCondition(goodsFilterCondition.getSubjectProductIds());
         allCondition.add(new CommonConditionVo(1,"学科",subjectProducts));
         // 体系筛选条件
-        List<CommonConditionVo> schemes = querySchemeCondition(goodsFilterCondition.getSchemeIds());
+        List<CommonConditionVo> schemes = goodsManager.querySchemeCondition(goodsFilterCondition.getSchemeIds());
         allCondition.add(new CommonConditionVo(2,"学科体系",schemes));
         // 学期筛选条件
-        List<CommonConditionVo> periods = queryPeriodCondition(goodsFilterCondition.getPeriodIds());
+        List<CommonConditionVo> periods = goodsManager.queryPeriodCondition(goodsFilterCondition.getPeriodIds());
         allCondition.add(new CommonConditionVo(3,"适用学期",periods));
         // 匹配条件
         List<CommonConditionVo> categoty = new ArrayList<>();
         if(CollectionUtils.isNotEmpty(goodsFilterCondition.getBookVersionIds())) {
-            List<CommonConditionVo> bookVersions = queryBookVersionCondition(goodsFilterCondition.getBookVersionIds());
+            List<CommonConditionVo> bookVersions = goodsManager.queryBookVersionCondition(goodsFilterCondition.getBookVersionIds());
             categoty.add(new CommonConditionVo(1, "匹配公立教材",bookVersions));
         }
         if(CollectionUtils.isNotEmpty(goodsFilterCondition.getExamAreaIds())) {
-            List<CommonConditionVo> examAreas = queryExamAreaCondition(goodsFilterCondition.getExamAreaIds());
+            List<CommonConditionVo> examAreas = goodsManager.queryExamAreaCondition(goodsFilterCondition.getExamAreaIds());
             categoty.add(new CommonConditionVo(2, "匹配当地考区", examAreas));
         }
         allCondition.add(new CommonConditionVo(4,"匹配条件",categoty));
@@ -335,90 +336,10 @@ public class GoodsController {
     }
 
     /**
-     * 查询科目筛选条件
-     * @param subjectIds
+     * 根据条件查询教材列表
+     * @param reqGoodsConditionVo
      * @return
      */
-    private List<CommonConditionVo> querySubjectCondition(List<Integer> subjectIds){
-        // 查询科目详情
-        ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(subjectIds);
-        ApiResponseCheck.check(subjectResponse);
-        List<SubjectBo> subjectBos = subjectResponse.getBody();
-        // 科目列表
-        List<CommonConditionVo> subjects = baseMapper.mapAsList(subjectBos,CommonConditionVo.class);
-        return subjects;
-    }
-
-    /**
-     * 获取学科筛选条件
-     * @param subjectProductIds
-     * @return
-     */
-    private List<CommonConditionVo> querySubjectProductCondition(List<Integer> subjectProductIds){
-        // 查询学科详情
-        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(subjectProductIds);
-        // 学科列表
-        List<CommonConditionVo> subjectProducts = baseMapper.mapAsList(subjectProductList,CommonConditionVo.class);
-        subjectProducts.add(0, addAllCondition());
-        return subjectProducts;
-    }
-
-    /**
-     * 获取体系筛选条件
-     * @param schmeIds
-     * @return
-     */
-    private List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds){
-        // 查询体系详情
-        ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(schmeIds);
-        ApiResponseCheck.check(schemeResponse);
-        List<SchemeBo> schemeBos = schemeResponse.getBody();
-        List<CommonConditionVo> schemes =  baseMapper.mapAsList(schemeBos,CommonConditionVo.class);
-        schemes.add(0, addAllCondition());
-        return schemes;
-    }
-
-    /**
-     * 获取学期筛选条件
-     * @param periodIds
-     * @return
-     */
-    private List<CommonConditionVo> queryPeriodCondition(List<Integer> periodIds){
-        ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(periodIds);
-        ApiResponseCheck.check(periodResponse);
-        List<DictionaryBo> dictionaryBos = periodResponse.getBody();
-        List<CommonConditionVo> periods = baseMapper.mapAsList(dictionaryBos,CommonConditionVo.class);
-        periods.add(0,addAllCondition());
-        return periods;
-    }
-
-    /**
-     * 获取教材版本筛选条件
-     * @param bookVersionIds
-     * @return
-     */
-    private List<CommonConditionVo> queryBookVersionCondition(List<Integer> bookVersionIds){
-        ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-        ApiResponseCheck.check(bookVersionResponse);
-        List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
-        List<CommonConditionVo> bookVersions = baseMapper.mapAsList(bookVersionBos,CommonConditionVo.class);
-        bookVersions.add(0,addAllCondition());
-        return bookVersions;
-    }
-
-    /**
-     * 获取考区版本筛选条件
-     * @param examAreaIds
-     * @return
-     */
-    private List<CommonConditionVo> queryExamAreaCondition(List<Integer> examAreaIds){
-        List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(examAreaIds);
-        List<CommonConditionVo> examAreas = baseMapper.mapAsList(examAreaBos,CommonConditionVo.class);
-        examAreas.add(0,addAllCondition());
-        return examAreas;
-    }
-
-
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResultData queryList(ReqGoodsConditionVo reqGoodsConditionVo){
         reqGoodsConditionVo.setInstitutionId(UserHandleUtil.getInsId());
@@ -590,17 +511,6 @@ public class GoodsController {
         ApiResponseCheck.check(response);
         SchemeBo schemeBo = response.getBody();
         return schemeBo.getName();
-    }
-
-    /**
-     * 添加全部条件
-     * @return
-     */
-    private CommonConditionVo addAllCondition(){
-        CommonConditionVo commonConditionVo = new CommonConditionVo();
-        commonConditionVo.setId(0);
-        commonConditionVo.setName("全部");
-        return commonConditionVo;
     }
 
     /**
