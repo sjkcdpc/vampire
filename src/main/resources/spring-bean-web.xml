@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
 
     <bean id="characterEncodingFilter" class="org.springframework.web.filter.CharacterEncodingFilter">
         <property name="encoding" value="utf-8"/>
@@ -28,12 +29,13 @@
     </bean>
 
     <bean id="accessAuthorityFilter" class="com.gaosi.api.davincicode.common.filter.AccessAuthorityFilter">
-        <property name="ignoreUrlRegex" value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
+        <property name="ignoreUrlRegex"
+                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
         <property name="cookieDomain" value="${cookie_domain}"/>
     </bean>
 
     <!-- 验证权限 -->
-    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter" />
+    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter"/>
 
     <!-- 使用disconf必须添加以下配置 -->
     <bean id="disconfMgrBean" class="com.baidu.disconf.client.DisconfMgrBean"
@@ -67,4 +69,17 @@
             </list>
         </property>
     </bean>
+    <bean id="baseValidatorFactory" class="com.aixuexi.thor.validate.factory.BaseValidatorFactory"/>
+    <bean id="validateAspect" class="com.aixuexi.thor.validate.aspect.ValidationAspect">
+        <constructor-arg name="validatorFactories">
+            <array>
+                <ref bean="baseValidatorFactory"/>
+            </array>
+        </constructor-arg>
+    </bean>
+    <aop:config>
+        <aop:aspect ref="validateAspect">
+            <aop:around method="around" pointcut="execution(* com.aixuexi.vampire.controller..*.*(..))"/>
+        </aop:aspect>
+    </aop:config>
 </beans>

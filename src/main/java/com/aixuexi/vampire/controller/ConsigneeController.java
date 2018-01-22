@@ -2,6 +2,8 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.thor.validate.annotation.NotNull;
+import com.aixuexi.thor.validate.annotation.common.Validate;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -9,6 +11,7 @@ import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.constant.ValidateConstatnt;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
@@ -41,14 +44,11 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public ResultData save(@RequestBody Consignee consignee) {
+    public ResultData save(@RequestBody @Validate(groups = ValidateConstatnt.INSERT_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
-
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(), consignee);
-
         resultData.setBody(getConsigneeVoById(id));
-
         return resultData;
     }
 
@@ -59,21 +59,17 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/update")
-    public ResultData update(Consignee consignee) {
+    public ResultData update(@Validate(groups = ValidateConstatnt.UPDATE_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
-
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(), consignee);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
-
         ConsigneeVo cv = getConsigneeVoById(consignee.getId());
-
         if (cv == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "该收货人不存在");
         }
         resultData.setBody(cv);
-
         return resultData;
     }
 
@@ -86,7 +82,6 @@ public class ConsigneeController {
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
         ResultData resultData = new ResultData();
-
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
@@ -97,7 +92,6 @@ public class ConsigneeController {
         } else {
             resultData.setBody(effectRows);
         }
-
         return resultData;
     }
 
@@ -112,9 +106,7 @@ public class ConsigneeController {
         if (resConsignee == null) {
             return null;
         }
-
         ConsigneeVo consigneeVo = baseMapper.map(resConsignee, ConsigneeVo.class);
-
         Integer areaId = consigneeVo.getAreaId();
         ApiResponse<AddressDTO> apiResponse = districtApi.getAncestryById(areaId);
         AddressDTO addressDTO = apiResponse.getBody();
