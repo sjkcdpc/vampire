@@ -1,6 +1,7 @@
 package com.aixuexi.vampire.util;
 
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
+import com.gaosi.api.basicdata.model.bo.SubjectBo;
 import com.gaosi.api.vulcan.vo.CommonConditionVo;
 import ma.glasnost.orika.MapperFactory;
 import ma.glasnost.orika.impl.ConfigurableMapper;
@@ -19,6 +20,11 @@ public class BaseMapper extends ConfigurableMapper {
                 .mapNulls(true).mapNullsInReverse(true)
                 .byDefault()
                 .fieldAToB("code", "id")
+                .register();
+        factory.classMap(SubjectBo.class, CommonConditionVo.class)
+                .mapNulls(true).mapNullsInReverse(true)
+                .byDefault()
+                .fieldAToB("brandName", "name")
                 .register();
 
     }
