@@ -2,8 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.thor.validate.annotation.NotNull;
-import com.aixuexi.thor.validate.annotation.common.Validate;
+import com.aixuexi.thor.validate.annotation.common.Valid;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -44,7 +43,7 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public ResultData save(@RequestBody @Validate(groups = ValidateConstatnt.INSERT_GROUP) Consignee consignee) {
+    public ResultData save(@RequestBody @Valid(groups = ValidateConstatnt.INSERT_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(), consignee);
@@ -59,7 +58,7 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/update")
-    public ResultData update(@Validate(groups = ValidateConstatnt.UPDATE_GROUP) Consignee consignee) {
+    public ResultData update(@Valid(groups = ValidateConstatnt.UPDATE_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.update(UserHandleUtil.getInsId(), consignee);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
