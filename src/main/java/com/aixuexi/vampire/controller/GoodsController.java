@@ -288,7 +288,7 @@ public class GoodsController {
         List<CommonConditionVo> subjectProducts = goodsManager.querySubjectProductCondition(goodsFilterCondition.getSubjectProductIds());
         allCondition.add(new CommonConditionVo(1,"学科",subjectProducts));
         // 体系筛选条件
-        List<CommonConditionVo> schemes = goodsManager.querySchemeCondition(goodsFilterCondition.getSchemeIds());
+        List<CommonConditionVo> schemes = goodsManager.querySchemeCondition(goodsFilterCondition.getSchemeIds(),subjectProducts);
         allCondition.add(new CommonConditionVo(2,"学科体系",schemes));
         // 学期筛选条件
         List<CommonConditionVo> periods = goodsManager.queryPeriodCondition(goodsFilterCondition.getPeriodIds());

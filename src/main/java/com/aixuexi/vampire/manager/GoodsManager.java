@@ -14,7 +14,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -55,8 +54,10 @@ public class GoodsManager {
     @Resource
     private BaseMapper baseMapper;
 
+    // 学期的排序规则
     private Map<String,Integer> periodMap = new HashMap<>();
 
+    // 排序规则初始化（暑，秋，寒，春，上册，下册）
     @PostConstruct
     private void init(){
         periodMap.put("1",4);
@@ -261,18 +262,38 @@ public class GoodsManager {
      * @param schmeIds
      * @return
      */
-    public List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds){
+    public List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds,List<CommonConditionVo> subjectProducts){
         try {
             ImmutableCollection<SchemeBo> schemeBos = cacheScheme.getAll(schmeIds).values();
             List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
-            // 按照先学部后ID排序
+            // 体系按ID排序
             Collections.sort(schemeBoList, new Comparator<SchemeBo>() {
                 @Override
                 public int compare(SchemeBo o1, SchemeBo o2) {
                     return o1.getId().compareTo(o2.getId());
                 }
             });
-            List<CommonConditionVo> schemes =  baseMapper.mapAsList(schemeBoList,CommonConditionVo.class);
+            // 排好序的学科ID
+            List<Integer> subjectProductIds = CollectionCommonUtil.getFieldListByObjectList(
+                    subjectProducts, "getId", Integer.class);
+            // 把体系按照排序好的学科ID分类
+            Map<Integer,List<SchemeBo>> schemeBoMap = new HashMap<>();
+            for (Integer subjectProductId : subjectProductIds) {
+                schemeBoMap.put(subjectProductId,new ArrayList<SchemeBo>());
+            }
+            for (SchemeBo schemeBo : schemeBoList) {
+                if(schemeBoMap.containsKey(schemeBo.getSubjectProductId())){
+                    schemeBoMap.get(schemeBo.getSubjectProductId()).add(schemeBo);
+                }
+            }
+            // 排好序的体系集合
+            List<SchemeBo> sortedSchemeBos = new ArrayList<>();
+            for (Integer subjectProductId : subjectProductIds) {
+                if(schemeBoMap.containsKey(subjectProductId)){
+                    sortedSchemeBos.addAll(schemeBoMap.get(subjectProductId));
+                }
+            }
+            List<CommonConditionVo> schemes =  baseMapper.mapAsList(sortedSchemeBos,CommonConditionVo.class);
             schemes.add(0, addAllCondition());
             return schemes;
         } catch (Exception e) {
