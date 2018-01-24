@@ -323,6 +323,7 @@ public class GoodsController {
         allCondition.add(new CommonConditionVo(3,"适用学期",periods));
         // 匹配条件
         List<CommonConditionVo> categoty = new ArrayList<>();
+        categoty.add(goodsManager.addAllCondition());
         if(CollectionUtils.isNotEmpty(goodsFilterCondition.getBookVersionIds())) {
             List<CommonConditionVo> bookVersions = goodsManager.queryBookVersionCondition(goodsFilterCondition.getBookVersionIds());
             categoty.add(new CommonConditionVo(1, "匹配公立教材",bookVersions));
