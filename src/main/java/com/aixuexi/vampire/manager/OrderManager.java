@@ -315,10 +315,16 @@ public class OrderManager {
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
         //ruanyj 收货人地址补全
         ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
+        if (addressDTOApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, addressDTOApiResponse.getMessage());
+        }
         AddressDTO address = addressDTOApiResponse.getBody();
         if (address == null){
             throw new RuntimeException("收货人地址查询失败，请联系管理员");
         }
+        // 设置同步订单收货人地址
+        goodsOrderVo.setAddress(address);
+
         StringBuilder preAddress = new StringBuilder();
         preAddress.append(address.getProvince() == null ? StringUtils.EMPTY : address.getProvince());
         preAddress.append(address.getCity() == null ? StringUtils.EMPTY : address.getCity());
