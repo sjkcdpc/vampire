@@ -20,8 +20,8 @@ public class GoodsControllerTest extends BaseTest {
         mockMvc.perform(MockMvcRequestBuilders.
                 get("/goods/queryCondition")
                 .param("schemeId","0")
-                .param("subjectId","6")
-                .param("subjectProductId","13")
+                .param("subjectId","2")
+                .param("subjectProductId","0")
                 .param("periodId","0")
                 .param("categoryId","0")
         );
@@ -33,11 +33,11 @@ public class GoodsControllerTest extends BaseTest {
                 get("/goods/list")
                 .param("pageNum","1")
                 .param("pageSize","10")
-                .param("schemeId","0")
-                .param("subjectId","6")
-                .param("subjectProductId","13")
-                .param("periodId","0")
-                .param("categoryId","0")
+                //.param("schemeId","0")
+                .param("subjectId","2")
+                .param("subjectProductId","7")
+                .param("periodId","3")
+                .param("categoryId","1")
         );
     }
 

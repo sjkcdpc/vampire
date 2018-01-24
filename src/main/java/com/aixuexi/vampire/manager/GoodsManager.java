@@ -16,14 +16,14 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +54,19 @@ public class GoodsManager {
 
     @Resource
     private BaseMapper baseMapper;
+
+    private Map<String,Integer> periodMap = new HashMap<>();
+
+    @PostConstruct
+    private void init(){
+        periodMap.put("1",4);
+        periodMap.put("2",1);
+        periodMap.put("3",2);
+        periodMap.put("4",3);
+        periodMap.put("5",5);
+        periodMap.put("6",6);
+    }
+
 
     /**
      * 缓存科目
@@ -194,8 +207,16 @@ public class GoodsManager {
     public List<CommonConditionVo> querySubjectCondition(List<Integer> subjectIds){
         try {
             ImmutableCollection<SubjectBo> subjectBos = cacheSubject.getAll(subjectIds).values();
+            List<SubjectBo> subjectBoList = new ArrayList<>(subjectBos);
+            // 按照ID排序
+            Collections.sort(subjectBoList, new Comparator<SubjectBo>() {
+                @Override
+                public int compare(SubjectBo o1, SubjectBo o2) {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            });
             // 科目列表
-            List<CommonConditionVo> subjects = baseMapper.mapAsList(subjectBos,CommonConditionVo.class);
+            List<CommonConditionVo> subjects = baseMapper.mapAsList(subjectBoList,CommonConditionVo.class);
             return subjects;
         } catch (Exception e) {
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询科目筛选条件异常");
@@ -243,7 +264,15 @@ public class GoodsManager {
     public List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds){
         try {
             ImmutableCollection<SchemeBo> schemeBos = cacheScheme.getAll(schmeIds).values();
-            List<CommonConditionVo> schemes =  baseMapper.mapAsList(schemeBos,CommonConditionVo.class);
+            List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
+            // 按照先学部后ID排序
+            Collections.sort(schemeBoList, new Comparator<SchemeBo>() {
+                @Override
+                public int compare(SchemeBo o1, SchemeBo o2) {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            });
+            List<CommonConditionVo> schemes =  baseMapper.mapAsList(schemeBoList,CommonConditionVo.class);
             schemes.add(0, addAllCondition());
             return schemes;
         } catch (Exception e) {
@@ -259,7 +288,18 @@ public class GoodsManager {
     public List<CommonConditionVo> queryPeriodCondition(List<Integer> periodIds){
         try {
             ImmutableCollection<DictionaryBo> dictionaryBos = cachePeriod.getAll(periodIds).values();
-            List<CommonConditionVo> periods = baseMapper.mapAsList(dictionaryBos,CommonConditionVo.class);
+            List<DictionaryBo> dictionaryList = new ArrayList<>(dictionaryBos);
+            // 学期按照orderIndex排序
+            for (DictionaryBo dictionaryBo : dictionaryList) {
+                resetPeriodOrder(dictionaryBo);
+            }
+            Collections.sort(dictionaryList, new Comparator<DictionaryBo>() {
+                @Override
+                public int compare(DictionaryBo o1, DictionaryBo o2) {
+                    return o1.getOrderIndex().compareTo(o2.getOrderIndex());
+                }
+            });
+            List<CommonConditionVo> periods = baseMapper.mapAsList(dictionaryList,CommonConditionVo.class);
             periods.add(0,addAllCondition());
             return periods;
         } catch (Exception e) {
@@ -275,7 +315,15 @@ public class GoodsManager {
     public List<CommonConditionVo> queryBookVersionCondition(List<Integer> bookVersionIds){
         try {
             ImmutableCollection<BookVersionBo> bookVersionBos = cacheBookVersion.getAll(bookVersionIds).values();
-            List<CommonConditionVo> bookVersions = baseMapper.mapAsList(bookVersionBos,CommonConditionVo.class);
+            List<BookVersionBo> bookVersionBoList = new ArrayList<>(bookVersionBos);
+            // 教材版本按照orderIndex排序
+            Collections.sort(bookVersionBoList, new Comparator<BookVersionBo>() {
+                @Override
+                public int compare(BookVersionBo o1, BookVersionBo o2) {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            });
+            List<CommonConditionVo> bookVersions = baseMapper.mapAsList(bookVersionBoList,CommonConditionVo.class);
             bookVersions.add(0,addAllCondition());
             return bookVersions;
         } catch (ExecutionException e) {
@@ -291,7 +339,15 @@ public class GoodsManager {
     public List<CommonConditionVo> queryExamAreaCondition(List<Integer> examAreaIds){
         try {
             ImmutableCollection<ExamAreaBo> examAreaBos = cacheExamArea.getAll(examAreaIds).values();
-            List<CommonConditionVo> examAreas = baseMapper.mapAsList(examAreaBos,CommonConditionVo.class);
+            List<ExamAreaBo> examAreaBoList = new ArrayList<>(examAreaBos);
+            // 考区版本按照orderIndex排序
+            Collections.sort(examAreaBoList, new Comparator<ExamAreaBo>() {
+                @Override
+                public int compare(ExamAreaBo o1, ExamAreaBo o2) {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            });
+            List<CommonConditionVo> examAreas = baseMapper.mapAsList(examAreaBoList,CommonConditionVo.class);
             examAreas.add(0,addAllCondition());
             return examAreas;
         } catch (Exception e) {
@@ -308,5 +364,21 @@ public class GoodsManager {
         commonConditionVo.setId(0);
         commonConditionVo.setName("全部");
         return commonConditionVo;
+    }
+
+    /**
+     * 重置学期排序
+     * @param db
+     */
+    public void resetPeriodOrder(DictionaryBo db) {
+        String code = db.getCode();
+        if(StringUtils.isNotBlank(code)) {
+            String trimCode = code.trim();
+            if (periodMap.containsKey(trimCode)) {
+                db.setOrderIndex(periodMap.get(trimCode));
+            } else {
+                db.setOrderIndex(db.getId());
+            }
+        }
     }
 }

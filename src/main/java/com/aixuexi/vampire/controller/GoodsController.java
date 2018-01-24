@@ -63,23 +63,11 @@ public class GoodsController {
     @Resource
     private BaseMapper baseMapper;
 
-    private Map<String,Integer> periodMap = new HashMap<>();
-
     @Resource
     private InvServiceFacade invServiceFacade;
 
     @Resource(name = "goodsManager")
     private GoodsManager goodsManager;
-
-    @PostConstruct
-    private void init(){
-        periodMap.put("1",4);
-        periodMap.put("2",1);
-        periodMap.put("3",2);
-        periodMap.put("4",3);
-        periodMap.put("5",5);
-        periodMap.put("6",6);
-    }
 
     /**
      * 获取学科列表
@@ -113,8 +101,8 @@ public class GoodsController {
         //需要调用获取名字接口
         ApiResponse<List<DictionaryBo>> periods = dictionaryApi.findGoodsPeriodByCode(response.getBody());
         List<DictionaryBo> dictionaryBos = periods.getBody();
-        for(DictionaryBo db :dictionaryBos) {
-            setSortId(db);
+        for(DictionaryBo dictionaryBo :dictionaryBos) {
+            goodsManager.resetPeriodOrder(dictionaryBo);
         }
         Collections.sort(dictionaryBos, new Comparator<DictionaryBo>() {
             @Override
@@ -126,22 +114,6 @@ public class GoodsController {
         conditionVos.add(0, goodsManager.addAllCondition());
         resultData.setBody(conditionVos);
         return resultData;
-    }
-
-    /**
-     * 学期重置排序
-     * @param db
-     */
-    private void setSortId(DictionaryBo db) {
-        String code = db.getCode();
-        if(StringUtils.isNotBlank(code)) {
-            String trimCode = code.trim();
-            if (periodMap.containsKey(trimCode)) {
-                db.setOrderIndex(periodMap.get(trimCode));
-            } else {
-                db.setOrderIndex(db.getId());
-            }
-        }
     }
 
     /**
@@ -326,11 +298,11 @@ public class GoodsController {
         categoty.add(goodsManager.addAllCondition());
         if(CollectionUtils.isNotEmpty(goodsFilterCondition.getBookVersionIds())) {
             List<CommonConditionVo> bookVersions = goodsManager.queryBookVersionCondition(goodsFilterCondition.getBookVersionIds());
-            categoty.add(new CommonConditionVo(1, "匹配公立教材",bookVersions));
+            categoty.add(new CommonConditionVo(1, "教材版本",bookVersions));
         }
         if(CollectionUtils.isNotEmpty(goodsFilterCondition.getExamAreaIds())) {
             List<CommonConditionVo> examAreas = goodsManager.queryExamAreaCondition(goodsFilterCondition.getExamAreaIds());
-            categoty.add(new CommonConditionVo(2, "匹配当地考区", examAreas));
+            categoty.add(new CommonConditionVo(2, "考区版本", examAreas));
         }
         allCondition.add(new CommonConditionVo(4,"匹配条件",categoty));
         return ResultData.successed(allCondition);

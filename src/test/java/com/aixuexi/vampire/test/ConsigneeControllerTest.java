@@ -13,21 +13,26 @@ public class ConsigneeControllerTest extends BaseTest  {
     @Test
     public void add() throws Exception {
         Consignee consignee = new Consignee();
+        consignee.setName("张三");
+        consignee.setAreaId(10007607);
+        consignee.setAddress("一个好地方");
+        consignee.setPhone("11111111111");
         String temp = JSON.toJSONString(consignee);
         mockMvc.perform(MockMvcRequestBuilders.
                 post("/consignee/save")
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(temp)
         );
     }
 
     @Test
     public void update() throws Exception {
-        String temp = "{\"address\":[\"白石镇丽景花园1\"]}";
+        Consignee consignee = new Consignee();
+        consignee.setId(1316);
+        consignee.setName("张三3");
+        String temp = JSON.toJSONString(consignee);
         mockMvc.perform(MockMvcRequestBuilders.
-                post("/consignee/update")
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .content(temp)
+                get("/consignee/update").param("id","1316").param("name","张三3")
         );
     }
 }
