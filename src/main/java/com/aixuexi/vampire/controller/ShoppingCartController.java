@@ -5,6 +5,7 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.*;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
+import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
@@ -101,15 +102,14 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
+        if(num.intValue()>9999 || num.intValue()<1) {
+            return ResultData.failed("每笔订单中单品数量不超过9999!");
+        }
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
         ApiResponseCheck.check(apiResponse);
         List<ConfirmGoodsVo> body = apiResponse.getBody();
         if (CollectionUtils.isEmpty(body)) {
             return ResultData.failed("商品不存在！");
-        }
-
-        if(num.intValue()>9999 || num.intValue()<1) {
-            return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ConfirmGoodsVo confirmGoodsVo = body.get(0);
         if(confirmGoodsVo.getStatus() != GoodsConstant.Status.ON) {
@@ -119,13 +119,10 @@ public class ShoppingCartController {
             return ResultData.failed("定制商品数量有误！");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
-        shoppingCartList.setGoodsId(confirmGoodsVo.getGoodsId());
-        shoppingCartList.setGoodsName(confirmGoodsVo.getGoodsName());
+        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+        shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
-        shoppingCartList.setGoodsTypeName(confirmGoodsVo.getGoodsTypeName());
-        shoppingCartList.setGoodsTypePrice(confirmGoodsVo.getPrice());
         shoppingCartList.setNum(num);
-        shoppingCartList.setWeight(confirmGoodsVo.getWeight());
 
         Integer userId = UserHandleUtil.getUserId();
         String redisKey = Constants.PRE_SHOPPINGCART + userId;
@@ -135,7 +132,7 @@ public class ShoppingCartController {
                 return ResultData.failed("请勿操作过快！");
             }
 
-            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
+            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, userId);
             ApiResponseCheck.check(addSCResponse);
         }
         finally {
@@ -153,8 +150,13 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/del")
     public ResultData del(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
-        int flag = shoppingCartServiceFacade.delShoppingCart(goodsId, goodsTypeId, UserHandleUtil.getUserId());
-        return dealDelAndMod(flag);
+        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+        Integer categoryId = MallItemConstant.Category.JCZB.getId();
+        ApiResponse<?> apiResponse = shoppingCartServiceFacade.delShoppingCart(UserHandleUtil.getUserId(), categoryId, goodsTypeId);
+        if (apiResponse.isSuccess()){
+            return ResultData.successed();
+        }
+        return ResultData.failed(apiResponse.getMessage());
     }
 
     /**
@@ -170,21 +172,13 @@ public class ShoppingCartController {
         if(num.intValue()>9999 || num.intValue()<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
-        int flag = shoppingCartServiceFacade.modNumShoppingCart(goodsId, goodsTypeId, num, UserHandleUtil.getUserId());
-        return dealDelAndMod(flag);
-    }
-
-    private ResultData dealDelAndMod(int flag) {
-        if (flag == -1) {
-            return ResultData.failed("购物车不存在数据、请刷新再试！");
-        } else if (flag == -2) {
-            return ResultData.failed("购物车重复、请联系客服！");
-        }
-
-        ResultData resultData = new ResultData();
-        resultData.setBody(flag);
-
-        return resultData;
+        ShoppingCartList shoppingCartList = new ShoppingCartList();
+        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+        shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
+        shoppingCartList.setGoodsTypeId(goodsTypeId);
+        shoppingCartList.setNum(num);
+        ApiResponse<Integer> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
+        return ResultData.successed(apiResponse.getBody());
     }
 
 }

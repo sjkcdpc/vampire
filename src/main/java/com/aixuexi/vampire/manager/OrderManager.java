@@ -228,11 +228,11 @@ public class OrderManager {
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
             logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
-            List<Integer> shoppingCartListIds = Lists.newArrayList();
             for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-                shoppingCartListIds.add(shoppingCartList.getId());
+                // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+                shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
             }
-            shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
+            shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
             return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
         } else {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
