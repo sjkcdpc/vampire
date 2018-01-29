@@ -273,6 +273,12 @@
             </properties>
         </profile>
         <profile>
+            <id>aliyun</id>
+            <properties>
+                <package.environment>src/main/resources_aliyun</package.environment>
+            </properties>
+        </profile>
+        <profile>
             <id>onlinetest</id>
             <properties>
                 <package.environment>src/main/resources_onlinetest</package.environment>
