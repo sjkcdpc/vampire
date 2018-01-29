@@ -8,13 +8,13 @@ import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
@@ -24,15 +24,14 @@ import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -156,6 +155,11 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
+        // 物流停运临时需求
+        DateTime dateTime= new DateTime(2018,2,8,0,0,0);
+        if (dateTime.isAfterNow() && ExpressConstant.Express.WULIU.getCode().equals(express)) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "物流停运,暂不接单");
+        }
 
         validateInsType(); // 试用机构不能下单
         Integer userId = UserHandleUtil.getUserId();
