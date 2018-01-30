@@ -125,20 +125,8 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
 
-        Integer userId = UserHandleUtil.getUserId();
-        String redisKey = Constants.PRE_SHOPPINGCART + userId;
-        try {
-            boolean ret = myJedisService.setnx(redisKey, "", 60);
-            if(!ret){
-                return ResultData.failed("请勿操作过快！");
-            }
-
-            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
-            ApiResponseCheck.check(addSCResponse);
-        }
-        finally {
-            myJedisService.del(redisKey);
-        }
+        ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
+        ApiResponseCheck.check(addSCResponse);
         return ResultData.successed();
     }
 
