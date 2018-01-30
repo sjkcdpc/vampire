@@ -200,7 +200,9 @@ public class OrderManager {
         if (CollectionUtils.isEmpty(goodsTypeIds)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "所选商品不能为空");
         }
-        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
+        // TODO 目前只查教材的类别
+        int categoryId = MallItemConstant.Category.JCZB.getId().intValue();
+        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
@@ -498,7 +500,9 @@ public class OrderManager {
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
+            // TODO 目前只查教材的类别
+            int categoryId = MallItemConstant.Category.JCZB.getId().intValue();
+            shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
             if (CollectionUtils.isEmpty(shoppingCartLists)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }

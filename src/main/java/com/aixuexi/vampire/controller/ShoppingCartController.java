@@ -120,6 +120,7 @@ public class ShoppingCartController {
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+        shoppingCartList.setUserId(UserHandleUtil.getUserId());
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
@@ -132,7 +133,7 @@ public class ShoppingCartController {
                 return ResultData.failed("请勿操作过快！");
             }
 
-            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList, userId);
+            ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
             ApiResponseCheck.check(addSCResponse);
         }
         finally {
@@ -150,9 +151,13 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/del")
     public ResultData del(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
+        ShoppingCartList shoppingCartList = new ShoppingCartList();
+        shoppingCartList.setUserId(UserHandleUtil.getUserId());
         // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
         Integer categoryId = MallItemConstant.Category.JCZB.getId();
-        ApiResponse<?> apiResponse = shoppingCartServiceFacade.delShoppingCart(UserHandleUtil.getUserId(), categoryId, goodsTypeId);
+        shoppingCartList.setCategoryId(categoryId);
+        shoppingCartList.setGoodsTypeId(goodsTypeId);
+        ApiResponse<?> apiResponse = shoppingCartServiceFacade.delShoppingCart(shoppingCartList);
         if (apiResponse.isSuccess()){
             return ResultData.successed();
         }
@@ -174,10 +179,11 @@ public class ShoppingCartController {
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+        shoppingCartList.setUserId(UserHandleUtil.getUserId());
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
-        ApiResponse<Integer> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList, UserHandleUtil.getUserId());
+        ApiResponse<Integer> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList);
         return ResultData.successed(apiResponse.getBody());
     }
 
