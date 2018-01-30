@@ -1,21 +1,19 @@
 package com.aixuexi.vampire.controller;
 
-import com.aixuexi.thor.redis.MyJedisService;
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.vampire.util.*;
+import com.aixuexi.vampire.util.ApiResponseCheck;
+import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.CalculateUtil;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
-import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
-import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -35,12 +33,6 @@ public class ShoppingCartController {
 
     @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
-
-    @Resource
-    private GoodsServiceFacade goodsServiceFacade;
-
-    @Resource
-    private MyJedisService myJedisService;
 
     @Resource
     private GoodsTypeServiceFacade goodsTypeServiceFacade;
@@ -104,19 +96,6 @@ public class ShoppingCartController {
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         if(num.intValue()>9999 || num.intValue()<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
-        }
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(Lists.newArrayList(goodsTypeId));
-        ApiResponseCheck.check(apiResponse);
-        List<ConfirmGoodsVo> body = apiResponse.getBody();
-        if (CollectionUtils.isEmpty(body)) {
-            return ResultData.failed("商品不存在！");
-        }
-        ConfirmGoodsVo confirmGoodsVo = body.get(0);
-        if(confirmGoodsVo.getStatus() != GoodsConstant.Status.ON) {
-            return ResultData.failed("商品已下架！");
-        }
-        if(confirmGoodsVo.getMinNum()>0 && num % confirmGoodsVo.getMinNum()!= 0){
-            return ResultData.failed("定制商品数量有误！");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
