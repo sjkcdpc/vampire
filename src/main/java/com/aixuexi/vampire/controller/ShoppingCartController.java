@@ -2,16 +2,11 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.util.ApiResponseCheck;
-import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
-import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
 import com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade;
-import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import org.apache.commons.collections.CollectionUtils;
@@ -22,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by gaoxinzhong on 2017/5/24.
@@ -34,12 +28,6 @@ public class ShoppingCartController {
     @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
-    @Resource
-    private GoodsTypeServiceFacade goodsTypeServiceFacade;
-
-    @Resource
-    private BaseMapper baseMapper;
-
     /**
      * 购物车
      *
@@ -50,32 +38,16 @@ public class ShoppingCartController {
         ResultData resultData = new ResultData();
 
         Integer userId = UserHandleUtil.getUserId();
-        List<ShoppingCartList> shoppingCartListList = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        if (CollectionUtils.isEmpty(shoppingCartListList)) {
+        List<ShoppingCartListVo> shoppingCartListVos = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             return resultData;
         }
-        List<Integer> goodTypeIds = CollectionCommonUtil.getFieldListByObjectList(shoppingCartListList,"getGoodsTypeId",Integer.class);
-        ApiResponse<List<GoodsType>> apiResponse = goodsTypeServiceFacade.findGoodsTypeByIds(goodTypeIds);
-        ApiResponseCheck.check(apiResponse);
-        List<GoodsType> goodsTypeList = apiResponse.getBody();
-        Map<Integer,GoodsType> goodsTypeMap = CollectionCommonUtil.toMapByList(goodsTypeList,"getId",Integer.class);
         ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
         int goodsPieces = 0;
         double payAmount = 0;
-        List<ShoppingCartListVo> shoppingCartListVos = baseMapper.mapAsList(shoppingCartListList, ShoppingCartListVo.class);
         for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-            Integer num = shoppingCartListVo.getNum();
-            goodsPieces += num;
-
-            double numDouble = num.doubleValue();
-            double priceDouble = shoppingCartListVo.getGoodsTypePrice();
-
-            double total = CalculateUtil.mul(numDouble, priceDouble);
-            shoppingCartListVo.setTotal(total);
-
-            payAmount += total;
-            int minNum = goodsTypeMap.get(shoppingCartListVo.getGoodsTypeId()).getMinNum();
-            shoppingCartListVo.setCustom(minNum>0);
+            goodsPieces += shoppingCartListVo.getNum();
+            payAmount += shoppingCartListVo.getTotal();
         }
         shoppingCartVo.setGoodsPieces(goodsPieces);
         shoppingCartVo.setPayAmount(payAmount);

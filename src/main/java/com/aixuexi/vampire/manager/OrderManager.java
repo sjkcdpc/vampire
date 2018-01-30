@@ -3,7 +3,6 @@ package com.aixuexi.vampire.manager;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -30,6 +29,7 @@ import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.model.GoodsPeriod;
 import com.gaosi.api.vulcan.model.GoodsPic;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.util.CalculateUtil;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -121,16 +121,16 @@ public class OrderManager {
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
         confirmOrderVo.setExpress(confirmExpressVos);
         // 3. 用户购物车中商品清单
-        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+        List<ShoppingCartListVo> shoppingCartListVos = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
         List<Integer> goodsTypeIds = Lists.newArrayList();
         // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
-            Integer num = shoppingCartList.getNum();
+        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+            Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
+            Integer num = shoppingCartListVo.getNum();
 
             goodsTypeIds.add(goodsTypeId);
             goodsNum.put(goodsTypeId, num);
