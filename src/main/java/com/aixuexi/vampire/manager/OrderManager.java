@@ -2,6 +2,7 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.exception.BusinessException;
+import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
@@ -121,7 +122,9 @@ public class OrderManager {
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
         confirmOrderVo.setExpress(confirmExpressVos);
         // 3. 用户购物车中商品清单
-        List<ShoppingCartListVo> shoppingCartListVos = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
         if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
@@ -202,7 +205,9 @@ public class OrderManager {
         }
         // TODO 目前只查教材的类别
         int categoryId = MallItemConstant.Category.JCZB.getId().intValue();
-        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+        ApiResponse<List<ShoppingCartList>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartList> shoppingCartLists = listApiResponse.getBody();
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
@@ -501,8 +506,10 @@ public class OrderManager {
         double goodsAmount = 0; // 总金额
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
             // TODO 目前只查教材的类别
-            int categoryId = MallItemConstant.Category.JCZB.getId().intValue();
-            shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+            int categoryId = MallItemConstant.Category.JCZB.getId();
+            ApiResponse<List<ShoppingCartList>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+            ApiResponseCheck.check(listApiResponse);
+            shoppingCartLists = listApiResponse.getBody();
             if (CollectionUtils.isEmpty(shoppingCartLists)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }
