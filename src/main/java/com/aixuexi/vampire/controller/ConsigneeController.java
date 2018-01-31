@@ -46,8 +46,8 @@ public class ConsigneeController {
 
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         int id = consigneeServiceFacade.insert(UserHandleUtil.getInsId(), consignee);
-        // TODO 查null问题
-        resultData.setBody(null);
+
+        resultData.setBody(getConsigneeVoById(id));
 
         return resultData;
     }
