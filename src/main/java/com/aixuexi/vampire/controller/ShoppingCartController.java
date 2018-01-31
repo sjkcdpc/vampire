@@ -38,7 +38,9 @@ public class ShoppingCartController {
         ResultData resultData = new ResultData();
 
         Integer userId = UserHandleUtil.getUserId();
-        List<ShoppingCartListVo> shoppingCartListVos = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
         if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             return resultData;
         }
