@@ -32,7 +32,7 @@
     <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ExpressServiceFacade" id="expressServiceFacade" />
     <!-- 在线商城相关接口 -->
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeService" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade" />

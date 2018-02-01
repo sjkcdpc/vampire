@@ -43,7 +43,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -59,25 +58,25 @@ public class OrderManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private ConsigneeServiceFacade consigneeServiceFacade;
 
-    @Autowired
+    @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
-    @Autowired
+    @Resource
     private FinancialAccountService finAccService;
 
     @Resource
     private DistrictApi districtApi;
 
-    @Autowired
+    @Resource
     private GoodsServiceFacade goodsServiceFacade;
 
-    @Autowired
+    @Resource
     private OrderServiceFacade orderServiceFacade;
 
-    @Autowired
+    @Resource
     private InstitutionService institutionService;
 
     @Resource
@@ -85,9 +84,6 @@ public class OrderManager {
 
     @Resource
     private BaseMapper baseMapper;
-
-    @Resource(name = "dictionaryManager")
-    private DictionaryManager dictionaryManager;
 
     @Resource
     private GoodsPicServiceFacade goodsPicServiceFacade;
@@ -112,7 +108,7 @@ public class OrderManager {
         // 1. 收货人地址
         List<ConsigneeVo> consigneeVos = findConsignee(insId);
         for (ConsigneeVo consigneeVo : consigneeVos) {
-            if (consigneeVo.getSystemDefault() == true) {
+            if (consigneeVo.getSystemDefault()) {
                 confirmOrderVo.setDefCneeId(consigneeVo.getId());
                 break;
             }
@@ -200,11 +196,8 @@ public class OrderManager {
         if (rr == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
-        if (CollectionUtils.isEmpty(goodsTypeIds)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "所选商品不能为空");
-        }
         // TODO 目前只查教材的类别
-        int categoryId = MallItemConstant.Category.JCZB.getId().intValue();
+        int categoryId = MallItemConstant.Category.JCZB.getId();
         ApiResponse<List<ShoppingCartList>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
         ApiResponseCheck.check(listApiResponse);
         List<ShoppingCartList> shoppingCartLists = listApiResponse.getBody();
@@ -225,7 +218,7 @@ public class OrderManager {
         Boolean syncToWms = true;
         Institution insinfo = institutionService.getInsInfoById(insId);
         // 1测试机构 2试用机构 或者关闭同步开关 则不同步到WMS
-        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()))
+        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType()))
                 || !expressUtil.getSyncToWms()) {
             syncToWms = false;
         }
@@ -366,7 +359,7 @@ public class OrderManager {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
-        goodsOrderVo.setFreight(Double.valueOf(expressFreightVo.getTotalFreight()));
+        goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
         goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
         return goodsOrderVo;
@@ -500,7 +493,6 @@ public class OrderManager {
      */
     public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId,Integer areaId, List<Integer> goodsTypeIds) {
         FreightVo freightVo = new FreightVo();
-        List<ShoppingCartList> shoppingCartLists = null;
         int goodsPieces = 0; // 商品总件数
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
@@ -509,7 +501,7 @@ public class OrderManager {
             int categoryId = MallItemConstant.Category.JCZB.getId();
             ApiResponse<List<ShoppingCartList>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
             ApiResponseCheck.check(listApiResponse);
-            shoppingCartLists = listApiResponse.getBody();
+            List<ShoppingCartList> shoppingCartLists = listApiResponse.getBody();
             if (CollectionUtils.isEmpty(shoppingCartLists)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }

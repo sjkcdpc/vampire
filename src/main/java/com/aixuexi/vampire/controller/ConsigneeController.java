@@ -12,7 +12,6 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -25,7 +24,7 @@ import javax.annotation.Resource;
 @RequestMapping(value = "/consignee")
 public class ConsigneeController {
 
-    @Autowired
+    @Resource
     private ConsigneeServiceFacade consigneeServiceFacade;
 
     @Resource
