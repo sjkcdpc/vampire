@@ -2,10 +2,7 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.exception.BusinessException;
-import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
-import com.aixuexi.vampire.util.Constants;
-import com.aixuexi.vampire.util.ExpressUtil;
+import com.aixuexi.vampire.util.*;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
@@ -22,6 +19,7 @@ import com.gaosi.api.revolver.dto.QueryExpressPriceDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
+import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
@@ -117,9 +115,10 @@ public class OrderManager {
             }
         }
         confirmOrderVo.setConsignees(consigneeVos);
-        // 2. 快递公司
-        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
-        confirmOrderVo.setExpress(confirmExpressVos);
+        // 2. 配送方式
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        ApiResponseCheck.check(expressTypeResponse);
+        confirmOrderVo.setExpressTypes(expressTypeResponse.getBody());
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
