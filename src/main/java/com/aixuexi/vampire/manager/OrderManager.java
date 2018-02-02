@@ -2,8 +2,8 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.exception.BusinessException;
+import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.CalculateUtil;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -30,6 +30,7 @@ import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.model.GoodsPeriod;
 import com.gaosi.api.vulcan.model.GoodsPic;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.util.CalculateUtil;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -42,7 +43,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -58,25 +58,25 @@ public class OrderManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private ConsigneeServiceFacade consigneeServiceFacade;
 
-    @Autowired
+    @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
-    @Autowired
+    @Resource
     private FinancialAccountService finAccService;
 
     @Resource
     private DistrictApi districtApi;
 
-    @Autowired
+    @Resource
     private GoodsServiceFacade goodsServiceFacade;
 
-    @Autowired
+    @Resource
     private OrderServiceFacade orderServiceFacade;
 
-    @Autowired
+    @Resource
     private InstitutionService institutionService;
 
     @Resource
@@ -84,9 +84,6 @@ public class OrderManager {
 
     @Resource
     private BaseMapper baseMapper;
-
-    @Resource(name = "dictionaryManager")
-    private DictionaryManager dictionaryManager;
 
     @Resource
     private GoodsPicServiceFacade goodsPicServiceFacade;
@@ -111,7 +108,7 @@ public class OrderManager {
         // 1. 收货人地址
         List<ConsigneeVo> consigneeVos = findConsignee(insId);
         for (ConsigneeVo consigneeVo : consigneeVos) {
-            if (consigneeVo.getSystemDefault() == true) {
+            if (consigneeVo.getSystemDefault()) {
                 confirmOrderVo.setDefCneeId(consigneeVo.getId());
                 break;
             }
@@ -121,16 +118,18 @@ public class OrderManager {
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
         confirmOrderVo.setExpress(confirmExpressVos);
         // 3. 用户购物车中商品清单
-        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
+        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
         List<Integer> goodsTypeIds = Lists.newArrayList();
         // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
-            Integer num = shoppingCartList.getNum();
+        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+            Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
+            Integer num = shoppingCartListVo.getNum();
 
             goodsTypeIds.add(goodsTypeId);
             goodsNum.put(goodsTypeId, num);
@@ -197,16 +196,17 @@ public class OrderManager {
         if (rr == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
         }
-        if (CollectionUtils.isEmpty(goodsTypeIds)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "所选商品不能为空");
-        }
-        List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
-        if (CollectionUtils.isEmpty(shoppingCartLists)) {
+        // TODO 目前只查教材的类别
+        int categoryId = MallItemConstant.Category.JCZB.getId();
+        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
+        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
 
         // 创建订单对象
-        GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartLists, userId, insId, consigneeId, receivePhone, express);
+        GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartListVos, userId, insId, consigneeId, receivePhone, express);
         logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrderVo));
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
@@ -218,7 +218,7 @@ public class OrderManager {
         Boolean syncToWms = true;
         Institution insinfo = institutionService.getInsInfoById(insId);
         // 1测试机构 2试用机构 或者关闭同步开关 则不同步到WMS
-        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType().intValue()))
+        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType()))
                 || !expressUtil.getSyncToWms()) {
             syncToWms = false;
         }
@@ -228,11 +228,16 @@ public class OrderManager {
         if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
             SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
             logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
-            List<Integer> shoppingCartListIds = Lists.newArrayList();
-            for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-                shoppingCartListIds.add(shoppingCartList.getId());
+            List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
+            ShoppingCartList shoppingCartList = null;
+            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+                shoppingCartList = new ShoppingCartList();
+                // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+                shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
+                shoppingCartList.setGoodsTypeId(shoppingCartListVo.getGoodsTypeId());
+                shoppingCartLists.add(shoppingCartList);
             }
-            shoppingCartServiceFacade.clearShoppingCart(shoppingCartListIds);
+            shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
             return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
         } else {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
@@ -242,7 +247,7 @@ public class OrderManager {
     /**
      * 创建订单对象
      *
-     * @param shoppingCartLists 购物车中的商品
+     * @param shoppingCartListVos 购物车中的商品
      * @param userId            用户ID
      * @param insId             机构ID
      * @param consigneeId       收货人ID
@@ -250,7 +255,7 @@ public class OrderManager {
      * @param express           快递
      * @return
      */
-    private GoodsOrderVo createGoodsOrder(List<ShoppingCartList> shoppingCartLists, Integer userId, Integer insId,
+    private GoodsOrderVo createGoodsOrder(List<ShoppingCartListVo> shoppingCartListVos, Integer userId, Integer insId,
                                           Integer consigneeId, String receivePhone, String express) {
         // 收货人信息判断
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
@@ -267,9 +272,9 @@ public class OrderManager {
         double goodsAmount = 0;
         // 商品数量
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-            Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
-            Integer num = shoppingCartList.getNum();
+        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+            Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
+            Integer num = shoppingCartListVo.getNum();
             goodsTypeIds.add(goodsTypeId);
             goodsNum.put(goodsTypeId, num);
             goodsPieces += num;
@@ -359,7 +364,7 @@ public class OrderManager {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
-        goodsOrderVo.setFreight(Double.valueOf(expressFreightVo.getTotalFreight()));
+        goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
         goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
         return goodsOrderVo;
@@ -493,22 +498,25 @@ public class OrderManager {
      */
     public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId,Integer areaId, List<Integer> goodsTypeIds) {
         FreightVo freightVo = new FreightVo();
-        List<ShoppingCartList> shoppingCartLists = null;
         int goodsPieces = 0; // 商品总件数
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId, goodsTypeIds);
-            if (CollectionUtils.isEmpty(shoppingCartLists)) {
+            // TODO 目前只查教材的类别
+            int categoryId = MallItemConstant.Category.JCZB.getId();
+            ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+            ApiResponseCheck.check(listApiResponse);
+            List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
+            if (CollectionUtils.isEmpty(shoppingCartListVos)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }
             goodsTypeIds = Lists.newArrayList();
 
             // 数量 goodsTypeIds - > num
             Map<Integer, Integer> goodsNum = Maps.newHashMap();
-            for (ShoppingCartList shoppingCartList : shoppingCartLists) {
-                Integer goodsTypeId = shoppingCartList.getGoodsTypeId();
-                Integer num = shoppingCartList.getNum();
+            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+                Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
+                Integer num = shoppingCartListVo.getNum();
 
                 goodsTypeIds.add(goodsTypeId);
                 goodsNum.put(goodsTypeId, num);

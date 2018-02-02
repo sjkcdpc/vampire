@@ -3,7 +3,6 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.exception.BusinessException;
-import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
@@ -58,9 +57,6 @@ public class OrderController {
 
     @Resource
     private OrderServiceFacade orderServiceFacade;
-
-    @Resource(name = "dictionaryManager")
-    private DictionaryManager dictionaryManager;
 
     @Resource
     private InstitutionService institutionService;
@@ -162,9 +158,12 @@ public class OrderController {
         }
 
         validateInsType(); // 试用机构不能下单
+        if (null==goodsTypeIds || goodsTypeIds.length==0){
+            return ResultData.failed("所选商品不能为空");
+        }
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
-        List<Integer> goodsTypeIdList = goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds);
+        List<Integer> goodsTypeIdList = Lists.newArrayList(goodsTypeIds);
 
         OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId,
                 receivePhone, express, goodsTypeIdList, token);
