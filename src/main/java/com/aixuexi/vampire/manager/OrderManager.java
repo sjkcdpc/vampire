@@ -235,6 +235,7 @@ public class OrderManager {
                 // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
                 shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
                 shoppingCartList.setGoodsTypeId(shoppingCartListVo.getGoodsTypeId());
+                shoppingCartLists.add(shoppingCartList);
             }
             shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
             return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
