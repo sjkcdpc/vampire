@@ -118,7 +118,9 @@ public class OrderManager {
         // 2. 配送方式
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
         ApiResponseCheck.check(expressTypeResponse);
-        confirmOrderVo.setExpressTypes(expressTypeResponse.getBody());
+        List<ExpressType> expressTypes = expressTypeResponse.getBody();
+        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
+        confirmOrderVo.setExpressTypes(confirmExpressVos);
         // 3. 用户购物车中商品清单
         List<ShoppingCartList> shoppingCartLists = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         if (CollectionUtils.isEmpty(shoppingCartLists)) {
@@ -460,13 +462,14 @@ public class OrderManager {
     private void calcFreight(Integer provinceId,Integer areaId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
         logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
         Map<String,Integer> expressMap = new HashMap<>();
-        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_SHUNFENG,provinceId);
-        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_SHENTONG,provinceId);
-        expressMap.put(OrderConstant.LogisticsMode.EXPRESS_DBWL,areaId);
-        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        for (ConfirmExpressVo confirmExpressVo : expressVoLists) {
+            expressMap.put(confirmExpressVo.getCode(),provinceId);
+            if(confirmExpressVo.getCode().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)){
+                expressMap.put(confirmExpressVo.getCode(),areaId);
+            }
         }
+        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
+        ApiResponseCheck.check(apiResponse);
         List<ExpressFreightVo> expressFreightVos = apiResponse.getBody();
         Map<String,ExpressFreightVo> expressFreightVoMap = CollectionCommonUtil.toMapByList(expressFreightVos,"getExpressCode",String.class);
         for (ConfirmExpressVo confirmExpressVo:expressVoLists) {
@@ -536,14 +539,17 @@ public class OrderManager {
                 }
             }
         }
-        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(Constants.EXPRESS_TYPE,ConfirmExpressVo.class);
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        ApiResponseCheck.check(expressTypeResponse);
+        List<ExpressType> expressTypes = expressTypeResponse.getBody();
+        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
         // 计算邮费
         calcFreight(provinceId,areaId, weight, confirmExpressVos, goodsPieces);
         // set
         freightVo.setGoodsPieces(goodsPieces);
         freightVo.setGoodsWeight(weight);
         freightVo.setGoodsAmount(goodsAmount);
-        freightVo.setExpress(confirmExpressVos);
+        freightVo.setExpressTypes(confirmExpressVos);
         // 账号余额
         RemainResult rr = finAccService.getRemainByInsId(insId);
         if (rr == null) {
