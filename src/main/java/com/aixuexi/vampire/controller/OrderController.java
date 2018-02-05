@@ -4,6 +4,7 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.manager.OrderManager;
+import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -19,6 +20,7 @@ import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.model.Express;
+import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
@@ -151,12 +153,17 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
-        // 物流停运临时需求
-        DateTime dateTime= new DateTime(2018,2,8,0,0,0);
-        if (dateTime.isAfterNow() && ExpressConstant.Express.WULIU.getCode().equals(express)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "物流停运,暂不接单");
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        ApiResponseCheck.check(expressTypeResponse);
+        Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(
+                expressTypeResponse.getBody(), "getCode", String.class);
+        if(expressTypeMap.containsKey(express)) {
+            if(!expressTypeMap.get(express).getEnable()){
+                return ResultData.failed("该配送方式停止承运,暂不接单");
+            }
+        }else{
+            return ResultData.failed("配送方式参数错误");
         }
-
         validateInsType(); // 试用机构不能下单
         if (null==goodsTypeIds || goodsTypeIds.length==0){
             return ResultData.failed("所选商品不能为空");
