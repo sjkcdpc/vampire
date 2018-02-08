@@ -1,6 +1,7 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
+import com.aixuexi.vampire.bean.GoodsFreightSubtotalBo;
 import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -125,50 +126,21 @@ public class OrderManager {
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
         confirmOrderVo.setExpressTypes(confirmExpressVos);
         // 3. 用户购物车中商品清单
-        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        ApiResponseCheck.check(listApiResponse);
-        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-        }
-        List<Integer> goodsTypeIds = Lists.newArrayList();
-        // 数量 goodsTypeIds -> num
-        Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-            Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
-            Integer num = shoppingCartListVo.getNum();
+        List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, null, null);
+        Map<Integer, ShoppingCartListVo> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class);
+        List<Integer> goodsTypeIds = new ArrayList<>(goodsNum.keySet());
 
-            goodsTypeIds.add(goodsTypeId);
-            goodsNum.put(goodsTypeId, num);
-
-        }
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
-        int goodsPieces = 0; // 商品总件数
-        double goodsAmount = 0; // 总金额
-        double weight = 0; // 商品重量
+        ApiResponseCheck.check(apiResponse);
+
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-        for (ConfirmGoodsVo goodsVo : goodsVos) {
-            Integer goodsTypeId = goodsVo.getGoodsTypeId();
-            Integer typeNum = goodsNum.get(goodsTypeId);
-            goodsVo.setNum(typeNum);
-            int num = goodsVo.getNum();
-            // 数量*单价
-            goodsVo.setTotal(num * goodsVo.getPrice());
-            if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
-                // 数量*单重量
-                weight += num * goodsVo.getWeight();
-                goodsAmount += goodsVo.getTotal();
-                goodsPieces += num;
-            }
-        }
+        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
+
         confirmOrderVo.setGoodsItem(goodsVos);
-        confirmOrderVo.setGoodsPieces(goodsPieces);
-        confirmOrderVo.setGoodsAmount(goodsAmount);
-        confirmOrderVo.setGoodsWeight(weight);
+        confirmOrderVo.setGoodsPieces(goodsFreightSubtotalBo.getGoodsPieces());
+        confirmOrderVo.setGoodsAmount(goodsFreightSubtotalBo.getGoodsAmount());
+        confirmOrderVo.setGoodsWeight(goodsFreightSubtotalBo.getWeight());
         // 5. 账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         Long remain = rr.getUsableRemain();
@@ -199,12 +171,7 @@ public class OrderManager {
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         // TODO 目前只查教材的类别
         int categoryId = MallItemConstant.Category.JCZB.getId();
-        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
-        ApiResponseCheck.check(listApiResponse);
-        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-        }
+        List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId,categoryId,goodsTypeIds);
 
         // 创建订单对象
         GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartListVos, userId, insId, consigneeId, receivePhone, express);
@@ -270,40 +237,31 @@ public class OrderManager {
         // 商品总金额
         double goodsAmount = 0;
         // 商品数量
-        Map<Integer, Integer> goodsNum = Maps.newHashMap();
-        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-            Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
-            Integer num = shoppingCartListVo.getNum();
-            goodsTypeIds.add(goodsTypeId);
-            goodsNum.put(goodsTypeId, num);
-            goodsPieces += num;
-        }
+        Map<Integer, ShoppingCartListVo> goodsNum = CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class);
 
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-        if (listApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
-        }
+        ApiResponseCheck.check(listApiResponse);
         List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
-        if (CollectionUtils.isEmpty(goodsVos)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在");
-        }
         // 校验商品是否已下架、条形码是否为空。
-        validateGoods(goodsVos, goodsNum);
+        validateGoods(goodsVos);
         // 订单详情
         List<OrderDetailVo> orderDetails = Lists.newArrayList();
         for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {
-            int num = goodsNum.get(confirmGoodsVo.getGoodsTypeId());
+            Integer goodsTypeId = confirmGoodsVo.getGoodsTypeId();
+            int num = goodsNum.get(goodsTypeId).getNum();
             confirmGoodsVo.setNum(num);
             // 数量*单重量
             weight += num * confirmGoodsVo.getWeight();
             // 数量*单价
             goodsAmount += num * confirmGoodsVo.getPrice();
+            //件数
+            goodsPieces += num;
             // 商品明细
             OrderDetailVo orderDetail = new OrderDetailVo();
             orderDetail.setBarCode(confirmGoodsVo.getBarCode());
             orderDetail.setGoodsId(confirmGoodsVo.getGoodsId());
-            orderDetail.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
+            orderDetail.setGoodTypeId(goodsTypeId);
             orderDetail.setName(confirmGoodsVo.getGoodsName() + Constants.ORDERDETAIL_NAME_DIV + confirmGoodsVo.getGoodsTypeName());
             orderDetail.setNum(num);
             orderDetail.setPrice(confirmGoodsVo.getPrice());
@@ -319,25 +277,16 @@ public class OrderManager {
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
         //ruanyj 收货人地址补全
         ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
-        if (addressDTOApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, addressDTOApiResponse.getMessage());
-        }
+        ApiResponseCheck.check(addressDTOApiResponse);
         AddressDTO address = addressDTOApiResponse.getBody();
         if (address == null){
             throw new RuntimeException("收货人地址查询失败，请联系管理员");
         }
         // 设置同步订单收货人地址
         goodsOrderVo.setAddress(address);
+        //设置收货地址
+        goodsOrderVo.setConsigneeAddress(getConsigneeAddress(address,consignee));
 
-        StringBuilder preAddress = new StringBuilder();
-        preAddress.append(address.getProvince() == null ? StringUtils.EMPTY : address.getProvince());
-        preAddress.append(address.getCity() == null ? StringUtils.EMPTY : address.getCity());
-        preAddress.append(address.getDistrict() == null ? StringUtils.EMPTY : address.getDistrict());
-        if (StringUtils.isBlank(preAddress.toString())) {
-            goodsOrderVo.setConsigneeAddress(consignee.getAddress());
-        } else {
-            goodsOrderVo.setConsigneeAddress(preAddress.toString() + " " + consignee.getAddress());
-        }
         goodsOrderVo.setConsumeAmount(goodsAmount); // 商品总金额
         goodsOrderVo.setInstitutionId(insId);
         goodsOrderVo.setRemark(StringUtils.EMPTY);
@@ -359,14 +308,34 @@ public class OrderManager {
         }
         ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
         logger.info("submitOrder --> freight : {}", apiResponse);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
+
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
         goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
         return goodsOrderVo;
+    }
+
+    /**
+     * 获取收货地址
+     *
+     * @param address   地址
+     * @param consignee 收货人
+     * @return 地址
+     */
+    private String getConsigneeAddress(AddressDTO address, Consignee consignee) {
+        StringBuilder preAddress = new StringBuilder();
+        preAddress.append(address.getProvince() == null ? StringUtils.EMPTY : address.getProvince());
+        preAddress.append(address.getCity() == null ? StringUtils.EMPTY : address.getCity());
+        preAddress.append(address.getDistrict() == null ? StringUtils.EMPTY : address.getDistrict());
+        String result = null;
+        if (StringUtils.isBlank(preAddress.toString())) {
+            result = consignee.getAddress().toString();
+        } else {
+            result = preAddress.toString() + " " + consignee.getAddress();
+        }
+        return result;
     }
 
     /**
@@ -504,46 +473,18 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
             // TODO 目前只查教材的类别
             int categoryId = MallItemConstant.Category.JCZB.getId();
-            ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
-            ApiResponseCheck.check(listApiResponse);
-            List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-            if (CollectionUtils.isEmpty(shoppingCartListVos)) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-            }
-            goodsTypeIds = Lists.newArrayList();
-
-            // 数量 goodsTypeIds - > num
-            Map<Integer, Integer> goodsNum = Maps.newHashMap();
-            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-                Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
-                Integer num = shoppingCartListVo.getNum();
-
-                goodsTypeIds.add(goodsTypeId);
-                goodsNum.put(goodsTypeId, num);
-            }
+            List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, categoryId, goodsTypeIds);
+            Map<Integer, ShoppingCartListVo> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class);
+            goodsTypeIds = new ArrayList<>(goodsNum.keySet());
 
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
-            if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-            }
+            ApiResponseCheck.check(apiResponse);
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-            if (CollectionUtils.isEmpty(goodsVos)) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在");
-            }
-            for (ConfirmGoodsVo goodsVo : goodsVos) {
-                if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
-                    Integer goodsTypeId = goodsVo.getGoodsTypeId();
-                    Integer goodsNumValue = goodsNum.get(goodsTypeId);
-                    Double unitWeight = goodsVo.getWeight();
-                    // 数量*单重量
-                    weight += goodsNumValue * unitWeight;
 
-                    Double price = goodsVo.getPrice();
-                    // 数量*单价
-                    goodsAmount += goodsNumValue * price;
-                    goodsPieces += goodsNumValue;
-                }
-            }
+            GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
+            weight = goodsFreightSubtotalBo.getWeight();
+            goodsAmount = goodsFreightSubtotalBo.getGoodsAmount();
+            goodsPieces = goodsFreightSubtotalBo.getGoodsPieces();
         }
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
         ApiResponseCheck.check(expressTypeResponse);
@@ -563,6 +504,62 @@ public class OrderManager {
         return freightVo;
     }
 
+    /**
+     * 获取计算运费需要的总重量、总费用、总件数
+     *
+     * @param goodsVos 商品Vos
+     * @param goodsNum 购物车详情对应的map
+     * @return 运费小计bo
+     */
+    private GoodsFreightSubtotalBo getGoodsFreightSubtotalBo(List<ConfirmGoodsVo> goodsVos, Map<Integer, ShoppingCartListVo> goodsNum) {
+        GoodsFreightSubtotalBo goodsFreightSubtotalBo = new GoodsFreightSubtotalBo();
+        int goodsPieces = 0; // 商品总件数
+        double weight = 0; // 重量
+        double goodsAmount = 0; // 总金额
+        for (ConfirmGoodsVo goodsVo : goodsVos) {
+            Integer goodsTypeId = goodsVo.getGoodsTypeId();
+            Integer typeNum = goodsNum.get(goodsTypeId).getNum();
+            goodsVo.setNum(typeNum);
+            // 数量*单价
+            goodsVo.setTotal(typeNum * goodsVo.getPrice());
+            if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
+                // 数量*单重量
+                weight += typeNum * goodsVo.getWeight();
+                goodsAmount += goodsVo.getTotal();
+                goodsPieces += typeNum;
+            }
+        }
+
+        goodsFreightSubtotalBo.setGoodsAmount(goodsAmount);
+        goodsFreightSubtotalBo.setWeight(weight);
+        goodsFreightSubtotalBo.setGoodsPieces(goodsPieces);
+        return goodsFreightSubtotalBo;
+    }
+
+    /**
+     * 获取购物车详情列表
+     *
+     * @param userId       用户Id
+     * @param categoryId   类型ID
+     * @param goodsTypeIds 商品skuID列表
+     * @return 购物车详情列表
+     */
+    private List<ShoppingCartListVo> getShoppingCartDetails(Integer userId, Integer categoryId, List<Integer> goodsTypeIds) {
+        ApiResponse<List<ShoppingCartListVo>> listApiResponse = null;
+
+        if (null != categoryId) {
+            listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
+        } else {//用于确认页面，此时没有goodsTypeIds
+            listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        }
+        ApiResponseCheck.check(listApiResponse);
+        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
+        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
+        }
+
+        return shoppingCartListVos;
+    }
 
     /**
      * 根据商品类型ID是查询商品信息
@@ -619,9 +616,8 @@ public class OrderManager {
      * 校验商品
      *
      * @param confirmGoodsVos
-     * @param goodsNum
      */
-    private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos, Map<Integer, Integer> goodsNum) {
+    private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             //ruanyj 商品编码为空校验
             String barCode = confirmGoodsVo.getBarCode();
@@ -782,5 +778,4 @@ public class OrderManager {
         }
         subGoodsOrderVo.setConsumeAmount(consumeAmount);
     }
-
 }
