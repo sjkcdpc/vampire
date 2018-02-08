@@ -2,7 +2,8 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.bean.GoodsFreightSubtotalBo;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.Assert;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
@@ -279,9 +280,8 @@ public class OrderManager {
         ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
         ApiResponseCheck.check(addressDTOApiResponse);
         AddressDTO address = addressDTOApiResponse.getBody();
-        if (address == null){
-            throw new RuntimeException("收货人地址查询失败，请联系管理员");
-        }
+        Assert.notNull(address,"收货人地址查询失败，请联系管理员");
+
         // 设置同步订单收货人地址
         goodsOrderVo.setAddress(address);
         //设置收货地址
@@ -554,9 +554,7 @@ public class OrderManager {
         }
         ApiResponseCheck.check(listApiResponse);
         List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
-        }
+        Assert.notEmpty(shoppingCartListVos, "购物车中商品已结算或为空");
 
         return shoppingCartListVos;
     }

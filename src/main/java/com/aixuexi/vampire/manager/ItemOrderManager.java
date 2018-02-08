@@ -5,7 +5,7 @@ import com.aixuexi.thor.sms_mail.SMSConstant;
 import com.aixuexi.thor.util.Functions;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.BusinessResult;
 import com.gaosi.api.axxBank.model.CostProxyParams;

@@ -3,7 +3,7 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
