@@ -239,6 +239,7 @@ public class OrderManager {
         double goodsAmount = 0;
         // 商品数量
         Map<Integer, ShoppingCartListVo> goodsNum = CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class);
+        goodsTypeIds = new ArrayList<>(goodsNum.keySet());
 
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
