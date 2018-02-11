@@ -2,6 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -73,6 +74,9 @@ public class ItemOrderController {
 
     @Resource
     private MallCategoryServiceFacade mallCategoryServiceFacade;
+
+    @Resource
+    private FinancialAccountManager financialAccountManager;
 
     @Resource
     private BaseMapper baseMapper;
@@ -299,10 +303,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/getAmount", method = RequestMethod.GET)
     public ResultData getAmount(@RequestParam String orderId) {
         //查询当前机构账号余额
-        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if (rr == null) {
-            return ResultData.failed("账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
         AmountVo amountVo = new AmountVo();
         Double remainAmount = rr.getUsableRemain().doubleValue() / 10000;

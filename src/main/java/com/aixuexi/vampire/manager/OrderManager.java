@@ -95,6 +95,9 @@ public class OrderManager {
     @Resource
     private ExpressServiceFacade expressServiceFacade;
 
+    @Resource
+    private FinancialAccountManager financialAccountManager;
+
 
     /**
      * 核对订单信息
@@ -167,10 +170,7 @@ public class OrderManager {
         confirmOrderVo.setGoodsAmount(goodsAmount);
         confirmOrderVo.setGoodsWeight(weight);
         // 5. 账户余额
-        RemainResult rr = finAccService.getRemainByInsId(insId);
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         Long remain = rr.getUsableRemain();
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
         // 6. 获取token
@@ -196,10 +196,7 @@ public class OrderManager {
         logger.info("submitOrder --> userId : {}, insId : {}, consigneeId : {}, receivePhone : {}, express : {}, goodsTypeIds : {}",
                 userId, insId, consigneeId, receivePhone, express, goodsTypeIds);
         // 账号余额
-        RemainResult rr = finAccService.getRemainByInsId(insId);
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         // TODO 目前只查教材的类别
         int categoryId = MallItemConstant.Category.JCZB.getId();
         ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
@@ -214,10 +211,8 @@ public class OrderManager {
         logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrderVo));
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
-        Long remain = rr.getUsableRemain();
-        if (amount.longValue() > remain) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
-        }
+        financialAccountManager.checkRemainMoney(rr,amount.longValue());
+
         // 是否同步到WMS
         Boolean syncToWms = true;
         Institution insinfo = institutionService.getInsInfoById(insId);
@@ -562,10 +557,7 @@ public class OrderManager {
         freightVo.setGoodsAmount(goodsAmount);
         freightVo.setExpressTypes(confirmExpressVos);
         // 账号余额
-        RemainResult rr = finAccService.getRemainByInsId(insId);
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         Long remain = rr.getUsableRemain();
         freightVo.setBalance(Double.valueOf(remain) / 10000);
         return freightVo;

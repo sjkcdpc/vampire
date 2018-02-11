@@ -24,6 +24,7 @@ import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
@@ -153,21 +154,8 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
-        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        ApiResponseCheck.check(expressTypeResponse);
-        Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(
-                expressTypeResponse.getBody(), "getCode", String.class);
-        if(expressTypeMap.containsKey(express)) {
-            if(!expressTypeMap.get(express).getEnable()){
-                return ResultData.failed("该配送方式停止承运,暂不接单");
-            }
-        }else{
-            return ResultData.failed("配送方式参数错误");
-        }
-        validateInsType(); // 试用机构不能下单
-        if (null==goodsTypeIds || goodsTypeIds.length==0){
-            return ResultData.failed("所选商品不能为空");
-        }
+        checkParams4Submit(goodsTypeIds,express);
+
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
         List<Integer> goodsTypeIdList = Lists.newArrayList(goodsTypeIds);
@@ -260,6 +248,17 @@ public class OrderController {
         if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
+    }
+
+
+    private void checkParams4Submit(Integer[] goodsTypeIds, String express) {
+        Assert.isTrue(null != goodsTypeIds && goodsTypeIds.length != 0, "所选商品不能为空");
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        ApiResponseCheck.check(expressTypeResponse);
+        Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(expressTypeResponse.getBody(), "getCode", String.class);
+        Assert.isTrue(expressTypeMap.containsKey(express), "配送方式参数错误");
+        Assert.isTrue(expressTypeMap.get(express).getEnable(), "该配送方式停止承运,暂不接单");
+        validateInsType(); // 试用机构不能下单
     }
 }
 
