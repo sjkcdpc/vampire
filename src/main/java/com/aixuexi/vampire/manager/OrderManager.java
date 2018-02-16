@@ -658,7 +658,6 @@ public class OrderManager {
                     goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class));
                 }
             }
-            Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = this.findGoodsByTypeIds(new ArrayList<>(goodsTypeIds));
             Map<Integer, List<GoodsPic>> picMap = null;
             if (needDetail) {
                 // 订单详情查看需要获取图片
@@ -684,22 +683,20 @@ public class OrderManager {
                 expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
             }
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                this.dealGoodsOrderVo(goodsOrderVo, confirmGoodsVoMap, picMap,expressPriceMap,provinceIdMap);
+                this.dealGoodsOrderVo(goodsOrderVo, picMap,expressPriceMap,provinceIdMap);
             }
         }
     }
 
     /**
-     * 补充订单中的重量，小计，图片，时效
+     * 补充订单中的小计，图片，时效
      * @param goodsOrderVo
-     * @param confirmGoodsVoMap
      * @param picMap
      * @param expressPriceMap
      * @param provinceIdMap
      */
-    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap,
-                                  Map<Integer, List<GoodsPic>> picMap,Map<String,ExpressPrice> expressPriceMap,
-                                  Map<Integer,AddressDTO> provinceIdMap){
+    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, List<GoodsPic>> picMap,
+                                  Map<String,ExpressPrice> expressPriceMap, Map<Integer,AddressDTO> provinceIdMap){
         String expressType = goodsOrderVo.getExpressType();
         Integer districtId ;
         // 非物流方式的订单，需要查询目的地的省ID
@@ -724,16 +721,12 @@ public class OrderManager {
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
                 subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
-                dealSubGoodsOrderVo(subGoodsOrderVo, confirmGoodsVoMap, picMap);
+                dealSubGoodsOrderVo(subGoodsOrderVo, picMap);
             }
         }else {
             goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
-                ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(orderDetailVo.getGoodTypeId());
-                if (confirmGoodsVo != null && confirmGoodsVo.getWeight() != null) {
-                    orderDetailVo.setWeight(confirmGoodsVo.getWeight());
-                }
                 orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
                 if (null != picMap){
                     List<GoodsPic> subPicList = picMap.get(orderDetailVo.getGoodsId());
@@ -749,16 +742,13 @@ public class OrderManager {
     /**
      * 处理子订单
      * @param subGoodsOrderVo
+     * @param picMap
      */
-    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap, Map<Integer, List<GoodsPic>> picMap){
+    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, List<GoodsPic>> picMap){
         List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
-            ConfirmGoodsVo confirmGoodsVo = confirmGoodsVoMap.get(subOrderDetailVo.getGoodTypeId());
-            if (confirmGoodsVo != null && confirmGoodsVo.getWeight() != null) {
-                subOrderDetailVo.setWeight(confirmGoodsVo.getWeight());
-            }
             subOrderDetailVo.setTotal(CalculateUtil.mul(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
             consumeAmount = CalculateUtil.add(consumeAmount,subOrderDetailVo.getTotal());
             if (null != picMap){
