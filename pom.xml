@@ -15,6 +15,7 @@
         <spring-version>4.3.4.RELEASE</spring-version>
         <avatar.version>addWeight-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
+        <thor-util.version>1.5.2-RELEASE</thor-util.version>
         <transformers.version>1.0.13.11-RELEASE</transformers.version>
         <transformers-proto.version>1.0.33-RELEASE</transformers-proto.version>
         <orika.version>1.5.1</orika.version>
@@ -265,6 +266,12 @@
             <id>docker</id>
             <properties>
                 <package.environment>src/main/resources_docker</package.environment>
+            </properties>
+        </profile>
+        <profile>
+            <id>aliyun</id>
+            <properties>
+                <package.environment>src/main/resources_aliyun</package.environment>
             </properties>
         </profile>
         <profile>

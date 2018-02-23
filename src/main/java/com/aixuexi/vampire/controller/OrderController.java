@@ -5,7 +5,6 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.validate.annotation.NotBlank;
 import com.aixuexi.thor.validate.annotation.NotNull;
 import com.aixuexi.vampire.exception.BusinessException;
-import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -17,20 +16,24 @@ import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.independenceDay.model.Institution;
 import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.model.Express;
+import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,9 +62,6 @@ public class OrderController {
 
     @Resource
     private OrderServiceFacade orderServiceFacade;
-
-    @Resource(name = "dictionaryManager")
-    private DictionaryManager dictionaryManager;
 
     @Resource
     private InstitutionService institutionService;
@@ -153,11 +153,11 @@ public class OrderController {
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
+        checkParams4Submit(goodsTypeIds,express);
 
-        validateInsType(); // 试用机构不能下单
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
-        List<Integer> goodsTypeIdList = goodsTypeIds == null ? null : Lists.newArrayList(goodsTypeIds);
+        List<Integer> goodsTypeIdList = Lists.newArrayList(goodsTypeIds);
 
         OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId,
                 receivePhone, express, goodsTypeIdList, token);
@@ -247,6 +247,17 @@ public class OrderController {
         if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
+    }
+
+
+    private void checkParams4Submit(Integer[] goodsTypeIds, String express) {
+        Assert.isTrue(null != goodsTypeIds && goodsTypeIds.length != 0, "所选商品不能为空");
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        ApiResponseCheck.check(expressTypeResponse);
+        Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(expressTypeResponse.getBody(), "getCode", String.class);
+        Assert.isTrue(expressTypeMap.containsKey(express), "配送方式参数错误");
+        Assert.isTrue(expressTypeMap.get(express).getEnable(), "该配送方式停止承运,暂不接单");
+        validateInsType(); // 试用机构不能下单
     }
 }
 

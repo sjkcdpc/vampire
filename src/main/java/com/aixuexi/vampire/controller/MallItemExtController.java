@@ -4,9 +4,9 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.exception.BusinessException;
+import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
-import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
@@ -14,9 +14,11 @@ import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
-import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.*;
+import com.gaosi.api.vulcan.vo.ConfirmCustomServiceVo;
+import com.gaosi.api.vulcan.vo.ConfirmMallItemNailVo;
+import com.gaosi.api.vulcan.vo.MallItemCustomServiceVo;
+import com.gaosi.api.vulcan.vo.MallItemNailVo;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,7 +45,7 @@ public class MallItemExtController {
     private ItemOrderServiceFacade itemOrderServiceFacade;
 
     @Resource
-    private FinancialAccountService finAccService;
+    private FinancialAccountManager financialAccountManager;
 
     @RequestMapping(value = "/nail", method = RequestMethod.GET)
     public ResultData queryMallItemNailList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
@@ -116,10 +118,7 @@ public class MallItemExtController {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();
-        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmMallItemNailVo.setBalance(balance);
 
@@ -158,10 +157,7 @@ public class MallItemExtController {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
-        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmCustomServiceVo.setBalance(balance);
 

@@ -35,16 +35,6 @@ public final class Constants {
     public static final String ORDERDETAIL_NAME_DIV ="-";
 
     /**
-     * 配送方式
-     */
-    public static final List<ConfirmExpressVo> EXPRESS_TYPE = new ArrayList<>();
-    static{
-        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.SHUNFENG.getCode(),ExpressConstant.Express.SHUNFENG.getName(), StringUtils.EMPTY));
-        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.PUKUAI.getCode(),ExpressConstant.Express.PUKUAI.getName(), StringUtils.EMPTY));
-        EXPRESS_TYPE.add(new ConfirmExpressVo(ExpressConstant.Express.WULIU.getCode(),ExpressConstant.Express.WULIU.getName(), StringUtils.EMPTY));
-    }
-
-    /**
      * 学期映射
      */
     public final static Map<Integer, Integer> PERIOD_MAP = new HashMap<>();

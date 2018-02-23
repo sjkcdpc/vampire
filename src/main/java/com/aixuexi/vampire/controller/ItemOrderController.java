@@ -2,7 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
-import com.aixuexi.vampire.manager.DictionaryManager;
+import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -24,18 +24,17 @@ import com.gaosi.api.revolver.vo.ItemOrderVo;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallCategoryServiceFacade;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
-import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
 import com.gaosi.api.vulcan.model.MallCategory;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.vulcan.vo.CategoryVo;
+import com.gaosi.api.vulcan.vo.ConfirmCustomServiceVo;
+import com.gaosi.api.vulcan.vo.MallItemNailVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -76,8 +75,8 @@ public class ItemOrderController {
     @Resource
     private MallCategoryServiceFacade mallCategoryServiceFacade;
 
-    @Resource(name = "dictionaryManager")
-    private DictionaryManager dictionaryManager;
+    @Resource
+    private FinancialAccountManager financialAccountManager;
 
     @Resource
     private BaseMapper baseMapper;
@@ -304,10 +303,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/getAmount", method = RequestMethod.GET)
     public ResultData getAmount(@RequestParam String orderId) {
         //查询当前机构账号余额
-        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if (rr == null) {
-            return ResultData.failed("账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
         AmountVo amountVo = new AmountVo();
         Double remainAmount = rr.getUsableRemain().doubleValue() / 10000;

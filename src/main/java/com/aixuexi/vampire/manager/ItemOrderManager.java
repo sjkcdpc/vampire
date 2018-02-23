@@ -46,8 +46,6 @@ public class ItemOrderManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ItemOrderManager.class);
 
-    @Autowired
-    private FinancialAccountService finAccService;
     @Resource
     private FinancialAccountService financialAccountService;
 
@@ -60,6 +58,9 @@ public class ItemOrderManager {
     @Value("${order_update_fail_receive_phone}")
     private String phoneStr;
 
+    @Resource
+    private FinancialAccountManager financialAccountManager;
+
     /**
      * 订单提交
      *
@@ -69,16 +70,10 @@ public class ItemOrderManager {
      */
     public String submit(MallItem mallItem, Integer itemCount, Integer insId ,Double price,Double originalPrice) {
         //查询当前机构账号余额
-        RemainResult rr = finAccService.getRemainByInsId(insId);
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         Double consumeCount = price * itemCount;
         Double totalCount = consumeCount * 10000;//根据商品现价和数量计算花费
-        Long remain = rr.getUsableRemain();
-        if (totalCount.longValue() > remain) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
-        }
+        financialAccountManager.checkRemainMoney(rr,totalCount.longValue());
 
         ItemOrder itemOrder = new ItemOrder();
         itemOrder.setInstitutionId(insId);
@@ -115,10 +110,7 @@ public class ItemOrderManager {
      */
     public void pay(String orderId, String token) {
         //查询当前机构账号余额
-        RemainResult rr = finAccService.getRemainByInsId(UserHandleUtil.getInsId());
-        if (rr == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "账户不存在");
-        }
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         ItemOrder itemOrder = getOrderByOrderId(orderId);
         if (itemOrder.getStatus() == OrderConstant.Status.CANCELLED) {// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
             throw new BusinessException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
