@@ -3,6 +3,8 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
+import com.aixuexi.thor.validate.annotation.NotBlank;
+import com.aixuexi.thor.validate.annotation.NotNull;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -83,16 +85,13 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@RequestParam String orderId) {
-        if (StringUtils.isBlank(orderId)) {
-            return ResultData.failed("参数错误");
-        }
+    public ResultData detail(@NotBlank String orderId) {
         ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
-        //响应错误直接返回
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         GoodsOrderVo goodsOrderVo = apiResponse.getBody();
+        if (goodsOrderVo == null) {
+            return ResultData.failed("教材订单:" + orderId + "不存在");
+        }
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
         // 订单详情需要加载图片
         orderManager.dealGoodsOrderVos(goodsOrderVos, true);

@@ -28,12 +28,13 @@
     </bean>
 
     <bean id="accessAuthorityFilter" class="com.gaosi.api.davincicode.common.filter.AccessAuthorityFilter">
-        <property name="ignoreUrlRegex" value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
+        <property name="ignoreUrlRegex"
+                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
         <property name="cookieDomain" value="${cookie_domain}"/>
     </bean>
 
     <!-- 验证权限 -->
-    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter" />
+    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter"/>
 
     <!-- 使用disconf必须添加以下配置 -->
     <bean id="disconfMgrBean" class="com.baidu.disconf.client.DisconfMgrBean"
@@ -67,4 +68,5 @@
             </list>
         </property>
     </bean>
+
 </beans>

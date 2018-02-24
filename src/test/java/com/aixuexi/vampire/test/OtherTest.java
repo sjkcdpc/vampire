@@ -1,9 +1,12 @@
 package com.aixuexi.vampire.test;
 
 
-import com.gaosi.api.revolver.model.GoodsOrder;
-import com.gaosi.api.revolver.util.ExpressCodeUtil;
+import com.aixuexi.thor.response.ResultData;
 import com.gaosi.api.vulcan.model.GoodsPic;
+import com.gaosi.api.vulcan.vo.CommonConditionVo;
+import com.gaosi.api.vulcan.vo.GoodsConditionVo;
+import com.google.common.collect.Lists;
+import net.sf.json.JSONObject;
 import org.junit.Test;
 
 import java.util.*;
@@ -15,6 +18,26 @@ import java.util.*;
 public class OtherTest {
     @Test
     public void fun1() throws Exception {
+        Map<Integer,Integer> m1 = new HashMap(1);
+        m1.put(1,1);
+        m1.put(2,2);
+        m1.put(3,3);
+        System.out.println(m1.size());
+//        List<String> list = new ArrayList<String>();
+//        list.add("1");
+//        list.add("2");
+//        for (String item : list) {
+//            if ("2".equals(item)) {
+//                list.remove(item);
+//            }
+//        }
+//        System.out.println(list.size());
+//        System.out.println(list.get(0));
+
+//        String str = "a,b,c,,";
+//        String[] ary = str.split(",");
+//        // 预期大于 3，结果是 3
+//        System.out.println(ary.length);
     }
 
     @Test
