@@ -131,19 +131,17 @@ public class OrderManager {
         if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
         }
-        List<Integer> goodsTypeIds = Lists.newArrayList();
         // 数量 goodsTypeIds -> num
         Map<Integer, Integer> goodsNum = Maps.newHashMap();
         for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
             Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
             Integer num = shoppingCartListVo.getNum();
 
-            goodsTypeIds.add(goodsTypeId);
             goodsNum.put(goodsTypeId, num);
 
         }
         // 4. 根据goodsTypeIds查询商品其他信息
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
@@ -261,8 +259,6 @@ public class OrderManager {
         if (consignee == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "请选择收货地址");
         }
-        // 商品类型ID
-        List<Integer> goodsTypeIds = Lists.newArrayList();
         // 商品件数
         int goodsPieces = 0;
         // 商品重量
@@ -274,13 +270,13 @@ public class OrderManager {
         for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
             Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
             Integer num = shoppingCartListVo.getNum();
-            goodsTypeIds.add(goodsTypeId);
+
             goodsNum.put(goodsTypeId, num);
             goodsPieces += num;
         }
 
         // 查询商品明细
-        ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
         if (listApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, listApiResponse.getMessage());
         }
@@ -510,7 +506,6 @@ public class OrderManager {
             if (CollectionUtils.isEmpty(shoppingCartListVos)) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, "购物车中商品已结算或为空");
             }
-            goodsTypeIds = Lists.newArrayList();
 
             // 数量 goodsTypeIds - > num
             Map<Integer, Integer> goodsNum = Maps.newHashMap();
@@ -518,11 +513,10 @@ public class OrderManager {
                 Integer goodsTypeId = shoppingCartListVo.getGoodsTypeId();
                 Integer num = shoppingCartListVo.getNum();
 
-                goodsTypeIds.add(goodsTypeId);
                 goodsNum.put(goodsTypeId, num);
             }
 
-            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
             if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
                 throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
             }
@@ -571,7 +565,11 @@ public class OrderManager {
      * @return
      */
     public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIds);
+        Map<Integer, Integer> goodsTypeMap = new HashMap<>(goodsTypeIds.size());
+        for (Integer goodsTypeId : goodsTypeIds) {
+            goodsTypeMap.put(goodsTypeId, null);
+        }
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeMap);
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
