@@ -1,12 +1,14 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
+import com.aixuexi.thor.validate.annotation.common.Valid;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.constant.ValidateConstatnt;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
@@ -38,7 +40,7 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public ResultData save(@RequestBody Consignee consignee) {
+    public ResultData save(@RequestBody @Valid(groups = ValidateConstatnt.INSERT_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.insert(consignee);
@@ -55,7 +57,7 @@ public class ConsigneeController {
      * @return
      */
     @RequestMapping(value = "/update")
-    public ResultData update(Consignee consignee) {
+    public ResultData update(@Valid(groups = ValidateConstatnt.UPDATE_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.update(consignee);
         ApiResponseCheck.check(consigneeResponse);

@@ -27,16 +27,16 @@
     <dependencies>
 
         <!-- 爱学习 -->
-
-        <dependency>
-            <groupId>com.aixuexi</groupId>
-            <artifactId>thor-util</artifactId>
-            <version>${thor-util.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.aixuexi</groupId>
             <artifactId>transformers</artifactId>
             <version>${transformers.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.aixuexi</groupId>
+                    <artifactId>thor-util</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.aixuexi</groupId>
@@ -68,10 +68,6 @@
                 <exclusion>
                     <groupId>com.gaosi</groupId>
                     <artifactId>common.util</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.aixuexi</groupId>
-                    <artifactId>thor-util</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -6,6 +6,7 @@ import com.aixuexi.thor.util.Functions;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
 import com.aixuexi.vampire.exception.BusinessException;
+import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.BusinessResult;
 import com.gaosi.api.axxBank.model.CostProxyParams;
@@ -202,13 +203,12 @@ public class ItemOrderManager {
      */
     public ItemOrder getOrderByOrderId(String orderId) {
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
-        if (itemOrderResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, itemOrderResponse.getMessage());
+        ApiResponseCheck.check(itemOrderResponse);
+        ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
+        if (itemOrderVo == null) {
+            throw new BusinessException(ExceptionCode.UNKNOWN, "订单:" + orderId + "不存在");
         }
-        if (itemOrderResponse.getBody() == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "未查询到该订单");
-        }
-        return itemOrderResponse.getBody();
+        return itemOrderVo;
     }
 
 }
