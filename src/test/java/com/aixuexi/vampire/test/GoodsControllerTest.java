@@ -63,4 +63,12 @@ public class GoodsControllerTest extends BaseTest {
                 .param("pageSize","10")
         );
     }
+
+    @Test
+    public void queryGoodsDetail() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/goods/detail")
+                .param("goodsId","1100086")
+        );
+    }
 }
