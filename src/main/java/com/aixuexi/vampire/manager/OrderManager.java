@@ -558,30 +558,6 @@ public class OrderManager {
         return freightVo;
     }
 
-
-    /**
-     * 根据商品类型ID是查询商品信息
-     *
-     * @param goodsTypeIds
-     * @return
-     */
-    public Map<Integer, ConfirmGoodsVo> findGoodsByTypeIds(List<Integer> goodsTypeIds) {
-        Map<Integer, Integer> goodsTypeMap = new HashMap<>(goodsTypeIds.size());
-        for (Integer goodsTypeId : goodsTypeIds) {
-            goodsTypeMap.put(goodsTypeId, null);
-        }
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeMap);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
-        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-        Map<Integer, ConfirmGoodsVo> confirmGoodsVoMap = Maps.newHashMap();
-        if (CollectionUtils.isNotEmpty(goodsVos)) {
-            confirmGoodsVoMap = CollectionCommonUtil.toMapByList(goodsVos, "getGoodsTypeId", Integer.class);
-        }
-        return confirmGoodsVoMap;
-    }
-
     /**
      * 根据商品id查询图片
      * @param goodsIds
