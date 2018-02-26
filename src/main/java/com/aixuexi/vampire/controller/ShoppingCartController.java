@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by gaoxinzhong on 2017/5/24.
@@ -68,7 +70,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        if(num.intValue()>9999 || num.intValue()<1) {
+        if(num>9999 || num<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
@@ -115,7 +117,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/mod")
     public ResultData mod(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        if(num.intValue()>9999 || num.intValue()<1) {
+        if(num>9999 || num<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
@@ -124,8 +126,11 @@ public class ShoppingCartController {
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
-        ApiResponse<Integer> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList);
-        return ResultData.successed(apiResponse.getBody());
+        ApiResponse<Double> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList);
+        Map<String, Object> map = new HashMap<>();
+        map.put("goodsTypeId", goodsTypeId);
+        map.put("price", apiResponse.getBody());
+        return ResultData.successed(map);
     }
 
 }
