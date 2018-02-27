@@ -2,8 +2,8 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.thor.validate.annotation.NotBlank;
-import com.aixuexi.vampire.exception.BusinessException;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;

@@ -1,7 +1,7 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;

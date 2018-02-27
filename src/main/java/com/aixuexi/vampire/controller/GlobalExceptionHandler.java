@@ -1,7 +1,8 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.vampire.exception.BusinessException;
+
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;

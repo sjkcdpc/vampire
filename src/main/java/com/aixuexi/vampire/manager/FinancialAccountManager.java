@@ -1,7 +1,7 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import org.springframework.stereotype.Service;

@@ -6,7 +6,7 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.exception.BusinessException;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
