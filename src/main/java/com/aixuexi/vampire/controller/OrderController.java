@@ -21,7 +21,6 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.ExpressType;
-import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
 import com.gaosi.api.vulcan.bean.common.Assert;
@@ -184,10 +183,7 @@ public class OrderController {
         if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数不能为空");
         }
-        GoodsOrder goodsOrder = new GoodsOrder();
-        goodsOrder.setId(orderId);
-        goodsOrder.setStatus(OrderConstant.Status.COMPLETED);
-        ApiResponse<?> apiResponse = orderServiceFacade.updateOrder(goodsOrder);
+        ApiResponse<?> apiResponse = orderServiceFacade.updateOrderToComplete(orderId);
         //响应错误直接返回
         if (apiResponse.isNotSuccess()) {
             return ResultData.failed(apiResponse.getMessage());
