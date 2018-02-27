@@ -279,7 +279,7 @@ public class OrderManager {
         goodsOrderVo.setAreaId(consignee.getAreaId());
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
-        //ruanyj 收货人地址补全
+        // 收货人地址补全
         ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
         ApiResponseCheck.check(addressDTOApiResponse);
         AddressDTO address = addressDTOApiResponse.getBody();
