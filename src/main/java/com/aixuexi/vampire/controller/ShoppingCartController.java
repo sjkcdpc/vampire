@@ -88,12 +88,11 @@ public class ShoppingCartController {
     /**
      * 删除购物车
      *
-     * @param goodsId     商品ID
      * @param goodsTypeId 商品类型ID
      * @return
      */
     @RequestMapping(value = "/del")
-    public ResultData del(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId) {
+    public ResultData del(@RequestParam Integer goodsTypeId) {
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setUserId(UserHandleUtil.getUserId());
         // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
@@ -110,13 +109,12 @@ public class ShoppingCartController {
     /**
      * 修改购物车
      *
-     * @param goodsId     商品ID
      * @param goodsTypeId 商品类型ID
      * @param num         数量
      * @return
      */
     @RequestMapping(value = "/mod")
-    public ResultData mod(@RequestParam Integer goodsId, @RequestParam Integer goodsTypeId, @RequestParam Integer num) {
+    public ResultData mod(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
         if(num>9999 || num<1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }

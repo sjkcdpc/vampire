@@ -104,13 +104,15 @@ public class ItemOrderController {
             //默认加载教材订单列表
             queryItemOrderDto.setCategoryId(MallItemConstant.Category.JCZB.getId());
         }
-        if (queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.LDPXSC.getId())||queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.DZFW.getId())) {
-            return queryLDPXSC(queryItemOrderDto);
+        switch (MallItemConstant.Category.get(queryItemOrderDto.getCategoryId())){
+            case LDPXSC:
+            case DZFW:
+                return queryLDPXSC(queryItemOrderDto);
+            case JCZB:
+                return queryJCZB(queryItemOrderDto);
+            default:
+                return ResultData.failed("参数类型错误");
         }
-        if (queryItemOrderDto.getCategoryId().equals(MallItemConstant.Category.JCZB.getId())) {
-            return queryJCZB(queryItemOrderDto);
-        }
-        return ResultData.failed("参数类型错误");
     }
 
     /**

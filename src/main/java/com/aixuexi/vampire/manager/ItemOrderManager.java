@@ -98,8 +98,7 @@ public class ItemOrderManager {
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "创建订单失败");
         }
-        String orderId = apiResponse.getBody();
-        return orderId;
+        return apiResponse.getBody();
     }
 
     /**
@@ -164,12 +163,12 @@ public class ItemOrderManager {
     private void updateOrderStatus(String orderId) {
         boolean flag = true;
         try {
-            int retry_num = 0;
-            while (retry_num < 3) {//重试三次
+            int retryNum = 0;
+            while (retryNum < 3) {//重试三次
                 ApiResponse<?> apiResponse = itemOrderServiceFacade.updateOrderStatus(orderId, OrderConstant.Status.COMPLETED);
                 if (apiResponse == null || apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
                     //更新状态失败，重试次数累加。
-                    retry_num++;
+                    retryNum++;
                     //等待100毫秒后重试
                     Thread.sleep(100);
                 } else {

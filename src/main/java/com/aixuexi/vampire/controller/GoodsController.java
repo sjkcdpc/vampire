@@ -223,10 +223,10 @@ public class GoodsController {
         conditionVo.setSubjectProductId(sid);
         conditionVo.setPeriodId(pid);
         conditionVo.setCategoryId(vtId);
-        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.BOOKVERSION)) {
+        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.BOOKVERSION.getValue())) {
             conditionVo.setBookVersionId(veId);
         }
-        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.AREA)){
+        if(conditionVo.getCategoryId().equals(GoodsConstant.GoodsCategory.AREA.getValue())){
             conditionVo.setExamAreaId(veId);
         }
         conditionVo.setPageNum(pageNum);
@@ -388,8 +388,8 @@ public class GoodsController {
                     "getExamAreaId", Integer.class));
         }
         //排除非教材版本ID和非考区ID
-        bookVersionIds.remove(new Integer(0));
-        examAreaIds.remove(new Integer(0));
+        bookVersionIds.remove(0);
+        examAreaIds.remove(0);
         //获取教材版本和考区的信息
         Map<Integer, ExamAreaBo> examAreaMap = getExamAreaInfo(new ArrayList<>(examAreaIds));
         Map<Integer, BookVersionBo> bookVersionMap = getBookVersionInfo(new ArrayList<>(bookVersionIds));

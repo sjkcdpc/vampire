@@ -2,8 +2,6 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.bean.GoodsFreightSubtotalBo;
-import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
@@ -26,6 +24,8 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.vo.*;
+import com.gaosi.api.vulcan.bean.common.Assert;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.*;
@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.ws.rs.HEAD;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -334,9 +333,9 @@ public class OrderManager {
         preAddress.append(address.getDistrict() == null ? StringUtils.EMPTY : address.getDistrict());
         String result = null;
         if (StringUtils.isBlank(preAddress.toString())) {
-            result = consignee.getAddress().toString();
+            result = consignee.getAddress();
         } else {
-            result = preAddress.toString() + " " + consignee.getAddress();
+            result = preAddress.append(" ").append(consignee.getAddress()).toString();
         }
         return result;
     }
@@ -621,7 +620,6 @@ public class OrderManager {
      */
     public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos, boolean needDetail){
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
-            Set<Integer> goodsTypeIds = Sets.newHashSet();
             Set<Integer> goodsIds = Sets.newHashSet();
             // 查询快递时效的条件
             List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
@@ -641,11 +639,9 @@ public class OrderManager {
                     // 拆单的处理子订单
                     List<SubGoodsOrderVo> subGoodsOrderVos = goodsOrderVo.getSubGoodsOrderVos();
                     for (SubGoodsOrderVo subGoodsOrderVo : subGoodsOrderVos) {
-                        goodsTypeIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodTypeId",Integer.class));
                         goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodsId",Integer.class));
                     }
                 }else {
-                    goodsTypeIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodTypeId",Integer.class));
                     goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class));
                 }
             }
