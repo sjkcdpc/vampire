@@ -224,32 +224,29 @@ public class OrderManager {
      */
     private GoodsOrderVo createGoodsOrder(List<ShoppingCartListVo> shoppingCartListVos, Integer userId, Integer insId,
                                           Integer consigneeId, String receivePhone, String express) {
-        // 收货人信息判断
-        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
-        if (consignee == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "请选择收货地址");
-        }
+        // 订单
+        GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
+        // 订单基本信息
+        goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
+        goodsOrderVo.setRemark(StringUtils.EMPTY);
+        goodsOrderVo.setUserId(userId);
         // 商品件数
         int goodsPieces = 0;
         // 商品重量
         double weight = 0;
         // 商品总金额
         double goodsAmount = 0;
-        // 商品数量
+        // 商品SKUID和数量的映射，Map<goodTypeId,num>
         Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
                 "getNum",Integer.class);
-
         // 查询商品明细
-        ApiResponse<List<ConfirmGoodsVo>> listApiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
-        ApiResponseCheck.check(listApiResponse);
-        List<ConfirmGoodsVo> goodsVos = listApiResponse.getBody();
-
-        Assert.notEmpty(goodsVos,"商品不存在");
-        // 校验商品条形码是否为空、是否已下架、重量是否有误
-        validateGoods(goodsVos);
+        ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
+        ApiResponseCheck.check(goodsVosResponse);
+        List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
+        validateGoods(confirmGoodsVos);
         // 订单详情
         List<OrderDetailVo> orderDetails = Lists.newArrayList();
-        for (ConfirmGoodsVo confirmGoodsVo : goodsVos) {
+        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             Integer goodsTypeId = confirmGoodsVo.getGoodsTypeId();
             int num = goodsNum.get(goodsTypeId);
             confirmGoodsVo.setNum(num);
@@ -260,47 +257,43 @@ public class OrderManager {
             //件数
             goodsPieces += num;
             // 商品明细
-            OrderDetailVo orderDetail = new OrderDetailVo();
-            orderDetail.setBarCode(confirmGoodsVo.getBarCode());
-            orderDetail.setGoodsId(confirmGoodsVo.getGoodsId());
-            orderDetail.setGoodTypeId(goodsTypeId);
-            orderDetail.setName(confirmGoodsVo.getGoodsName() + Constants.ORDERDETAIL_NAME_DIV + confirmGoodsVo.getGoodsTypeName());
-            orderDetail.setNum(num);
-            orderDetail.setPrice(confirmGoodsVo.getPrice());
-            orderDetail.setWeight(confirmGoodsVo.getWeight());
-            orderDetails.add(orderDetail);
+            OrderDetailVo orderDetailVo = new OrderDetailVo();
+            orderDetailVo.setBarCode(confirmGoodsVo.getBarCode());
+            orderDetailVo.setGoodsId(confirmGoodsVo.getGoodsId());
+            orderDetailVo.setGoodTypeId(goodsTypeId);
+            orderDetailVo.setName(confirmGoodsVo.getGoodsName() + Constants.ORDERDETAIL_NAME_DIV + confirmGoodsVo.getGoodsTypeName());
+            orderDetailVo.setNum(num);
+            orderDetailVo.setPrice(confirmGoodsVo.getPrice());
+            orderDetailVo.setWeight(confirmGoodsVo.getWeight());
+            orderDetailVo.setCustomized(confirmGoodsVo.getCustomized());
+            orderDetails.add(orderDetailVo);
         }
         handlePeriod(orderDetails);
-        // 订单
-        GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
-        goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
         goodsOrderVo.setOrderDetailVos(orderDetails);
+        // 商品总金额
+        goodsOrderVo.setConsumeAmount(goodsAmount);
+        // 收货人信息
+        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
+        Assert.notNull(consignee,"请选择收货地址");
         goodsOrderVo.setAreaId(consignee.getAreaId());
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
-        // 收货人地址补全
         ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
         ApiResponseCheck.check(addressDTOApiResponse);
         AddressDTO address = addressDTOApiResponse.getBody();
         Assert.notNull(address,"收货人地址查询失败，请联系管理员");
-
-        // 设置同步订单收货人地址
         goodsOrderVo.setAddress(address);
-        //设置收货地址
         goodsOrderVo.setConsigneeAddress(getConsigneeAddress(address,consignee));
-
-        goodsOrderVo.setConsumeAmount(goodsAmount); // 商品总金额
-        goodsOrderVo.setInstitutionId(insId);
-        goodsOrderVo.setRemark(StringUtils.EMPTY);
         goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
-        goodsOrderVo.setUserId(userId);
+        // 机构信息
+        Institution institution = institutionService.getInsInfoById(insId);
+        goodsOrderVo.setInstitutionId(insId);
+        goodsOrderVo.setInstitutionName(institution.getName());
+        // 设置配送方式
         goodsOrderVo.setExpressCode(express);
-
-        //设置配送方式
         goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
-        // 省ID
+        // 计算运费
         Integer provinceId = address.getProvinceId();
-        // 区ID
         Integer areaId = address.getDistrictId();
         Map<String, Integer> expressMap = new HashMap<>();
         if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
@@ -309,9 +302,7 @@ public class OrderManager {
             expressMap.put(express, provinceId);
         }
         ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
-        logger.info("submitOrder --> freight : {}", apiResponse);
         ApiResponseCheck.check(apiResponse);
-
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
@@ -593,23 +584,18 @@ public class OrderManager {
     }
 
     /**
-     * 校验商品
+     * 校验商品是否存在、条形码是否为空、是否已下架、重量是否有误
      *
      * @param confirmGoodsVos
      */
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
+        Assert.notEmpty(confirmGoodsVos, "商品不存在");
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-            if (StringUtils.isBlank(confirmGoodsVo.getBarCode())) {
-                throw new BusinessException(ExceptionCode.UNKNOWN,
-                        confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName() + "条形码为空");
-            }
-            if (confirmGoodsVo.getStatus() == GoodsConstant.Status.OFF) {
-                throw new BusinessException(ExceptionCode.UNKNOWN, "存在已下架商品");
-            }
-            if (confirmGoodsVo.getWeight() <= 0) {
-                throw new BusinessException(ExceptionCode.UNKNOWN,
-                        confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName() + "重量有误");
-            }
+            // 商品全称（商品+型号名称）
+            String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
+            Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
+            Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
+            Assert.isTrue(confirmGoodsVo.getWeight() > 0, goodsFullName + "重量有误");
         }
     }
 
