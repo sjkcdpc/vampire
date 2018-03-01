@@ -234,6 +234,13 @@ public class GoodsManager {
             ImmutableCollection<SubjectProductBo> subjectProductBos = cacheSubjectProduct.getAll(subjectProductIds).values();
             // 学科列表
             List<SubjectProductBo> subjectProducts = new ArrayList<>(subjectProductBos);
+            // 学科按orderIndex排序
+            Collections.sort(subjectProducts, new Comparator<SubjectProductBo>() {
+                @Override
+                public int compare(SubjectProductBo o1, SubjectProductBo o2) {
+                    return o1.getOrderIndex().compareTo(o2.getOrderIndex());
+                }
+            });
             return subjectProducts;
         } catch (Exception e) {
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询学科异常");
@@ -247,16 +254,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> querySubjectProductCondition(List<Integer> subjectProductIds){
         try {
-            ImmutableCollection<SubjectProductBo> subjectProductBos = cacheSubjectProduct.getAll(subjectProductIds).values();
-            List<SubjectProductBo> subjectProductBoList = new ArrayList<>(subjectProductBos);
-            // 学科按ID排序
-            Collections.sort(subjectProductBoList, new Comparator<SubjectProductBo>() {
-                @Override
-                public int compare(SubjectProductBo o1, SubjectProductBo o2) {
-                    return o1.getId().compareTo(o2.getId());
-                }
-            });
-            // 学科列表
+            List<SubjectProductBo> subjectProductBoList = querySubjectProduct(subjectProductIds);
             List<CommonConditionVo> subjectProducts = baseMapper.mapAsList(subjectProductBoList,CommonConditionVo.class);
             subjectProducts.add(0, addAllCondition());
             return subjectProducts;
