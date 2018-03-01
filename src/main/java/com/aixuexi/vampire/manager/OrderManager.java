@@ -205,7 +205,8 @@ public class OrderManager {
                 shoppingCartLists.add(shoppingCartList);
             }
             shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
-            return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
+            //如果包含DIY，则返回空提示
+            return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), simpleGoodsOrderVo.isContainDIY() ? "" : goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
         } else {
             throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
         }
