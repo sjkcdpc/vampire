@@ -175,8 +175,8 @@ public class OrderController {
     /**
      * 确认收货
      *
-     * @param orderId
-     * @return
+     * @param orderId 订单号
+     * @return 订单号，用于前端修改指定订单的状态
      */
     @RequestMapping(value = "/receive", method = RequestMethod.POST)
     public ResultData receive(@RequestParam String orderId) {
@@ -188,7 +188,9 @@ public class OrderController {
         if (apiResponse.isNotSuccess()) {
             return ResultData.failed(apiResponse.getMessage());
         }
-        return ResultData.successed();
+        Map<String, Object> map = new HashMap<>(1);
+        map.put("orderId", orderId);
+        return ResultData.successed(map);
     }
 
     /**
