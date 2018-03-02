@@ -694,11 +694,21 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
+                //DIY定制不写仓库提示
+                if (subGoodsOrderVo.getOrderType() == OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                    subGoodsOrderVo.setWarehouseTips(StringUtils.EMPTY);
+                }else {
+                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
+                }
                 dealSubGoodsOrderVo(subGoodsOrderVo, picMap);
             }
         }else {
-            goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
+            //DIY定制不写仓库提示
+            if (goodsOrderVo.getOrderType() == OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                goodsOrderVo.setWarehouseTips(StringUtils.EMPTY);
+            }else {
+                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
+            }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
