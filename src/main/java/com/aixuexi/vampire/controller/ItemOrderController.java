@@ -12,7 +12,7 @@ import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
-import com.gaosi.api.revolver.dto.QueryItemOrderDto;
+import com.gaosi.api.revolver.dto.QueryOrderDto;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
@@ -85,31 +85,31 @@ public class ItemOrderController {
     /**
      * 根据条件查询我的订单列表
      *
-     * @param queryItemOrderDto
+     * @param queryOrderDto
      * @return
      */
     @RequestMapping(value = "/list", method = RequestMethod.GET)
-    public ResultData list(QueryItemOrderDto queryItemOrderDto) {
-        if (queryItemOrderDto == null) {
+    public ResultData list(QueryOrderDto queryOrderDto) {
+        if (queryOrderDto == null) {
             return ResultData.failed("查询参数不能为空");
         }
-        queryItemOrderDto.setInstitutionId(UserHandleUtil.getInsId());
-        queryItemOrderDto.setUserId(UserHandleUtil.getUserId());
-        if (queryItemOrderDto.getEndTime() != null) {
-            Date endTime = queryItemOrderDto.getEndTime();
+        queryOrderDto.setInstitutionId(UserHandleUtil.getInsId());
+        queryOrderDto.setUserId(UserHandleUtil.getUserId());
+        if (queryOrderDto.getEndTime() != null) {
+            Date endTime = queryOrderDto.getEndTime();
             endTime = new DateTime(endTime).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).toDate();
-            queryItemOrderDto.setEndTime(endTime);
+            queryOrderDto.setEndTime(endTime);
         }
-        if (queryItemOrderDto.getCategoryId() == null || queryItemOrderDto.getCategoryId() == 0) {
+        if (queryOrderDto.getCategoryId() == null || queryOrderDto.getCategoryId() == 0) {
             //默认加载教材订单列表
-            queryItemOrderDto.setCategoryId(MallItemConstant.Category.JCZB.getId());
+            queryOrderDto.setCategoryId(MallItemConstant.Category.JCZB.getId());
         }
-        switch (MallItemConstant.Category.get(queryItemOrderDto.getCategoryId())){
+        switch (MallItemConstant.Category.get(queryOrderDto.getCategoryId())){
             case LDPXSC:
             case DZFW:
-                return queryLDPXSC(queryItemOrderDto);
+                return queryLDPXSC(queryOrderDto);
             case JCZB:
-                return queryJCZB(queryItemOrderDto);
+                return queryJCZB(queryOrderDto);
             default:
                 return ResultData.failed("参数类型错误");
         }
@@ -118,11 +118,11 @@ public class ItemOrderController {
     /**
      * 查询教材周边订单列表
      *
-     * @param queryItemOrderDto
+     * @param queryOrderDto
      * @return
      */
-    private ResultData queryJCZB(QueryItemOrderDto queryItemOrderDto) {
-        ApiResponse<Page<GoodsOrderVo>> apiResponse = orderServiceFacade.queryGoodsOrder(queryItemOrderDto);
+    private ResultData queryJCZB(QueryOrderDto queryOrderDto) {
+        ApiResponse<Page<GoodsOrderVo>> apiResponse = orderServiceFacade.queryGoodsOrder(queryOrderDto);
         //响应错误直接返回
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
@@ -142,11 +142,11 @@ public class ItemOrderController {
     /**
      * 查询校长培训订单列表
      *
-     * @param queryItemOrderDto
+     * @param queryOrderDto
      * @return
      */
-    private ResultData queryLDPXSC(QueryItemOrderDto queryItemOrderDto) {
-        ApiResponse<Page<ItemOrderVo>> apiResponse = itemOrderServiceFacade.queryItemOrder(queryItemOrderDto);
+    private ResultData queryLDPXSC(QueryOrderDto queryOrderDto) {
+        ApiResponse<Page<ItemOrderVo>> apiResponse = itemOrderServiceFacade.queryItemOrder(queryOrderDto);
         //响应错误直接返回
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
             return ResultData.failed(apiResponse.getMessage());
