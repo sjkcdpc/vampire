@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Service("goodsManager")
 public class GoodsManager {
-    private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private SubjectProductApi subjectProductApi;
