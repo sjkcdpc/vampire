@@ -540,7 +540,7 @@ public class OrderManager {
     private List<ShoppingCartListVo> getShoppingCartDetails(Integer userId, Integer categoryId, List<Integer> goodsTypeIds) {
         ApiResponse<List<ShoppingCartListVo>> listApiResponse = null;
 
-        if (null != categoryId) {
+        if (null != categoryId && CollectionUtils.isNotEmpty(goodsTypeIds)) {
             listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
         } else {//用于确认页面，此时没有goodsTypeIds
             listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
