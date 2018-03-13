@@ -23,6 +23,7 @@ import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
+import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
@@ -33,7 +34,6 @@ import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.model.GoodsPeriod;
 import com.gaosi.api.vulcan.model.GoodsPic;
 import com.gaosi.api.vulcan.model.ShoppingCartList;
-import com.gaosi.api.vulcan.util.CalculateUtil;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -711,7 +711,7 @@ public class OrderManager {
             }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
-                orderDetailVo.setTotal(CalculateUtil.mul(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
+                orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue(), 2));
                 if (null != picMap){
                     List<GoodsPic> subPicList = picMap.get(orderDetailVo.getGoodsId());
                     if (CollectionUtils.isNotEmpty(subPicList)) {
@@ -733,8 +733,8 @@ public class OrderManager {
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
-            subOrderDetailVo.setTotal(CalculateUtil.mul(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
-            consumeAmount = CalculateUtil.add(consumeAmount,subOrderDetailVo.getTotal());
+            subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue(), 2));
+            consumeAmount = AmountUtil.add(consumeAmount,subOrderDetailVo.getTotal(), 2);
             if (null != picMap){
                 List<GoodsPic> subPicList = picMap.get(subOrderDetailVo.getGoodsId());
                 if (CollectionUtils.isNotEmpty(subPicList)) {
