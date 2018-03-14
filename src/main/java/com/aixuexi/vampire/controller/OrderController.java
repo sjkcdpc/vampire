@@ -2,9 +2,7 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.thor.validate.annotation.NotBlank;
-import com.aixuexi.thor.validate.annotation.NotNull;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
@@ -13,10 +11,7 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
-import com.gaosi.api.independenceDay.model.Institution;
-import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
-import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
@@ -26,14 +21,16 @@ import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.turing.model.po.Institution;
+import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -189,7 +186,7 @@ public class OrderController {
         }
         GoodsOrder goodsOrder = new GoodsOrder();
         goodsOrder.setId(orderId);
-        goodsOrder.setStatus(OrderConstant.Status.COMPLETED);
+        goodsOrder.setStatus(OrderConstant.OrderStatus.COMPLETED.getValue());
         ApiResponse<?> apiResponse = orderServiceFacade.updateOrder(goodsOrder);
         //响应错误直接返回
         if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
