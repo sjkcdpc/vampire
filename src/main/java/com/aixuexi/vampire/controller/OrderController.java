@@ -21,6 +21,7 @@ import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.model.GoodsOrder;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
@@ -241,7 +242,7 @@ public class OrderController {
     private void validateInsType() {
         Integer insId = UserHandleUtil.getInsId();
         Institution institution = institutionService.getInsInfoById(insId);
-        if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
+        if (InstitutionTypeEnum.TRY.getType() == institution.getInstitutionType()) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
     }

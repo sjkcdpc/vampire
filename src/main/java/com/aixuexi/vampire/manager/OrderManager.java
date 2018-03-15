@@ -22,6 +22,7 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.vo.*;
+import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
@@ -168,47 +169,45 @@ public class OrderManager {
                                  String express, List<Integer> goodsTypeIds, String token) {
         logger.info("submitOrder --> userId : {}, insId : {}, consigneeId : {}, receivePhone : {}, express : {}, goodsTypeIds : {}",
                 userId, insId, consigneeId, receivePhone, express, goodsTypeIds);
-        // 账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         // TODO 目前只查教材的类别
         int categoryId = MallItemConstant.Category.JCZB.getId();
         List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId,categoryId,goodsTypeIds);
-
         // 创建订单对象
         GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartListVos, userId, insId, consigneeId, receivePhone, express);
         logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrderVo));
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
+        // 账号余额
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         financialAccountManager.checkRemainMoney(rr,amount.longValue());
-
         // 是否同步到WMS
         Boolean syncToWms = true;
         Institution insinfo = institutionService.getInsInfoById(insId);
-        // 1测试机构 2试用机构 或者关闭同步开关 则不同步到WMS
-        if ((insinfo != null && Constants.INS_TYPES.contains(insinfo.getInstitutionType()))
-                || !expressUtil.getSyncToWms()) {
+        if (insinfo == null) {
+            logger.error("未知机构信息{}", insId);
+        } else if (InstitutionTypeEnum.TEST.getType() == insinfo.getInstitutionType() ||
+                InstitutionTypeEnum.TRY.getType() == insinfo.getInstitutionType() ||
+                !expressUtil.getSyncToWms()) {
+            // 测试机构,试用机构或者关闭同步开关 则不同步到WMS
             syncToWms = false;
         }
+
         logger.info("submitOrder --> syncToWms : {}", syncToWms);
         // 创建订单
         ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token, syncToWms);
-        if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-            SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
-            logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
-            List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
-            ShoppingCartList shoppingCartList = null;
-            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-                shoppingCartList = new ShoppingCartList();
-                // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
-                shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
-                shoppingCartList.setGoodsTypeId(shoppingCartListVo.getGoodsTypeId());
-                shoppingCartLists.add(shoppingCartList);
-            }
-            shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
-            return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
-        } else {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
+        ApiResponseCheck.check(apiResponse);
+        SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
+        logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
+        List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
+        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+            ShoppingCartList shoppingCartList = new ShoppingCartList();
+            // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
+            shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
+            shoppingCartList.setGoodsTypeId(shoppingCartListVo.getGoodsTypeId());
+            shoppingCartLists.add(shoppingCartList);
         }
+        shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
+        return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
     }
 
     /**

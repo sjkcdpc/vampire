@@ -15,21 +15,10 @@ import java.util.Map;
  */
 public final class Constants {
 
-    //机构类型 0 正式 1测试机构 2试用机构 3外研英语机构
-    public static final List<Integer> INS_TYPES = Lists.newArrayList(1, 2);
-
     /**
      * 缓存0.5个小时
      */
     public static final long CACHE_TIME = 1800;
-
-    /**
-     * 试用机构
-     */
-    public static final Integer INSTITUTION_TYPE_TEST_USE = 2;
-
-
-    public static final String PRE_SHOPPINGCART ="SHOPPINGCART_";
 
     //订单详情中商品名称拼接的分隔符
     public static final String ORDERDETAIL_NAME_DIV ="-";
