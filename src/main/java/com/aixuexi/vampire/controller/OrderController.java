@@ -2,7 +2,6 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.thor.validate.annotation.NotBlank;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
@@ -12,8 +11,6 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
-import com.gaosi.api.independenceDay.model.Institution;
-import com.gaosi.api.independenceDay.service.InstitutionService;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
@@ -23,7 +20,11 @@ import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.ExpressType;
 import com.gaosi.api.revolver.vo.GoodsOrderVo;
 import com.gaosi.api.revolver.vo.OrderFollowVo;
+import com.gaosi.api.turing.constant.InstitutionTypeEnum;
+import com.gaosi.api.turing.model.po.Institution;
+import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
@@ -239,7 +240,7 @@ public class OrderController {
     private void validateInsType() {
         Integer insId = UserHandleUtil.getInsId();
         Institution institution = institutionService.getInsInfoById(insId);
-        if (Constants.INSTITUTION_TYPE_TEST_USE.equals(institution.getInstitutionType())) {
+        if (InstitutionTypeEnum.TRY.getType() == institution.getInstitutionType()) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
         }
     }

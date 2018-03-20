@@ -79,7 +79,7 @@ public class ItemOrderManager {
         itemOrder.setInstitutionId(insId);
         itemOrder.setUserId(UserHandleUtil.getUserId());
         itemOrder.setConsigneeName(UserSessionHandler.getUsername());//虚拟商品没有收货人，默认收货人为当前用户
-        itemOrder.setStatus(OrderConstant.Status.NO_PAY);//只要提交订单就是待支付，确认支付后再更改状态
+        itemOrder.setStatus(OrderConstant.OrderStatus.NO_PAY.getValue());//只要提交订单就是待支付，确认支付后再更改状态
         itemOrder.setCategoryId(mallItem.getCategoryId());
         itemOrder.setConsumeCount(consumeCount);
 
@@ -111,7 +111,7 @@ public class ItemOrderManager {
         //查询当前机构账号余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         ItemOrder itemOrder = getOrderByOrderId(orderId);
-        if (itemOrder.getStatus() == OrderConstant.Status.CANCELLED) {// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
+        if (itemOrder.getStatus() == OrderConstant.OrderStatus.CANCELLED.getValue()) {// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
             throw new BusinessException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
         }
         Double amount = AmountUtil.multiply(itemOrder.getConsumeCount(), 10000);//扩大10000倍
@@ -165,7 +165,7 @@ public class ItemOrderManager {
         try {
             int retryNum = 0;
             while (retryNum < 3) {//重试三次
-                ApiResponse<?> apiResponse = itemOrderServiceFacade.updateOrderStatus(orderId, OrderConstant.Status.COMPLETED);
+                ApiResponse<?> apiResponse = itemOrderServiceFacade.updateOrderStatus(orderId, OrderConstant.OrderStatus.COMPLETED.getValue());
                 if (apiResponse == null || apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
                     //更新状态失败，重试次数累加。
                     retryNum++;

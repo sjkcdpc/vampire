@@ -10,7 +10,7 @@ import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.firstblood.constants.Constant;
 import com.gaosi.api.firstblood.constants.WhitelistEnum;
 import com.gaosi.api.firstblood.model.WhitelistCheck;
-import com.gaosi.api.independenceDay.service.GroupInstitutionService;
+import com.gaosi.api.turing.service.GroupInstitutionService;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;

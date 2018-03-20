@@ -51,8 +51,8 @@
     <dubbo:reference interface="com.gaosi.api.axxBank.service.FinancialAccountService" id="finAccService"  />
 
     <!-- 机构服务 -->
-    <dubbo:reference interface="com.gaosi.api.independenceDay.service.InstitutionService" id="institutionService"/>
-    <dubbo:reference interface="com.gaosi.api.independenceDay.service.GroupInstitutionService" id="groupInstitutionService"/>
+    <dubbo:reference interface="com.gaosi.api.turing.service.InstitutionService" id="institutionService"/>
+    <dubbo:reference interface="com.gaosi.api.turing.service.GroupInstitutionService" id="groupInstitutionService"/>
     <dubbo:reference interface="com.gaosi.api.warcraft.mq.TaskProducerApi" id="taskProducerApi"/>
     <dubbo:reference interface="com.gaosi.api.independenceDay.service.UserService" id="userServiceIndependenceDay"  />
 
