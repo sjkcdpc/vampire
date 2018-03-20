@@ -1,12 +1,12 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.CommonConditionVo;
@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Service("goodsManager")
 public class GoodsManager {
+    private final Logger logger = LoggerFactory.getLogger(GoodsManager.class);
 
     @Resource
     private SubjectProductApi subjectProductApi;
@@ -219,6 +220,7 @@ public class GoodsManager {
             List<CommonConditionVo> subjects = baseMapper.mapAsList(subjectBoList,CommonConditionVo.class);
             return subjects;
         } catch (Exception e) {
+            logger.error("查询科目筛选条件异常 subjectIds : {}",subjectIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询科目筛选条件异常");
         }
     }
@@ -242,6 +244,7 @@ public class GoodsManager {
             });
             return subjectProducts;
         } catch (Exception e) {
+            logger.error("查询学科异常 subjectProductIds : {}",subjectProductIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询学科异常");
         }
     }
@@ -258,6 +261,7 @@ public class GoodsManager {
             subjectProducts.add(0, addAllCondition());
             return subjectProducts;
         } catch (Exception e) {
+            logger.error("查询学科筛选条件异常 subjectProductIds : {}",subjectProductIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询学科筛选条件异常");
         }
     }
@@ -302,6 +306,7 @@ public class GoodsManager {
             schemes.add(0, addAllCondition());
             return schemes;
         } catch (Exception e) {
+            logger.error("查询学科筛选条件异常 schmeIds : {} , subjectProducts : {}", schmeIds, subjectProducts);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询体系筛选条件异常");
         }
     }
@@ -329,6 +334,7 @@ public class GoodsManager {
             periods.add(0,addAllCondition());
             return periods;
         } catch (Exception e) {
+            logger.error("获取学期筛选条件异常 periodIds : {} ",periodIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"获取学期筛选条件异常");
         }
     }
@@ -353,6 +359,7 @@ public class GoodsManager {
             bookVersions.add(0,addAllCondition());
             return bookVersions;
         } catch (ExecutionException e) {
+            logger.error("获取教材版本筛选条件异常 bookVersionIds : {} ",bookVersionIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"获取教材版本筛选条件异常");
         }
     }
@@ -377,6 +384,7 @@ public class GoodsManager {
             examAreas.add(0,addAllCondition());
             return examAreas;
         } catch (Exception e) {
+            logger.error("获取考区版本筛选条件异常 examAreaIds : {} ",examAreaIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"获取考区版本筛选条件异常");
         }
     }
