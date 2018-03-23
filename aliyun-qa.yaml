@@ -26,6 +26,8 @@ spec:
         imagePullPolicy: Always
         name: vampire
         env:
+        - name: "MONGOIP"
+          value: "192.168.0.51"
         - name: "IP"
           value: "192.168.0.31"
         - name: "MYSQLIP"
