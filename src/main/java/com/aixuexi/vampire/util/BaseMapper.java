@@ -39,6 +39,7 @@ public class BaseMapper extends ConfigurableMapper {
                         orderDetailVo.setName(confirmGoodsVo.getGoodsName() +
                                 Constants.ORDERDETAIL_NAME_DIV +
                                 confirmGoodsVo.getGoodsTypeName());
+                        orderDetailVo.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
                     }
                 })
                 .register();
