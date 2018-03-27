@@ -180,21 +180,8 @@ public class OrderManager {
         // 账号余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         financialAccountManager.checkRemainMoney(rr,amount.longValue());
-        // 是否同步到WMS
-        Boolean syncToWms = true;
-        Institution insinfo = institutionService.getInsInfoById(insId);
-        if (insinfo == null) {
-            logger.error("未知机构信息{}", insId);
-        } else if (InstitutionTypeEnum.TEST.getType() == insinfo.getInstitutionType() ||
-                InstitutionTypeEnum.TRY.getType() == insinfo.getInstitutionType() ||
-                !expressUtil.getSyncToWms()) {
-            // 测试机构,试用机构或者关闭同步开关 则不同步到WMS
-            syncToWms = false;
-        }
-
-        logger.info("submitOrder --> syncToWms : {}", syncToWms);
         // 创建订单
-        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token, syncToWms);
+        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token);
         ApiResponseCheck.check(apiResponse);
         SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
         logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
@@ -230,12 +217,6 @@ public class OrderManager {
         goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
         goodsOrderVo.setRemark(StringUtils.EMPTY);
         goodsOrderVo.setUserId(userId);
-        // 商品件数
-        int goodsPieces = 0;
-        // 商品重量
-        double weight = 0;
-        // 商品总金额
-        double goodsAmount = 0;
         // 商品SKUID和数量的映射，Map<goodTypeId,num>
         Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
                 "getNum",Integer.class);
@@ -244,54 +225,41 @@ public class OrderManager {
         ApiResponseCheck.check(goodsVosResponse);
         List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
         validateGoods(confirmGoodsVos);
+        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos, goodsNum);
         // 订单详情
-        List<OrderDetailVo> orderDetails = Lists.newArrayList();
-        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
-            Integer goodsTypeId = confirmGoodsVo.getGoodsTypeId();
-            int num = goodsNum.get(goodsTypeId);
-            confirmGoodsVo.setNum(num);
-            // 数量*单重量
-            weight += num * confirmGoodsVo.getWeight();
-            // 数量*单价
-            goodsAmount += num * confirmGoodsVo.getPrice();
-            //件数
-            goodsPieces += num;
-            // 商品明细
-            OrderDetailVo orderDetailVo = new OrderDetailVo();
-            orderDetailVo.setBarCode(confirmGoodsVo.getBarCode());
-            orderDetailVo.setGoodsId(confirmGoodsVo.getGoodsId());
-            orderDetailVo.setGoodTypeId(goodsTypeId);
-            orderDetailVo.setName(confirmGoodsVo.getGoodsName() + Constants.ORDERDETAIL_NAME_DIV + confirmGoodsVo.getGoodsTypeName());
-            orderDetailVo.setNum(num);
-            orderDetailVo.setPrice(confirmGoodsVo.getPrice());
-            orderDetailVo.setWeight(confirmGoodsVo.getWeight());
-            orderDetailVo.setCustomized(confirmGoodsVo.getCustomized());
-            orderDetails.add(orderDetailVo);
-        }
-        handlePeriod(orderDetails);
-        goodsOrderVo.setOrderDetailVos(orderDetails);
+        List<OrderDetailVo> orderDetailVos = baseMapper.mapAsList(confirmGoodsVos,OrderDetailVo.class);
+        handlePeriod(orderDetailVos);
+        goodsOrderVo.setOrderDetailVos(orderDetailVos);
         // 商品总金额
-        goodsOrderVo.setConsumeAmount(goodsAmount);
+        goodsOrderVo.setConsumeAmount(goodsFreightSubtotalBo.getGoodsAmount());
+        // 机构信息
+        Institution institution = institutionService.getInsInfoById(insId);
+        goodsOrderVo.setInstitutionId(insId);
+        goodsOrderVo.setInstitutionName(institution.getName());
+        goodsOrderVo.setSyncToWms(true);
+        if (InstitutionTypeEnum.TEST.getType() == institution.getInstitutionType() ||
+                InstitutionTypeEnum.TRY.getType() == institution.getInstitutionType() ||
+                !expressUtil.getSyncToWms()) {
+            // 测试机构,试用机构或者关闭同步开关 则不同步到WMS
+            goodsOrderVo.setSyncToWms(false);
+        }
+        // 设置配送方式
+        goodsOrderVo.setExpressCode(express);
+        goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
         // 收货人信息
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
         Assert.notNull(consignee,"请选择收货地址");
         goodsOrderVo.setAreaId(consignee.getAreaId());
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
-        ApiResponse<AddressDTO> addressDTOApiResponse = districtApi.getAncestryById(consignee.getAreaId());
-        ApiResponseCheck.check(addressDTOApiResponse);
-        AddressDTO address = addressDTOApiResponse.getBody();
+        goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone);
+        // 地址信息
+        ApiResponse<AddressDTO> addressResponse = districtApi.getAncestryById(consignee.getAreaId());
+        ApiResponseCheck.check(addressResponse);
+        AddressDTO address = addressResponse.getBody();
         Assert.notNull(address,"收货人地址查询失败，请联系管理员");
         goodsOrderVo.setAddress(address);
         goodsOrderVo.setConsigneeAddress(getConsigneeAddress(address,consignee));
-        goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone); // 发货通知手机号
-        // 机构信息
-        Institution institution = institutionService.getInsInfoById(insId);
-        goodsOrderVo.setInstitutionId(insId);
-        goodsOrderVo.setInstitutionName(institution.getName());
-        // 设置配送方式
-        goodsOrderVo.setExpressCode(express);
-        goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
         // 计算运费
         Integer provinceId = address.getProvinceId();
         Integer areaId = address.getDistrictId();
@@ -301,7 +269,8 @@ public class OrderManager {
         } else {
             expressMap.put(express, provinceId);
         }
-        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
+        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap,
+                goodsFreightSubtotalBo.getWeight(), goodsFreightSubtotalBo.getGoodsPieces());
         ApiResponseCheck.check(apiResponse);
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());

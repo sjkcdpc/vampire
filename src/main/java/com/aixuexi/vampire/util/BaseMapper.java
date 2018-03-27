@@ -2,8 +2,12 @@ package com.aixuexi.vampire.util;
 
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectBo;
+import com.gaosi.api.revolver.vo.OrderDetailVo;
 import com.gaosi.api.vulcan.vo.CommonConditionVo;
+import com.gaosi.api.vulcan.vo.ConfirmGoodsVo;
+import ma.glasnost.orika.CustomMapper;
 import ma.glasnost.orika.MapperFactory;
+import ma.glasnost.orika.MappingContext;
 import ma.glasnost.orika.impl.ConfigurableMapper;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +30,17 @@ public class BaseMapper extends ConfigurableMapper {
                 .byDefault()
                 .fieldAToB("brandName", "name")
                 .register();
-
+        factory.classMap(ConfirmGoodsVo.class,OrderDetailVo.class)
+                .mapNulls(true).mapNullsInReverse(true)
+                .byDefault()
+                .customize(new CustomMapper<ConfirmGoodsVo, OrderDetailVo>(){
+                    @Override
+                    public void mapAtoB(ConfirmGoodsVo confirmGoodsVo, OrderDetailVo orderDetailVo, MappingContext context) {
+                        orderDetailVo.setName(confirmGoodsVo.getGoodsName() +
+                                Constants.ORDERDETAIL_NAME_DIV +
+                                confirmGoodsVo.getGoodsTypeName());
+                    }
+                })
+                .register();
     }
 }
