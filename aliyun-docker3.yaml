@@ -4,7 +4,7 @@ metadata:
   labels:
     app: vampire
   name: vampire
-  namespace: qa
+  namespace: docker3
 spec:
   replicas: 1
   selector:
@@ -27,11 +27,11 @@ spec:
         name: vampire
         env:
         - name: "MONGOIP"
-          value: "192.168.0.51"
+          value: "192.168.0.55"
         - name: "IP"
-          value: "192.168.0.31"
+          value: "192.168.0.50"
         - name: "MYSQLIP"
-          value: "192.168.0.36"
+          value: "192.168.0.54"
         - name: "test"
           value: "test"
         resources:
@@ -54,7 +54,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: vampire
-  namespace: qa
+  namespace: docker3
 spec:
   ports:
   - port: 8080

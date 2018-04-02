@@ -8,6 +8,6 @@ echo "${IP} mysql.aixuexi.com" >> /etc/hosts
 echo "${IP} redis.cluster.aixuexi.com" >> /etc/hosts
 echo "${IP} redis.aixuexi.com" >> /etc/hosts
 echo "${IP} ehcache.aixuexi.com" >> /etc/hosts
-echo "${IP} mongo.aixuexi.com" >> /etc/hosts
+echo "${MONGOIP} mongo.aixuexi.com" >> /etc/hosts
 echo "${IP} memcached.aixuexi.com" >> /etc/hosts
 exec "$@"
