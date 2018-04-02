@@ -11,6 +11,7 @@
         <property name="splitTips" value="${splitTips}"/>
         <property name="aging" value="${aging}"/>
         <property name="expressTips" value="${expressTips}"/>
+        <property name="diyTips" value="${diyTips}"/>
     </bean>
 
 </beans>

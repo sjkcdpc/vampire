@@ -195,7 +195,8 @@ public class OrderManager {
         }
         shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
         //如果包含DIY，则返回空提示
-        return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), simpleGoodsOrderVo.isContainDIY() ? "" : goodsOrderVo.getAging(), getSplitTips(simpleGoodsOrderVo.getSplitNum()));
+        return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), simpleGoodsOrderVo.isContainDIY() ? "" : goodsOrderVo.getAging(),
+                getTips(simpleGoodsOrderVo.getSplitNum(),simpleGoodsOrderVo.isContainDIY()));
     }
 
     /**
@@ -539,17 +540,20 @@ public class OrderManager {
     }
 
     /**
-     * 根据拆单数量提示信息
-     *
+     * 下单成功后提示
      * @param splitNum
+     * @param isContainDIY
      * @return
      */
-    private String getSplitTips(Integer splitNum) {
-        String remark = "";
+    private String getTips(Integer splitNum, Boolean isContainDIY) {
+        StringBuilder tips = new StringBuilder();
         if (splitNum > 1) {
-            remark = MessageFormat.format(expressUtil.getSplitTips(), splitNum);
+            tips.append(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
         }
-        return remark;
+        if (isContainDIY) {
+            tips.append(expressUtil.getDiyTips());
+        }
+        return tips.toString();
     }
 
     /**

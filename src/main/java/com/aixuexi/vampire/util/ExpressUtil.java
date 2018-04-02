@@ -26,6 +26,10 @@ public class ExpressUtil {
      * 快递提示
      */
     private String expressTips;
+    /**
+     * DIY提示
+     */
+    private String diyTips;
 
     public Boolean getSyncToWms() {
         return syncToWms;
@@ -65,5 +69,13 @@ public class ExpressUtil {
 
     public void setExpressTips(String expressTips) {
         this.expressTips = expressTips;
+    }
+
+    public String getDiyTips() {
+        return diyTips;
+    }
+
+    public void setDiyTips(String diyTips) {
+        this.diyTips = diyTips;
     }
 }
