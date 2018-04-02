@@ -662,19 +662,15 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                //DIY定制不写仓库提示
-                if (subGoodsOrderVo.getOrderType() == OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                    subGoodsOrderVo.setWarehouseTips(StringUtils.EMPTY);
-                }else {
+                //非DIY订单补充仓库提示
+                if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
                     subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
                 }
                 dealSubGoodsOrderVo(subGoodsOrderVo, picMap);
             }
         }else {
-            //DIY定制不写仓库提示
-            if (goodsOrderVo.getOrderType() == OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                goodsOrderVo.setWarehouseTips(StringUtils.EMPTY);
-            }else {
+            //非DIY订单补充仓库提示
+            if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
                 goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
             }
             //详情中的一些信息
