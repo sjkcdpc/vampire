@@ -1,6 +1,5 @@
 package com.aixuexi.vampire.util;
 
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import org.springframework.util.Assert;
 
@@ -18,6 +17,6 @@ public class ApiResponseCheck {
      */
     public static void check(ApiResponse apiResponse) {
         Assert.notNull(apiResponse, "apiResponse is null.");
-        Assert.isTrue(apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE, apiResponse.getMessage());
+        Assert.isTrue(apiResponse.isSuccess(), apiResponse.getMessage());
     }
 }

@@ -2,27 +2,19 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.sms_mail.SMSConstant;
-import com.aixuexi.thor.util.Functions;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.axxBank.model.BusinessResult;
-import com.gaosi.api.axxBank.model.CostProxyParams;
 import com.gaosi.api.axxBank.model.RemainResult;
-import com.gaosi.api.axxBank.service.ChangeCostProxyHandler;
-import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.revolver.constant.OrderConstant;
-import com.gaosi.api.revolver.constant.PayTypeConstant;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.model.ItemOrderDetail;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.google.common.collect.Lists;
@@ -47,9 +39,6 @@ public class ItemOrderManager {
     private static final Logger logger = LoggerFactory.getLogger(ItemOrderManager.class);
 
     @Resource
-    private FinancialAccountService financialAccountService;
-
-    @Autowired
     private ItemOrderServiceFacade itemOrderServiceFacade;
 
     @Autowired(required = false)
@@ -95,78 +84,26 @@ public class ItemOrderManager {
         itemOrderDetails.add(itemOrderDetail);
 
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+        if (apiResponse.isNotSuccess()) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "创建订单失败");
         }
         return apiResponse.getBody();
     }
 
-    /**
-     * 订单支付
-     *
-     * @param orderId
-     * @return
-     */
-    public void pay(String orderId, String token) {
-        //查询当前机构账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        ItemOrder itemOrder = getOrderByOrderId(orderId);
-        if (itemOrder.getStatus() == OrderConstant.OrderStatus.CANCELLED.getValue()) {// 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
-            throw new BusinessException(ExceptionCode.UNKNOWN, "支付超时，该订单已自动取消");
-        }
-        Double amount = AmountUtil.multiply(itemOrder.getConsumeCount(), 10000);//扩大10000倍
-        if (amount.longValue() > rr.getUsableRemain()) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "余额不足");
-        }
-        String optionDesc = "订单号[order]" + orderId + "[/order]";
-        ChangeCostProxyHandler proxyHandler = new ChangeCostProxyHandler(financialAccountService);
-        CostProxyParams proxyParams = new CostProxyParams();
-        proxyParams.setInsId(UserHandleUtil.getInsId());
-        proxyParams.setAmount(amount.longValue());
-        proxyParams.setDiscount(100);
-        proxyParams.setOperatorId(UserHandleUtil.getUserId());
-        proxyParams.setOperatorType(1);
-        proxyParams.setOptionItemEnum(PayTypeConstant.PayType.getOptionItemEnum(itemOrder.getCategoryId()));
-        proxyParams.setToken(token);
-        proxyParams.setOptionDesc(optionDesc);
-        BusinessResult businessResult = proxyHandler.costAidou(proxyParams, this.financialOperation(orderId));
-        if (businessResult.getCgFinancialResult().getStatus() == 1) {
-            updateOrderStatus(orderId);
-            logger.info("订单扣费成功，optionDesc：{},amount:{},token:{}", optionDesc, amount, token);
-        } else {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "订单扣费失败，错误信息：" +
-                    businessResult.getCgFinancialResult().getMessage());
-        }
 
-    }
-
-    /**
-     * 财务扣款操作
-     *
-     * @param orderId
-     * @return
-     */
-    private Functions.Function0<BusinessResult> financialOperation(final String orderId) {
-        return new Functions.Function0<BusinessResult>() {
-            @Override
-            public BusinessResult apply() {
-                return new BusinessResult(orderId, null);
-            }
-        };
-    }
 
     /**
      * 付款后更新订单状态
      *
      * @param orderId
      */
-    private void updateOrderStatus(String orderId) {
+    public void updateOrderStatus(String orderId) {
         boolean flag = true;
         try {
             int retryNum = 0;
             while (retryNum < 3) {//重试三次
                 ApiResponse<?> apiResponse = itemOrderServiceFacade.updateOrderStatus(orderId, OrderConstant.OrderStatus.COMPLETED.getValue());
-                if (apiResponse == null || apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
+                if (apiResponse == null || apiResponse.isNotSuccess()) {
                     //更新状态失败，重试次数累加。
                     retryNum++;
                     //等待100毫秒后重试

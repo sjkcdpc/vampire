@@ -5,6 +5,7 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.manager.OrderManager;
+import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
@@ -12,6 +13,7 @@ import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
+import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.QueryOrderDto;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
@@ -61,7 +63,7 @@ public class ItemOrderController {
     private OrderManager orderManager;
 
     @Resource
-    private FinancialAccountService finAccService;
+    private FinancialAccountService financialAccountService;
 
     @Resource
     private OrderServiceFacade orderServiceFacade;
@@ -123,10 +125,7 @@ public class ItemOrderController {
      */
     private ResultData queryJCZB(QueryOrderDto queryOrderDto) {
         ApiResponse<Page<GoodsOrderVo>> apiResponse = orderServiceFacade.queryGoodsOrder(queryOrderDto);
-        //响应错误直接返回
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         //查询成功
         Page<GoodsOrderVo> page = apiResponse.getBody();
         //总数为0就不进行其他操作了
@@ -147,10 +146,7 @@ public class ItemOrderController {
      */
     private ResultData queryLDPXSC(QueryOrderDto queryOrderDto) {
         ApiResponse<Page<ItemOrderVo>> apiResponse = itemOrderServiceFacade.queryItemOrder(queryOrderDto);
-        //响应错误直接返回
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         //查询成功
         Page<ItemOrderVo> page = apiResponse.getBody();
         //总数为0就不进行其他操作了
@@ -160,10 +156,7 @@ public class ItemOrderController {
         List<ItemOrderVo> itemOrderVos = page.getList();
         List<Integer> categoryIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderVos,"getCategoryId",Integer.class));
         ApiResponse<List<MallCategory>> mallCategoryByIds = mallCategoryServiceFacade.findMallCategoryByIds(categoryIds);
-        //响应错误直接返回
-        if (mallCategoryByIds.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(mallCategoryByIds.getMessage());
-        }
+        ApiResponseCheck.check(mallCategoryByIds);
         List<MallCategory> mallCategories = mallCategoryByIds.getBody();
         Map<Integer, MallCategory> map = CollectionCommonUtil.toMapByList(mallCategories, "getId", Integer.class);
         for (ItemOrderVo itemOrderVo : itemOrderVos) {
@@ -190,9 +183,7 @@ public class ItemOrderController {
         }
         //根据商品id查询商品
         ApiResponse<MallItemNailVo> voApiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(itemId,MallItemConstant.ShelvesStatus.ON);
-        if (voApiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(voApiResponse.getMessage());
-        }
+        ApiResponseCheck.check(voApiResponse);
         if (voApiResponse.getBody() == null) {
             return ResultData.failed("未查询到该校长培训");
         }
@@ -205,9 +196,7 @@ public class ItemOrderController {
         }
         //已报名数量查询
         ApiResponse<List<ItemOrderStatisVo>> apiResponse = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(itemId));
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed("查询已报名数量失败");
-        }
+        ApiResponseCheck.check(apiResponse);
         //仅在限制报名人数时做判断
         if (mallItemNailVo.getSignUpNum() > 0) {
             List<ItemOrderStatisVo> itemOrderStatisVos = apiResponse.getBody();
@@ -239,9 +228,7 @@ public class ItemOrderController {
             return ResultData.failed("参数错误");
         }
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(itemId,itemCount);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
         MallItem mallItem = baseMapper.map(confirmCustomServiceVo,MallItem.class);
         String orderId = itemOrderManager.submit(mallItem, itemCount, UserHandleUtil.getInsId(),confirmCustomServiceVo.getPrice(),confirmCustomServiceVo.getPrice());
@@ -263,7 +250,13 @@ public class ItemOrderController {
         if (StringUtils.isBlank(token)) {
             return ResultData.failed("token为空");
         }
-        itemOrderManager.pay(orderId, token);
+        ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
+        if (itemOrder.getStatus() == OrderConstant.OrderStatus.CANCELLED.getValue()) {
+            // 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
+            return ResultData.failed("支付超时，该订单已自动取消");
+        }
+        financialAccountManager.pay(orderId, token, itemOrder.getCategoryId(), itemOrder.getConsumeCount());
+        itemOrderManager.updateOrderStatus(orderId);
         return ResultData.successed(orderId);
     }
 
@@ -293,7 +286,7 @@ public class ItemOrderController {
      */
     @RequestMapping(value = "/getToken", method = RequestMethod.GET)
     public ResultData getToken() {
-        String token = finAccService.getTokenForFinancial();
+        String token = financialAccountService.getTokenForFinancial();
         return ResultData.successed(token);
     }
 

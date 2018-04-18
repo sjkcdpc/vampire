@@ -48,7 +48,7 @@
     <dubbo:reference interface="com.gaosi.api.basicdata.BookVersionApi" id="bookVersionApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.SchemeApi" id="schemeApi"  />
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectApi" id="subjectApi"  />
-    <dubbo:reference interface="com.gaosi.api.axxBank.service.FinancialAccountService" id="finAccService"  />
+    <dubbo:reference interface="com.gaosi.api.axxBank.service.FinancialAccountService" id="financialAccountService"  />
 
     <!-- 机构服务 -->
     <dubbo:reference interface="com.gaosi.api.turing.service.InstitutionService" id="institutionService"/>
