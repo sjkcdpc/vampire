@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: vampire
+  name: vampire
+  namespace: docker5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vampire
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: vampire
+      name: vampire
+    spec:
+      containers:
+      - image: registry-vpc.cn-beijing.aliyuncs.com/gaosi/vampire:latest
+        imagePullPolicy: Always
+        name: vampire
+        env:
+        - name: "MONGOIP"
+          value: "192.168.0.63"
+        - name: "IP"
+          value: "192.168.0.65"
+        - name: "MYSQLIP"
+          value: "192.168.0.62"
+        - name: "test"
+          value: "test"
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: 512Mi
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: regsecret
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vampire
+  namespace: docker5
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: vampire
