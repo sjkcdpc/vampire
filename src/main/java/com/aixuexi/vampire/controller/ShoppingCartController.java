@@ -10,6 +10,8 @@ import com.gaosi.api.vulcan.model.ShoppingCartList;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,7 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping(value = "/shoppingCart")
 public class ShoppingCartController {
-
+    private final Logger logger = LoggerFactory.getLogger(ShoppingCartController.class);
     @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
@@ -115,7 +117,7 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/mod")
     public ResultData mod(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        if(num>9999 || num<1) {
+        if (num > 9999 || num < 1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
@@ -125,6 +127,14 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
         ApiResponse<Double> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList);
+        if (null == apiResponse) {
+            logger.error("修改购物车失败!  goods_type_id: [{}]", goodsTypeId);
+            return ResultData.failed("修改购物车失败");
+        }
+        if (apiResponse.isNotSuccess()) {
+            logger.error("修改购物车失败!  goods_type_id: [{}] msg:[{}]", goodsTypeId, apiResponse.getMessage());
+            return ResultData.failed(apiResponse.getMessage());
+        }
         Map<String, Object> map = new HashMap<>();
         map.put("goodsTypeId", goodsTypeId);
         map.put("price", apiResponse.getBody());
