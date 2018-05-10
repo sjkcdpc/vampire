@@ -15,10 +15,7 @@ import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.ConfirmCustomServiceVo;
-import com.gaosi.api.vulcan.vo.ConfirmMallItemNailVo;
-import com.gaosi.api.vulcan.vo.MallItemCustomServiceVo;
-import com.gaosi.api.vulcan.vo.MallItemNailVo;
+import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +44,12 @@ public class MallItemExtController {
     @Resource
     private FinancialAccountManager financialAccountManager;
 
+    /**
+     * 校长培训列表
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
     @RequestMapping(value = "/nail", method = RequestMethod.GET)
     public ResultData queryMallItemNailList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
@@ -82,6 +85,11 @@ public class MallItemExtController {
         return resultData;
     }
 
+    /**
+     * 校长培训详情
+     * @param mallItemId
+     * @return
+     */
     @RequestMapping(value = "/nail/detail", method = RequestMethod.GET)
     public ResultData queryMallItemNailDetail(@RequestParam Integer mallItemId) {
         ResultData resultData = new ResultData();
@@ -107,6 +115,12 @@ public class MallItemExtController {
         return resultData;
     }
 
+    /**
+     * 校长培训确认订单
+     * @param mallItemId
+     * @param goodsPieces
+     * @return
+     */
     @RequestMapping(value = "/nail/confirm", method = RequestMethod.GET)
     public ResultData confirmMallItemNail(@RequestParam Integer mallItemId, @RequestParam Integer goodsPieces) {
         if (goodsPieces < 1) {
@@ -126,6 +140,12 @@ public class MallItemExtController {
         return resultData;
     }
 
+    /**
+     * 定制服务列表
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
     @RequestMapping(value = "/customService", method = RequestMethod.GET)
     public ResultData queryCustomServiceList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
         ResultData resultData = new ResultData();
@@ -146,6 +166,12 @@ public class MallItemExtController {
         return resultData;
     }
 
+    /**
+     * 定制服务确认订单
+     * @param mallItemId
+     * @param goodsPieces
+     * @return
+     */
     @RequestMapping(value = "/customService/confirm", method = RequestMethod.GET)
     public ResultData confirmCustomService(@RequestParam Integer mallItemId,@RequestParam Integer goodsPieces ){
         if (goodsPieces < 1) {
@@ -163,5 +189,25 @@ public class MallItemExtController {
 
         resultData.setBody(confirmCustomServiceVo);
         return resultData;
+    }
+
+    /**
+     * 人才中心筛选条件
+     * @return
+     */
+    @RequestMapping(value = "/talentCenter/queryCondition", method = RequestMethod.GET)
+    public ResultData queryCondition4TalentCenter(){
+        // 全部筛选条件
+        List<CommonConditionVo> allCondition = new ArrayList<>();
+        return ResultData.successed(allCondition);
+    }
+
+    /**
+     * 人才中心列表
+     * @return
+     */
+    @RequestMapping(value = "/talentCenter/list", method = RequestMethod.GET)
+    public ResultData queryTalentCenterList(ReqTalentCenterConditionVo reqTalentCenterConditionVo){
+        return null;
     }
 }
