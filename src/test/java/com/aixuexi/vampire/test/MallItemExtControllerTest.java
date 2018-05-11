@@ -25,4 +25,11 @@ public class MallItemExtControllerTest extends BaseTest {
         long end = System.currentTimeMillis();
         logger.info(""+(end-start));
     }
+
+    @Test
+    public void queryCondition4TalentCenter() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/item/talentCenter/queryCondition")
+        );
+    }
 }

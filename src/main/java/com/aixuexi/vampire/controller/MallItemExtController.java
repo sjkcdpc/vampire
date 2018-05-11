@@ -3,6 +3,13 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.GoodsManager;
+import com.aixuexi.vampire.util.ApiResponseCheck;
+import com.aixuexi.vampire.util.BaseMapper;
+import com.gaosi.api.basicdata.DictionaryApi;
+import com.gaosi.api.basicdata.SubjectProductApi;
+import com.gaosi.api.basicdata.model.bo.DictionaryBo;
+import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -14,8 +21,10 @@ import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
+import com.gaosi.api.vulcan.model.TalentFilterCondition;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
+import com.gaosi.api.xmen.constant.DictConstants;
 import com.google.common.collect.Lists;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +52,18 @@ public class MallItemExtController {
 
     @Resource
     private FinancialAccountManager financialAccountManager;
+
+    @Resource
+    private DictionaryApi dictionaryApi;
+
+    @Resource
+    private SubjectProductApi subjectProductApi;
+
+    @Resource
+    private GoodsManager goodsManager;
+
+    @Resource
+    private BaseMapper baseMapper;
 
     /**
      * 校长培训列表
@@ -199,6 +220,29 @@ public class MallItemExtController {
     public ResultData queryCondition4TalentCenter(){
         // 全部筛选条件
         List<CommonConditionVo> allCondition = new ArrayList<>();
+        // 获取人才中心的筛选条件
+        ApiResponse<TalentFilterCondition> talentResponse = mallItemExtServiceFacade.queryTalentFilterCondition();
+        ApiResponseCheck.check(talentResponse);
+        TalentFilterCondition talentFilterCondition = talentResponse.getBody();
+        List<String> typeCodes = talentFilterCondition.getTypeCode();
+        List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
+        // 查询字典表中的人才类型
+        ApiResponse<List<DictionaryBo>> dictionaryResponse = dictionaryApi.findByType(DictConstants.TALENT_TYPE);
+        ApiResponseCheck.check(dictionaryResponse);
+        List<DictionaryBo> dictionaryBos = dictionaryResponse.getBody();
+        List<CommonConditionVo> typeCodeCondition = new ArrayList<>();
+        for (DictionaryBo dictionaryBo : dictionaryBos) {
+            if(typeCodes.contains(dictionaryBo.getCode())){
+                typeCodeCondition.add(new CommonConditionVo(dictionaryBo.getId(),dictionaryBo.getCode(),dictionaryBo.getName()));
+            }
+        }
+        typeCodeCondition.add(0, goodsManager.addAllCondition());
+        allCondition.add(new CommonConditionVo(0,"人才类型",typeCodeCondition));
+        // 查询基础数据的学科
+        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(subjectProductIds);
+        List<CommonConditionVo> subjectProductCondition = baseMapper.mapAsList(subjectProductList,CommonConditionVo.class);
+        subjectProductCondition.add(0, goodsManager.addAllCondition());
+        allCondition.add(new CommonConditionVo(1,"所属学科",subjectProductCondition));
         return ResultData.successed(allCondition);
     }
 
