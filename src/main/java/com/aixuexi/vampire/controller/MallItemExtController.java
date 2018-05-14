@@ -252,6 +252,34 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/talentCenter/list", method = RequestMethod.GET)
     public ResultData queryTalentCenterList(ReqTalentCenterConditionVo reqTalentCenterConditionVo){
-        return null;
+        reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
+        reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
+        ApiResponse<Page<MallItemTalentVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4Talent(reqTalentCenterConditionVo);
+        ApiResponseCheck.check(apiResponse);
+        Page<MallItemTalentVo> mallItemTalentVoPage = apiResponse.getBody();
+        List<MallItemTalentVo> mallItemTalentVos = mallItemTalentVoPage.getList();
+        dealMallItemTalentVo(mallItemTalentVos);
+        return ResultData.successed(mallItemTalentVoPage);
+    }
+
+    @RequestMapping(value = "/talentCenter/detail", method = RequestMethod.GET)
+    public ResultData queryTalentCenterDetail(@RequestParam Integer mallItemId) {
+        ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
+        reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
+        reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
+        reqTalentCenterConditionVo.setMallItemId(mallItemId);
+        ApiResponse<MallItemTalentVo> apiResponse = mallItemExtServiceFacade.queryMallItem4Talent(reqTalentCenterConditionVo);
+        ApiResponseCheck.check(apiResponse);
+        MallItemTalentVo mallItemTalentVo = apiResponse.getBody();
+        dealMallItemTalentVo(Lists.newArrayList(mallItemTalentVo));
+        return ResultData.successed(mallItemTalentVo);
+    }
+
+    /**
+     * 处理人才中心VO（补充销售量）
+     * @param mallItemTalentVos
+     */
+    private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {
+
     }
 }
