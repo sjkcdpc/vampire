@@ -262,6 +262,11 @@ public class MallItemExtController {
         return ResultData.successed(mallItemTalentVoPage);
     }
 
+    /**
+     * 人才中心详情
+     * @param mallItemId
+     * @return
+     */
     @RequestMapping(value = "/talentCenter/detail", method = RequestMethod.GET)
     public ResultData queryTalentCenterDetail(@RequestParam Integer mallItemId) {
         ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
