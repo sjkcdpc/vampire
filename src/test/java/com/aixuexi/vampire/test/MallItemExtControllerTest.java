@@ -47,4 +47,14 @@ public class MallItemExtControllerTest extends BaseTest {
                 param("mallItemId","815")
         );
     }
+
+    @Test
+    public void confirmTalentCenter() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/item/talentCenter/confirm").
+                param("mallItemId","815").
+                param("mallSkuId","1407").
+                param("num","2")
+        );
+    }
 }

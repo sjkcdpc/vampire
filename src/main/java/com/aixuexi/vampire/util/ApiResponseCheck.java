@@ -19,4 +19,13 @@ public class ApiResponseCheck {
         Assert.notNull(apiResponse, "apiResponse is null.");
         Assert.isTrue(apiResponse.isSuccess(), apiResponse.getMessage());
     }
+
+    /**
+     * 新apiResponse校验(非空，以及ApiRetCode为SUCCESS)
+     * @param apiResponse
+     */
+    public static void checkNew(com.aixuexi.thor.response.ApiResponse apiResponse) {
+        Assert.notNull(apiResponse, "apiResponse is null.");
+        Assert.isTrue(apiResponse.isSuccess(), apiResponse.getMessage());
+    }
 }

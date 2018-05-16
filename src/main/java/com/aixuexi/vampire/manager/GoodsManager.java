@@ -397,6 +397,7 @@ public class GoodsManager {
         CommonConditionVo commonConditionVo = new CommonConditionVo();
         commonConditionVo.setId(0);
         commonConditionVo.setName("全部");
+        commonConditionVo.setCode(StringUtils.EMPTY);
         return commonConditionVo;
     }
 

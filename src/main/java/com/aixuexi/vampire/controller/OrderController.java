@@ -6,7 +6,6 @@ import com.aixuexi.thor.validate.annotation.NotBlank;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
@@ -149,7 +148,7 @@ public class OrderController {
     public ResultData submit(@RequestParam Integer consigneeId, String receivePhone,
                              @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
-                UserSessionHandler.getId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
+                UserHandleUtil.getUserId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
         checkParams4Submit(goodsTypeIds,express);
 
         Integer userId = UserHandleUtil.getUserId();

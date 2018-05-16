@@ -33,4 +33,9 @@ public final class Constants {
         PERIOD_MAP.put(3, 2);//秋 0010
         PERIOD_MAP.put(4, 1);//寒 0001
     }
+
+    /**
+     * 人才中心模板编码
+     */
+    public static final String RCZX_TEMPLATE_CODE = "rczx";
 }

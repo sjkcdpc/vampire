@@ -5,19 +5,25 @@ import com.aixuexi.thor.sms_mail.SMSConstant;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
 import com.aixuexi.vampire.util.ApiResponseCheck;
+import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.davincicode.UserService;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
+import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.model.ItemOrderDetail;
+import com.gaosi.api.revolver.util.AmountUtil;
+import com.gaosi.api.revolver.vo.ItemOrderDetailVo;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.model.MallItem;
-import com.google.common.collect.Lists;
+import com.gaosi.api.vulcan.model.MallSku;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +31,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.aixuexi.vampire.util.Constants.ORDERDETAIL_NAME_DIV;
 
 /**
  * @Description:商品订单管理，供controller使用
@@ -50,43 +59,74 @@ public class ItemOrderManager {
     @Resource
     private FinancialAccountManager financialAccountManager;
 
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private BaseMapper baseMapper;
+
     /**
-     * 订单提交
-     *
-     * @param mallItem 商品
-     * @param itemCount   商品数量
+     * 虚拟商品生成订单对象
+     * @param mallItem
+     * @param mallSku
+     * @param num
      * @return
      */
-    public String submit(MallItem mallItem, Integer itemCount, Integer insId ,Double price,Double originalPrice) {
-        //查询当前机构账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
-        Double consumeCount = price * itemCount;
-        Double totalCount = consumeCount * 10000;//根据商品现价和数量计算花费
-        financialAccountManager.checkRemainMoney(rr,totalCount.longValue());
-
-        ItemOrder itemOrder = new ItemOrder();
-        itemOrder.setInstitutionId(insId);
-        itemOrder.setUserId(UserHandleUtil.getUserId());
-        itemOrder.setConsigneeName(UserSessionHandler.getUsername());//虚拟商品没有收货人，默认收货人为当前用户
-        itemOrder.setStatus(OrderConstant.OrderStatus.NO_PAY.getValue());//只要提交订单就是待支付，确认支付后再更改状态
-        itemOrder.setCategoryId(mallItem.getCategoryId());
-        itemOrder.setConsumeCount(consumeCount);
-
-        //订单详情拼接
-        List<ItemOrderDetail> itemOrderDetails = Lists.newArrayList();
-        ItemOrderDetail itemOrderDetail = new ItemOrderDetail();
-        itemOrderDetail.setItemId(mallItem.getId());
-        itemOrderDetail.setItemName(mallItem.getName());
-        itemOrderDetail.setItemPrice(price);
-        itemOrderDetail.setItemCount(itemCount);
-        itemOrderDetail.setDiscount(originalPrice - price);
-        itemOrderDetail.setBusinessId(MallItemConstant.Category.getCode(mallItem.getCategoryId()));
-        itemOrderDetails.add(itemOrderDetail);
-
-        ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
-        if (apiResponse.isNotSuccess()) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "创建订单失败");
+    public ItemOrderVo generateItemOrderVo(MallItem mallItem, MallSku mallSku, Integer num) {
+        ItemOrderVo itemOrderVo = new ItemOrderVo();
+        itemOrderVo.setInstitutionId(UserHandleUtil.getInsId());
+        itemOrderVo.setUserId(UserHandleUtil.getUserId());
+        //虚拟商品没有收货人，默认收货人为当前用户,收货人电话为当前用户的电话
+        itemOrderVo.setConsigneeName(UserSessionHandler.getUsername());
+        User user = userService.getUserById(UserHandleUtil.getUserId());
+        itemOrderVo.setConsigneePhone(user.getTelephone());
+        //只要提交订单就是待支付，确认支付后再更改状态
+        itemOrderVo.setStatus(OrderConstant.OrderStatus.NO_PAY.getValue());
+        itemOrderVo.setCategoryId(mallItem.getCategoryId());
+        //订单详情
+        List<ItemOrderDetailVo> itemOrderDetailVos = new ArrayList<>();
+        ItemOrderDetailVo itemOrderDetailVo = new ItemOrderDetailVo();
+        itemOrderDetailVo.setItemId(mallItem.getId());
+        itemOrderDetailVo.setItemName(mallItem.getName());
+        if (StringUtils.isNotBlank(mallSku.getName())) {
+            itemOrderDetailVo.setItemName(mallItem.getName() + ORDERDETAIL_NAME_DIV + mallSku.getName());
         }
+        itemOrderDetailVo.setItemPrice(mallSku.getPrice());
+        itemOrderDetailVo.setItemCount(num);
+        itemOrderDetailVo.setDiscount(0D);
+        if (mallSku.getOriginalPrice() != null && mallSku.getOriginalPrice() != 0) {
+            itemOrderDetailVo.setDiscount(AmountUtil.subtract(mallSku.getOriginalPrice(), mallSku.getPrice()));
+        }
+        itemOrderDetailVo.setBusinessId(MallItemConstant.Category.getCode(mallItem.getCategoryId()));
+        itemOrderDetailVos.add(itemOrderDetailVo);
+        itemOrderVo.setItemOrderDetails(itemOrderDetailVos);
+        return itemOrderVo;
+    }
+
+    /**
+     * 虚拟商品提交订单
+     * @param itemOrderVo
+     * @return
+     */
+    public String submit(ItemOrderVo itemOrderVo) {
+        //查询当前机构账号余额
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(itemOrderVo.getInstitutionId());
+        List<ItemOrderDetailVo> itemOrderDetailVos = itemOrderVo.getItemOrderDetails();
+        // 计算订单总金额
+        Double consumeCount = 0D;
+        for (ItemOrderDetailVo itemOrderDetailVo : itemOrderDetailVos) {
+            consumeCount = AmountUtil.multiply(itemOrderDetailVo.getItemPrice(),itemOrderDetailVo.getItemCount());
+        }
+        Double totalCount = AmountUtil.multiply(consumeCount , 10000D);
+        // 检查账户余额
+        financialAccountManager.checkRemainMoney(rr,totalCount.longValue());
+        ItemOrder itemOrder = baseMapper.map(itemOrderVo,ItemOrder.class);
+        itemOrder.setConsumeCount(consumeCount);
+        // 订单详情
+        List<ItemOrderDetail> itemOrderDetails = baseMapper.mapAsList(itemOrderDetailVos,ItemOrderDetail.class);
+        // 创建订单
+        ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
+        ApiResponseCheck.check(apiResponse);
         return apiResponse.getBody();
     }
 

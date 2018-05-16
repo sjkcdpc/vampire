@@ -6,27 +6,30 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.SubjectProductApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
+import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
-import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
+import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.model.TalentFilterCondition;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
+import com.gaosi.api.workorder.facade.TemplateServiceFacade;
+import com.gaosi.api.workorder.vo.TemplateFieldVo;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.google.common.collect.Lists;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,6 +39,8 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.aixuexi.vampire.util.Constants.RCZX_TEMPLATE_CODE;
 
 /**
  * Created by ruanyanjie on 2017/7/28.
@@ -60,6 +65,9 @@ public class MallItemExtController {
     private SubjectProductApi subjectProductApi;
 
     @Resource
+    private TemplateServiceFacade templateServiceFacade;
+
+    @Resource
     private GoodsManager goodsManager;
 
     @Resource
@@ -78,28 +86,26 @@ public class MallItemExtController {
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
-        ApiResponse<Page<MallItemNailVo>> apiResponse = mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
-        Page<MallItemNailVo> mallItemNailVoPage = apiResponse.getBody();
-        List<Integer> ids = new ArrayList<>();
-        if (CollectionUtils.isEmpty(mallItemNailVoPage.getList())) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "未查找到校长培训列表!");
-        }
-        for (MallItemNailVo mno : mallItemNailVoPage.getList()) {
-            ids.add(mno.getMallItemId());
-        }
-        ApiResponse<List<ItemOrderStatisVo>> signedUpNumList = itemOrderServiceFacade.getCountByItemId(ids);
-        List<ItemOrderStatisVo> signedUpNums = signedUpNumList.getBody();
-        Map<Integer, ItemOrderStatisVo> signedUpNumMap = CollectionCommonUtil.toMapByList(signedUpNums, "getItemId", Integer.class);
-        for (MallItemNailVo mno : mallItemNailVoPage.getList()) {
-            Integer mallItemId = mno.getMallItemId();
-            Integer signedUpNum = signedUpNumMap.get(mallItemId).getSignedTotal();
-            mno.setSignedUpNum(signedUpNum);
-            //添加名额已满的状态
-            if (mno.getSignUpNum() > 0 && signedUpNum >= mno.getSignUpNum()) {
-                mno.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
+        ApiResponse<Page<MallItemNailVo>> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
+        ApiResponseCheck.check(mallItemNailVoResponse);
+        Page<MallItemNailVo> mallItemNailVoPage = mallItemNailVoResponse.getBody();
+        List<MallItemNailVo> mallItemNailVos = mallItemNailVoPage.getList();
+        if (CollectionUtils.isNotEmpty(mallItemNailVos)) {
+            List<Integer> ids = CollectionCommonUtil.getFieldListByObjectList(mallItemNailVos,
+                    "mallItemNailVos",Integer.class);
+            ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(ids);
+            ApiResponseCheck.check(itemOrderStatisVoResponse);
+            List<ItemOrderStatisVo> signedUpNums = itemOrderStatisVoResponse.getBody();
+            Map<Integer, ItemOrderStatisVo> signedUpNumMap = CollectionCommonUtil.toMapByList(signedUpNums,
+                    "getItemId", Integer.class);
+            for (MallItemNailVo mno : mallItemNailVos) {
+                Integer mallItemId = mno.getMallItemId();
+                Integer signedUpNum = signedUpNumMap.get(mallItemId).getSignedTotal();
+                mno.setSignedUpNum(signedUpNum);
+                //添加名额已满的状态
+                if (mno.getSignUpNum() > 0 && signedUpNum >= mno.getSignUpNum()) {
+                    mno.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
+                }
             }
         }
         resultData.setBody(mallItemNailVoPage);
@@ -114,17 +120,13 @@ public class MallItemExtController {
     @RequestMapping(value = "/nail/detail", method = RequestMethod.GET)
     public ResultData queryMallItemNailDetail(@RequestParam Integer mallItemId) {
         ResultData resultData = new ResultData();
-        ApiResponse<MallItemNailVo> apiResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId, MallItemConstant.ShelvesStatus.ON);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
-        MallItemNailVo mallItemNailVo = apiResponse.getBody();
+        ApiResponse<MallItemNailVo> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId, MallItemConstant.ShelvesStatus.ON);
+        ApiResponseCheck.check(mallItemNailVoResponse);
+        MallItemNailVo mallItemNailVo = mallItemNailVoResponse.getBody();
         //已报名数量查询
-        ApiResponse<List<ItemOrderStatisVo>> apiResponse1 = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(mallItemNailVo.getMallItemId()));
-        if (apiResponse1.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed("查询已报名数量失败");
-        }
-        List<ItemOrderStatisVo> itemOrderStatisVos = apiResponse1.getBody();
+        ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(mallItemNailVo.getMallItemId()));
+        ApiResponseCheck.check(itemOrderStatisVoResponse);
+        List<ItemOrderStatisVo> itemOrderStatisVos = itemOrderStatisVoResponse.getBody();
         Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
         int signedUpNum = map.get(mallItemNailVo.getMallItemId()).getSignedTotal();
         mallItemNailVo.setSignedUpNum(signedUpNum);
@@ -149,9 +151,7 @@ public class MallItemExtController {
         }
         ResultData resultData = new ResultData();
         ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId, goodsPieces);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
@@ -169,22 +169,14 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/customService", method = RequestMethod.GET)
     public ResultData queryCustomServiceList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
-        ResultData resultData = new ResultData();
         QueryCriteria queryCriteria = new QueryCriteria();
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
         queryCriteria.setCategoryId(MallItemConstant.Category.DZFW.getId());
-        ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria,UserHandleUtil.getInsId());
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
-        Page<MallItemCustomServiceVo> customServiceVoPage = apiResponse.getBody();
-        if (CollectionUtils.isEmpty(customServiceVoPage.getList())) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "未查找到定制服务列表!");
-        }
-        resultData.setBody(customServiceVoPage);
-        return resultData;
+        ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria, UserHandleUtil.getInsId());
+        ApiResponseCheck.check(apiResponse);
+        return ResultData.successed(apiResponse.getBody());
     }
 
     /**
@@ -200,9 +192,7 @@ public class MallItemExtController {
         }
         ResultData resultData = new ResultData();
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(mallItemId, goodsPieces);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
+        ApiResponseCheck.check(apiResponse);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
@@ -254,6 +244,7 @@ public class MallItemExtController {
     public ResultData queryTalentCenterList(ReqTalentCenterConditionVo reqTalentCenterConditionVo){
         reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
+        reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
         ApiResponse<Page<MallItemTalentVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4Talent(reqTalentCenterConditionVo);
         ApiResponseCheck.check(apiResponse);
         Page<MallItemTalentVo> mallItemTalentVoPage = apiResponse.getBody();
@@ -273,11 +264,42 @@ public class MallItemExtController {
         reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         reqTalentCenterConditionVo.setMallItemId(mallItemId);
+        reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
         ApiResponse<MallItemTalentVo> apiResponse = mallItemExtServiceFacade.queryMallItem4Talent(reqTalentCenterConditionVo);
         ApiResponseCheck.check(apiResponse);
         MallItemTalentVo mallItemTalentVo = apiResponse.getBody();
         dealMallItemTalentVo(Lists.newArrayList(mallItemTalentVo));
         return ResultData.successed(mallItemTalentVo);
+    }
+
+    /**
+     * 人才中心订单确认
+     * @param mallItemId
+     * @param mallSkuId
+     * @param num
+     * @return
+     */
+    @RequestMapping(value = "/talentCenter/confirm", method = RequestMethod.GET)
+    public ResultData confirmTalentCenter(@RequestParam Integer mallItemId,@RequestParam Integer mallSkuId,
+                                          @RequestParam Integer num) {
+        ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
+        reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
+        reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
+        reqTalentCenterConditionVo.setMallItemId(mallItemId);
+        reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
+        ApiResponse<ConfirmTalentVo> apiResponse = mallItemExtServiceFacade.confirmTalentCenter(reqTalentCenterConditionVo, mallSkuId, num);
+        ApiResponseCheck.check(apiResponse);
+        ConfirmTalentVo confirmTalentVo = apiResponse.getBody();
+        // 查询账户余额
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
+        Double balance = AmountUtil.divide(Double.valueOf(rr.getUsableRemain()),10000D);
+        confirmTalentVo.setBalance(balance);
+        // 查询工单模板
+        com.aixuexi.thor.response.ApiResponse<List<TemplateFieldVo>> templateResponse = templateServiceFacade.queryTemplateFields(RCZX_TEMPLATE_CODE);
+        ApiResponseCheck.checkNew(templateResponse);
+        List<TemplateFieldVo> templateFieldVos = templateResponse.getBody();
+        confirmTalentVo.setTalentTemplate(templateFieldVos);
+        return ResultData.successed(confirmTalentVo);
     }
 
     /**
