@@ -91,6 +91,9 @@ public class ItemOrderManager {
         if (StringUtils.isNotBlank(mallSku.getName())) {
             itemOrderDetailVo.setItemName(mallItem.getName() + ORDERDETAIL_NAME_DIV + mallSku.getName());
         }
+        if (mallSku.getId() != null) {
+            itemOrderDetailVo.setMallSkuId(mallSku.getId());
+        }
         itemOrderDetailVo.setItemPrice(mallSku.getPrice());
         itemOrderDetailVo.setItemCount(num);
         itemOrderDetailVo.setDiscount(0D);

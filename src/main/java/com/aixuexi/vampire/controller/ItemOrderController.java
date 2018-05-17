@@ -11,8 +11,14 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
+import com.gaosi.api.basicdata.DictionaryApi;
+import com.gaosi.api.basicdata.SubjectProductApi;
+import com.gaosi.api.basicdata.model.bo.DictionaryBo;
+import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.davincicode.UserService;
+import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.QueryOrderDto;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
@@ -20,6 +26,8 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.util.ConstantsUtil;
 import com.gaosi.api.revolver.vo.*;
+import com.gaosi.api.turing.model.po.Institution;
+import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
@@ -30,11 +38,13 @@ import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
+import com.gaosi.api.xmen.constant.DictConstants;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -76,6 +86,18 @@ public class ItemOrderController {
 
     @Resource
     private FinancialAccountManager financialAccountManager;
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private InstitutionService institutionService;
+
+    @Resource
+    private DictionaryApi dictionaryApi;
+
+    @Resource
+    private SubjectProductApi subjectProductApi;
 
     @Resource
     private BaseMapper baseMapper;
@@ -250,6 +272,7 @@ public class ItemOrderController {
         mallItem.setName(confirmTalentVo.getName());
         mallItem.setCategoryId(MallItemConstant.Category.RCZX.getId());
         MallSku mallSku = new MallSku();
+        mallSku.setId(confirmTalentVo.getMallSkuId());
         mallSku.setPrice(confirmTalentVo.getPrice());
         mallSku.setName(confirmTalentVo.getEducationRemark() + ORDERDETAIL_NAME_DIV + confirmTalentVo.getExperienceRemark());
         ItemOrderVo itemOrderVo = itemOrderManager.generateItemOrderVo(mallItem, mallSku, talentOrderVo.getNum());
@@ -283,6 +306,79 @@ public class ItemOrderController {
         financialAccountManager.pay(orderId, token, itemOrder.getCategoryId(), itemOrder.getConsumeCount());
         itemOrderManager.updateOrderStatus(orderId);
         return ResultData.successed(orderId);
+    }
+
+    @RequestMapping(value = "/lockPay", method = RequestMethod.POST)
+    public ResultData lockPay(@RequestParam String orderId, @RequestParam String token) {
+        Integer userId = UserHandleUtil.getUserId();
+        Integer insId = UserHandleUtil.getInsId();
+        logger.info("userId=[{}] lockPay, orderId=[{}], token=[{}].", userId, orderId, token);
+        // 订单支付
+        ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.payItemOrder(orderId, token, insId, userId);
+        ApiResponseCheck.check(itemOrderResponse);
+        ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
+        // 人才中心工单
+        TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
+        return ResultData.successed();
+    }
+
+    /**
+     * 生成人才中心工单类型对象
+     * @param itemOrderVo
+     * @param userId
+     * @param insId
+     * @return
+     */
+    private TalentWorkOrderVo generateTalentWorkOrderVo(ItemOrderVo itemOrderVo, Integer userId,Integer insId) {
+        TalentWorkOrderVo talentWorkOrderVo = new TalentWorkOrderVo();
+        // 用户信息
+        talentWorkOrderVo.setUserId(userId);
+        User user = userService.getUserById(userId);
+        talentWorkOrderVo.setUserName(user.getName());
+        talentWorkOrderVo.setTelephone(user.getTelephone());
+        // 机构信息
+        talentWorkOrderVo.setInsititutionId(insId);
+        Institution institution = institutionService.getInsInfoById(insId);
+        talentWorkOrderVo.setInsititutionName(institution.getName());
+        talentWorkOrderVo.setInsititutionAddress(institution.getAddress());
+        // 订单信息
+        talentWorkOrderVo.setOrderId(itemOrderVo.getOrderId());
+        talentWorkOrderVo.setCreateTime(itemOrderVo.getCreateTime());
+        String extInfo = itemOrderVo.getExtInfo();
+        List<TalentTemplateVo> talentTemplateVos = (List<TalentTemplateVo>)JSONObject.parse(extInfo);
+        talentWorkOrderVo.setTalentTemplateVos(talentTemplateVos);
+        // 订单详情
+        List<ItemOrderDetailVo> itemOrderDetails = itemOrderVo.getItemOrderDetails();
+        ItemOrderDetailVo itemOrderDetailVo = itemOrderDetails.get(0);
+        talentWorkOrderVo.setNum(itemOrderDetailVo.getItemCount());
+        // 订单的商品信息
+        ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
+        reqTalentCenterConditionVo.setMallItemId(itemOrderDetailVo.getItemId());
+        ApiResponse<MallItemTalentVo> mallItemTalentResponse = mallItemExtServiceFacade.queryMallItem4Talent(reqTalentCenterConditionVo);
+        MallItemTalentVo mallItemTalentVo = mallItemTalentResponse.getBody();
+        // 人才类型
+        talentWorkOrderVo.setTypeCode(mallItemTalentVo.getTypeCode());
+        ApiResponse<DictionaryBo> dictionaryResponse = dictionaryApi.getByTypeAndCode(DictConstants.TALENT_TYPE, mallItemTalentVo.getTypeCode());
+        ApiResponseCheck.check(dictionaryResponse);
+        DictionaryBo dictionaryBo = dictionaryResponse.getBody();
+        talentWorkOrderVo.setType(dictionaryBo.getName());
+        // 学科
+        talentWorkOrderVo.setSubjectProductId(mallItemTalentVo.getSubjectProductId());
+        ApiResponse<SubjectProductBo> subjectResponse = subjectProductApi.getById(mallItemTalentVo.getSubjectProductId());
+        ApiResponseCheck.check(subjectResponse);
+        SubjectProductBo subjectProductBo = subjectResponse.getBody();
+        talentWorkOrderVo.setSubjectProduct(subjectProductBo.getName());
+        // 学历，经验
+        List<MallSkuExtTalentVo> mallSkuExtTalentVos = mallItemTalentVo.getMallSkuExtTalentVos();
+        for (MallSkuExtTalentVo mallSkuExtTalentVo : mallSkuExtTalentVos) {
+            if(mallSkuExtTalentVo.getMallSkuId().equals(itemOrderDetailVo.getMallSkuId())){
+                talentWorkOrderVo.setEducationCode(mallSkuExtTalentVo.getEducationCode());
+                talentWorkOrderVo.setEducationRemark(mallSkuExtTalentVo.getEducationRemark());
+                talentWorkOrderVo.setExperienceCode(mallSkuExtTalentVo.getExperienceCode());
+                talentWorkOrderVo.setExperienceRemark(mallSkuExtTalentVo.getExperienceRemark());
+            }
+        }
+        return talentWorkOrderVo;
     }
 
     /**
