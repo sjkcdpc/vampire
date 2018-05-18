@@ -92,7 +92,7 @@ public class MallItemExtController {
         List<MallItemNailVo> mallItemNailVos = mallItemNailVoPage.getList();
         if (CollectionUtils.isNotEmpty(mallItemNailVos)) {
             List<Integer> ids = CollectionCommonUtil.getFieldListByObjectList(mallItemNailVos,
-                    "mallItemNailVos",Integer.class);
+                    "getMallItemId",Integer.class);
             ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(ids);
             ApiResponseCheck.check(itemOrderStatisVoResponse);
             List<ItemOrderStatisVo> signedUpNums = itemOrderStatisVoResponse.getBody();

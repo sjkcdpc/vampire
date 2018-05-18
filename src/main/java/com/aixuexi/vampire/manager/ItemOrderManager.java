@@ -76,6 +76,9 @@ public class ItemOrderManager {
         ItemOrderVo itemOrderVo = new ItemOrderVo();
         itemOrderVo.setInstitutionId(UserHandleUtil.getInsId());
         itemOrderVo.setUserId(UserHandleUtil.getUserId());
+        itemOrderVo.setRemark(StringUtils.EMPTY);
+        itemOrderVo.setExtInfo(StringUtils.EMPTY);
+        itemOrderVo.setRelationInfo(StringUtils.EMPTY);
         //虚拟商品没有收货人，默认收货人为当前用户,收货人电话为当前用户的电话
         itemOrderVo.setConsigneeName(UserSessionHandler.getUsername());
         User user = userService.getUserById(UserHandleUtil.getUserId());
@@ -91,6 +94,7 @@ public class ItemOrderManager {
         if (StringUtils.isNotBlank(mallSku.getName())) {
             itemOrderDetailVo.setItemName(mallItem.getName() + ORDERDETAIL_NAME_DIV + mallSku.getName());
         }
+        itemOrderDetailVo.setMallSkuId(0);
         if (mallSku.getId() != null) {
             itemOrderDetailVo.setMallSkuId(mallSku.getId());
         }
