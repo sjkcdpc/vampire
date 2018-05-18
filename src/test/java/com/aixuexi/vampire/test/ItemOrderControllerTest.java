@@ -49,7 +49,7 @@ public class ItemOrderControllerTest extends BaseTest {
         talentTemplateVo.setFieldCode("aaa");
         talentTemplateVo.setFieldLabel("啊啊啊");
         talentTemplateVo.setFieldName("aaabbb");
-        talentTemplateVo.setValue("aaabbbccc");
+        talentTemplateVo.setFieldValue("aaabbbccc");
         talentTemplateVos.add(talentTemplateVo);
         talentOrderVo.setTalentTemplateVos(talentTemplateVos);
         String temp = JSONObject.toJSONString(talentOrderVo);
