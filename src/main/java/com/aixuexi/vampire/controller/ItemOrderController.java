@@ -39,12 +39,12 @@ import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.xmen.constant.DictConstants;
+import com.gaosi.api.xmen.service.TalentDemandService;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -98,6 +98,9 @@ public class ItemOrderController {
 
     @Resource
     private SubjectProductApi subjectProductApi;
+
+    @Resource
+    private TalentDemandService talentDemandService;
 
     @Resource
     private BaseMapper baseMapper;
@@ -319,7 +322,20 @@ public class ItemOrderController {
         ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
         // 人才中心工单
         TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
-        return ResultData.successed();
+        List<String> workOrderIds = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
+        // 更新关联工单号
+        ItemOrder itemOrder = new ItemOrder();
+        itemOrder.setOrderId(orderId);
+        // 工单号分隔符
+        String SEPARATOR = ",";
+        StringBuilder workOrderIdBuilder = new StringBuilder();
+        for (String workOrderId : workOrderIds) {
+            workOrderIdBuilder.append(workOrderId);
+            workOrderIdBuilder.append(SEPARATOR);
+        }
+        itemOrder.setRelationInfo(workOrderIdBuilder.toString());
+        itemOrderServiceFacade.updateOrder(itemOrder);
+        return ResultData.successed(orderId);
     }
 
     /**
