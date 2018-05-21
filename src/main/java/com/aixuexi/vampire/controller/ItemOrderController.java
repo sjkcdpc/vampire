@@ -131,7 +131,8 @@ public class ItemOrderController {
         switch (MallItemConstant.Category.get(queryOrderDto.getCategoryId())){
             case LDPXSC:
             case DZFW:
-                return queryLDPXSC(queryOrderDto);
+            case RCZX:
+                return queryItemOrder(queryOrderDto);
             case JCZB:
                 return queryJCZB(queryOrderDto);
             default:
@@ -161,12 +162,12 @@ public class ItemOrderController {
     }
 
     /**
-     * 查询校长培训订单列表
+     * 查询虚拟商品订单列表
      *
      * @param queryOrderDto
      * @return
      */
-    private ResultData queryLDPXSC(QueryOrderDto queryOrderDto) {
+    private ResultData queryItemOrder(QueryOrderDto queryOrderDto) {
         ApiResponse<Page<ItemOrderVo>> apiResponse = itemOrderServiceFacade.queryItemOrder(queryOrderDto);
         ApiResponseCheck.check(apiResponse);
         //查询成功
@@ -442,5 +443,16 @@ public class ItemOrderController {
         amountVo.setRemainAmount(remainAmount);
         amountVo.setConsumeCount(itemOrder.getConsumeCount());
         return ResultData.successed(amountVo);
+    }
+
+    /**
+     * 订单状态统计
+     * @return
+     */
+    @RequestMapping(value = "/getStatusTotal", method = RequestMethod.GET)
+    public ResultData getStatusTotal() {
+        ApiResponse<List<OrderStatusTotalVo>> apiResponse = orderServiceFacade.queryOrderStatusTotal(UserHandleUtil.getInsId());
+        ApiResponseCheck.check(apiResponse);
+        return ResultData.successed(apiResponse.getBody());
     }
 }
