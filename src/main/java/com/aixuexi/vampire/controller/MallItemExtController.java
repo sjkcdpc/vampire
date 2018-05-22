@@ -12,6 +12,7 @@ import com.gaosi.api.basicdata.SubjectProductApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.revolver.util.AmountUtil;
+import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.gaosi.api.axxBank.model.RemainResult;
@@ -303,10 +304,19 @@ public class MallItemExtController {
     }
 
     /**
-     * 处理人才中心VO（补充销售量）
+     * 处理人才中心VO（补充销售量）TODO 取消订单需要扣除销量
      * @param mallItemTalentVos
      */
     private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {
-
+        List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
+                "getMallItemId", Integer.class);
+        ApiResponse<List<MallItemSalesNumVo>> apiResponse = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
+        ApiResponseCheck.check(apiResponse);
+        List<MallItemSalesNumVo> mallItemSalesNumVos = apiResponse.getBody();
+        Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
+                "getMallItemId", Integer.class);
+        for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
+            mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getSalesNum());
+        }
     }
 }

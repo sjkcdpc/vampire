@@ -188,9 +188,6 @@ public class ItemOrderManager {
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
         ApiResponseCheck.check(itemOrderResponse);
         ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
-        if (itemOrderVo == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "订单:" + orderId + "不存在");
-        }
         return itemOrderVo;
     }
 
