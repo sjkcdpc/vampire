@@ -17,6 +17,7 @@ import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davincicode.UserService;
 import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.revolver.constant.OrderConstant;
@@ -38,8 +39,10 @@ import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
+import com.gaosi.api.workorder.dto.FieldErrorMsg;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.gaosi.api.xmen.service.TalentDemandService;
+import com.gaosi.api.xmen.vo.WorkOrderRes;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -265,6 +268,8 @@ public class ItemOrderController {
     @RequestMapping(value = "/talentCenter/submit", method = RequestMethod.POST)
     public ResultData talentCenterSubmit(@RequestBody TalentOrderVo talentOrderVo) {
         logger.info("userId=[{}] talentCenterSubmit, talentOrderVo=[{}]", UserHandleUtil.getUserId(), talentOrderVo);
+        TalentOrderResponseVo talentOrderResponseVo = new TalentOrderResponseVo();
+        // TODO 工单字段校验
         ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
         reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
@@ -285,7 +290,8 @@ public class ItemOrderController {
         String extInfo = JSONObject.toJSONString(talentTemplateVos);
         itemOrderVo.setExtInfo(extInfo);
         String orderId = itemOrderManager.submit(itemOrderVo);
-        return ResultData.successed(orderId);
+        talentOrderResponseVo.setOrderId(orderId);
+        return ResultData.successed(talentOrderResponseVo);
     }
 
     /**
@@ -307,26 +313,36 @@ public class ItemOrderController {
         if (itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())) {
             // 人才中心工单
             TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
-            List<String> workOrderIds = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
-            // 更新关联工单号,订单状态
-            ItemOrder itemOrder = new ItemOrder();
-            itemOrder.setOrderId(orderId);
-            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
-            StringBuilder workOrderIdBuilder = new StringBuilder();
-            for (String workOrderId : workOrderIds) {
-                workOrderIdBuilder.append(workOrderId);
-                workOrderIdBuilder.append(SEPARATOR);
+            com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
+            WorkOrderRes workOrderRes = workOrderResResponse.getBody();
+            List<String> workOrderList = workOrderRes.getWorkOrderList();
+            if(CollectionUtils.isNotEmpty(workOrderList)) {
+                // 更新关联工单号,订单状态
+                ItemOrder itemOrder = new ItemOrder();
+                itemOrder.setOrderId(orderId);
+                itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+                StringBuilder workOrderIdBuilder = new StringBuilder();
+                for (String workOrderId : workOrderList) {
+                    workOrderIdBuilder.append(workOrderId);
+                    workOrderIdBuilder.append(SEPARATOR);
+                }
+                workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
+                itemOrder.setRelationInfo(workOrderIdBuilder.toString());
+                // 订单支付
+                itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+                return ResultData.successed(orderId);
+            }else{
+                // 工单模板修改，字段校验失败
+                FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
+                return ResultData.failed(fieldErrorMsg.getMsg());
             }
-            workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length()-1);
-            itemOrder.setRelationInfo(workOrderIdBuilder.toString());
-            // 订单支付
-            ApiResponse<?> itemOrderResponse = itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
-            ApiResponseCheck.check(itemOrderResponse);
+
         }else {
             financialAccountManager.pay(orderId, token, itemOrderVo.getCategoryId(), itemOrderVo.getConsumeCount());
             itemOrderManager.updateOrderStatus(orderId);
+            return ResultData.successed(orderId);
         }
-        return ResultData.successed(orderId);
+
     }
 
     /**
@@ -444,5 +460,10 @@ public class ItemOrderController {
         ApiResponse<List<OrderStatusTotalVo>> apiResponse = orderServiceFacade.queryOrderStatusTotal(UserHandleUtil.getInsId());
         ApiResponseCheck.check(apiResponse);
         return ResultData.successed(apiResponse.getBody());
+    }
+
+    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    public ResultData detail(@RequestParam String orderId) {
+        return ResultData.successed(null);
     }
 }
