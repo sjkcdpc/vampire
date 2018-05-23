@@ -1,7 +1,6 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
@@ -43,7 +42,6 @@ public class ShoppingCartController {
 
         Integer userId = UserHandleUtil.getUserId();
         ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        ApiResponseCheck.check(listApiResponse);
         List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
         if (CollectionUtils.isEmpty(shoppingCartListVos)) {
             return resultData;
@@ -83,7 +81,6 @@ public class ShoppingCartController {
         shoppingCartList.setNum(num);
 
         ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
-        ApiResponseCheck.check(addSCResponse);
         return ResultData.successed();
     }
 

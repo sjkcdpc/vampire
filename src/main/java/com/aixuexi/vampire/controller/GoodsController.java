@@ -4,7 +4,6 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.GoodsManager;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
@@ -82,7 +81,6 @@ public class GoodsController {
         conditionVo.setPageSize(pageSize);
         conditionVo.setGoodsName(goodName);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
-        ApiResponseCheck.check(response);
         Page<GoodsVo> page = response.getBody();
         dealGoodsVo(Lists.newArrayList(page.getList()));
         resultData.setBody(page);
@@ -98,7 +96,6 @@ public class GoodsController {
         // 获取教材筛选条件的ID集合
         ApiResponse<GoodsFilterCondition> conditionResponse =
                 goodsServiceFacade.queryGoodsFilterCondition(new ReqGoodsConditionVo());
-        ApiResponseCheck.check(conditionResponse);
         GoodsFilterCondition goodsFilterCondition = conditionResponse.getBody();
         // 科目筛选条件
         List<CommonConditionVo> subjects = goodsManager.querySubjectCondition(goodsFilterCondition.getSubjectIds());
@@ -127,7 +124,6 @@ public class GoodsController {
         // 获取教材筛选条件的ID集合
         ApiResponse<GoodsFilterCondition> conditionResponse =
                 goodsServiceFacade.queryGoodsFilterCondition(reqGoodsConditionVo);
-        ApiResponseCheck.check(conditionResponse);
         GoodsFilterCondition goodsFilterCondition = conditionResponse.getBody();
         // 全部筛选条件
         List<CommonConditionVo> allCondition = new ArrayList<>();
@@ -167,7 +163,6 @@ public class GoodsController {
     public ResultData queryList(ReqGoodsConditionVo reqGoodsConditionVo){
         reqGoodsConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(reqGoodsConditionVo);
-        ApiResponseCheck.check(response);
         Page<GoodsVo> page = response.getBody();
         dealGoodsVo(Lists.newArrayList(page.getList()));
         return ResultData.successed(page);
@@ -212,7 +207,6 @@ public class GoodsController {
     public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
         Integer insId = UserHandleUtil.getInsId();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
-        ApiResponseCheck.check(response);
         GoodsVo goodsVo = response.getBody();
         if (goodsVo == null) {
             throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在!");
@@ -273,7 +267,6 @@ public class GoodsController {
         Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
         if (CollectionUtils.isNotEmpty(bookVersionIds)) {
             ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-            ApiResponseCheck.check(bookVersionResponse);
             List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
             bookVersionMap = CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
         }
@@ -290,7 +283,6 @@ public class GoodsController {
         Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
         if (CollectionUtils.isNotEmpty(examAreaIds)) {
             ApiResponse<List<ExamAreaBo>> examAreaResponse = examAreaApi.findByExamAreaIds(examAreaIds);
-            ApiResponseCheck.check(examAreaResponse);
             List<ExamAreaBo> examAreaBos = examAreaResponse.getBody();
             examAreaMap = CollectionCommonUtil.toMapByList(examAreaBos, "getId", Integer.class);
         }
@@ -331,7 +323,6 @@ public class GoodsController {
      */
     private String getScheme(Integer scheme){
         ApiResponse<SchemeBo> response = schemeApi.getById(scheme);
-        ApiResponseCheck.check(response);
         SchemeBo schemeBo = response.getBody();
         return schemeBo.getName();
     }

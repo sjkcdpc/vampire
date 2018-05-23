@@ -2,7 +2,6 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.bean.GoodsFreightSubtotalBo;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
 import com.aixuexi.vampire.util.ExpressUtil;
@@ -69,7 +68,7 @@ public class OrderManager {
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
     @Resource
-    private FinancialAccountService finAccService;
+    private FinancialAccountService financialAccountService;
 
     @Resource
     private DistrictApi districtApi;
@@ -123,7 +122,6 @@ public class OrderManager {
         confirmOrderVo.setConsignees(consigneeVos);
         // 2. 配送方式
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        ApiResponseCheck.check(expressTypeResponse);
         List<ExpressType> expressTypes = expressTypeResponse.getBody();
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
         confirmOrderVo.setExpressTypes(confirmExpressVos);
@@ -134,7 +132,6 @@ public class OrderManager {
 
         // 4. 根据goodsTypeIds查询商品其他信息
         ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
-        ApiResponseCheck.check(apiResponse);
 
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
@@ -148,7 +145,7 @@ public class OrderManager {
         Long remain = rr.getUsableRemain();
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
         // 6. 获取token
-        confirmOrderVo.setToken(finAccService.getTokenForFinancial());
+        confirmOrderVo.setToken(financialAccountService.getTokenForFinancial());
         logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         return confirmOrderVo;
     }
@@ -182,7 +179,6 @@ public class OrderManager {
         financialAccountManager.checkRemainMoney(rr,amount.longValue());
         // 创建订单
         ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token);
-        ApiResponseCheck.check(apiResponse);
         SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
         logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
         List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
@@ -223,7 +219,6 @@ public class OrderManager {
                 "getNum",Integer.class);
         // 查询商品明细
         ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
-        ApiResponseCheck.check(goodsVosResponse);
         List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
         validateGoods(confirmGoodsVos);
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos, goodsNum);
@@ -256,7 +251,6 @@ public class OrderManager {
         goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone);
         // 地址信息
         ApiResponse<AddressDTO> addressResponse = districtApi.getAncestryById(consignee.getAreaId());
-        ApiResponseCheck.check(addressResponse);
         AddressDTO address = addressResponse.getBody();
         Assert.notNull(address,"收货人地址查询失败，请联系管理员");
         goodsOrderVo.setAddress(address);
@@ -272,7 +266,6 @@ public class OrderManager {
         }
         ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap,
                 goodsFreightSubtotalBo.getWeight(), goodsFreightSubtotalBo.getGoodsPieces());
-        ApiResponseCheck.check(apiResponse);
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
@@ -404,7 +397,6 @@ public class OrderManager {
             }
         }
         ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
-        ApiResponseCheck.check(apiResponse);
         List<ExpressFreightVo> expressFreightVos = apiResponse.getBody();
         Map<String,ExpressFreightVo> expressFreightVoMap = CollectionCommonUtil.toMapByList(expressFreightVos,"getExpressCode",String.class);
         for (ConfirmExpressVo confirmExpressVo:expressVoLists) {
@@ -440,7 +432,6 @@ public class OrderManager {
             Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
                     "getNum",Integer.class);
             ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
-            ApiResponseCheck.check(apiResponse);
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
 
             GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
@@ -449,7 +440,6 @@ public class OrderManager {
             goodsPieces = goodsFreightSubtotalBo.getGoodsPieces();
         }
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        ApiResponseCheck.check(expressTypeResponse);
         List<ExpressType> expressTypes = expressTypeResponse.getBody();
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
         // 计算邮费
@@ -514,7 +504,6 @@ public class OrderManager {
         } else {//用于确认页面，此时没有goodsTypeIds
             listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         }
-        ApiResponseCheck.check(listApiResponse);
         List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
         Assert.notEmpty(shoppingCartListVos, "购物车中商品已结算或为空");
 

@@ -1,10 +1,8 @@
 package com.aixuexi.vampire.manager;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.sms_mail.SMSConstant;
 import com.aixuexi.transformers.mq.ONSMQProducer;
 import com.aixuexi.transformers.msg.SmsSend;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
@@ -19,7 +17,6 @@ import com.gaosi.api.revolver.model.ItemOrderDetail;
 import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderDetailVo;
 import com.gaosi.api.revolver.vo.ItemOrderVo;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
@@ -133,7 +130,6 @@ public class ItemOrderManager {
         List<ItemOrderDetail> itemOrderDetails = baseMapper.mapAsList(itemOrderDetailVos,ItemOrderDetail.class);
         // 创建订单
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
-        ApiResponseCheck.check(apiResponse);
         return apiResponse.getBody();
     }
 
@@ -186,7 +182,6 @@ public class ItemOrderManager {
      */
     public ItemOrderVo getOrderByOrderId(String orderId) {
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
-        ApiResponseCheck.check(itemOrderResponse);
         ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
         return itemOrderVo;
     }

@@ -5,7 +5,6 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.manager.OrderManager;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -40,6 +39,9 @@ import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
+import com.gaosi.api.workorder.dto.WorkOrderDto;
+import com.gaosi.api.workorder.dto.WorkorderRecordDto;
+import com.gaosi.api.workorder.facade.WorkOrderServiceFacade;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.gaosi.api.xmen.service.TalentDemandService;
 import com.gaosi.api.xmen.vo.WorkOrderRes;
@@ -107,6 +109,9 @@ public class ItemOrderController {
     private TalentDemandService talentDemandService;
 
     @Resource
+    private WorkOrderServiceFacade workOrderServiceFacade;
+
+    @Resource
     private BaseMapper baseMapper;
 
 
@@ -152,7 +157,6 @@ public class ItemOrderController {
      */
     private ResultData queryJCZB(QueryOrderDto queryOrderDto) {
         ApiResponse<Page<GoodsOrderVo>> apiResponse = orderServiceFacade.queryGoodsOrder(queryOrderDto);
-        ApiResponseCheck.check(apiResponse);
         //查询成功
         Page<GoodsOrderVo> page = apiResponse.getBody();
         //总数为0就不进行其他操作了
@@ -173,7 +177,6 @@ public class ItemOrderController {
      */
     private ResultData queryItemOrder(QueryOrderDto queryOrderDto) {
         ApiResponse<Page<ItemOrderVo>> apiResponse = itemOrderServiceFacade.queryItemOrder(queryOrderDto);
-        ApiResponseCheck.check(apiResponse);
         //查询成功
         Page<ItemOrderVo> page = apiResponse.getBody();
         //总数为0就不进行其他操作了
@@ -183,7 +186,6 @@ public class ItemOrderController {
         List<ItemOrderVo> itemOrderVos = page.getList();
         List<Integer> categoryIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderVos,"getCategoryId",Integer.class));
         ApiResponse<List<MallCategory>> mallCategoryByIds = mallCategoryServiceFacade.findMallCategoryByIds(categoryIds);
-        ApiResponseCheck.check(mallCategoryByIds);
         List<MallCategory> mallCategories = mallCategoryByIds.getBody();
         Map<Integer, MallCategory> map = CollectionCommonUtil.toMapByList(mallCategories, "getId", Integer.class);
         for (ItemOrderVo itemOrderVo : itemOrderVos) {
@@ -207,7 +209,6 @@ public class ItemOrderController {
         logger.info("userId=[{}] submit order, itemId=[{}], itemCount=[{}].", UserHandleUtil.getUserId(), itemId, itemCount);
         //根据商品id查询商品
         ApiResponse<MallItemNailVo> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailDetail(itemId,MallItemConstant.ShelvesStatus.ON);
-        ApiResponseCheck.check(mallItemNailVoResponse);
         MallItemNailVo mallItemNailVo = mallItemNailVoResponse.getBody();
         Assert.notNull(mallItemNailVo,"未查询到该校长培训");
         Assert.isTrue(mallItemNailVo.getSignUpStatus() != MallItemConstant.SignUpStatus.NO_START,"报名未开始");
@@ -216,7 +217,6 @@ public class ItemOrderController {
         if (mallItemNailVo.getSignUpNum() > 0) {
             //已报名数量查询
             ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(itemId));
-            ApiResponseCheck.check(itemOrderStatisVoResponse);
             List<ItemOrderStatisVo> itemOrderStatisVos = itemOrderStatisVoResponse.getBody();
             Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
             int signedUpNum = map.get(itemId).getSignedTotal();
@@ -250,7 +250,6 @@ public class ItemOrderController {
     public ResultData customServiceSubmit(@RequestParam Integer itemId, @RequestParam Integer itemCount) {
         logger.info("userId=[{}] customServiceSubmit, itemId=[{}], itemCount=[{}].", UserHandleUtil.getUserId(), itemId, itemCount);
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(itemId,itemCount);
-        ApiResponseCheck.check(apiResponse);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
         MallItem mallItem = baseMapper.map(confirmCustomServiceVo,MallItem.class);
         MallSku mallSku = new MallSku();
@@ -268,29 +267,44 @@ public class ItemOrderController {
     @RequestMapping(value = "/talentCenter/submit", method = RequestMethod.POST)
     public ResultData talentCenterSubmit(@RequestBody TalentOrderVo talentOrderVo) {
         logger.info("userId=[{}] talentCenterSubmit, talentOrderVo=[{}]", UserHandleUtil.getUserId(), talentOrderVo);
-        TalentOrderResponseVo talentOrderResponseVo = new TalentOrderResponseVo();
-        // TODO 工单字段校验
-        ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
-        reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
-        reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
-        reqTalentCenterConditionVo.setMallItemId(talentOrderVo.getMallItemId());
-        reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
-        ApiResponse<ConfirmTalentVo> confirmTalentVoResponse = mallItemExtServiceFacade.confirmTalentCenter(reqTalentCenterConditionVo, talentOrderVo.getMallSkuId(), talentOrderVo.getNum());
-        ConfirmTalentVo confirmTalentVo = confirmTalentVoResponse.getBody();
-        MallItem mallItem = new MallItem();
-        mallItem.setId(talentOrderVo.getMallItemId());
-        mallItem.setName(confirmTalentVo.getName());
-        mallItem.setCategoryId(MallItemConstant.Category.RCZX.getId());
-        MallSku mallSku = new MallSku();
-        mallSku.setId(confirmTalentVo.getMallSkuId());
-        mallSku.setPrice(confirmTalentVo.getPrice());
-        mallSku.setName(confirmTalentVo.getEducationRemark() + ORDERDETAIL_NAME_DIV + confirmTalentVo.getExperienceRemark());
-        ItemOrderVo itemOrderVo = itemOrderManager.generateItemOrderVo(mallItem, mallSku, talentOrderVo.getNum());
+        // 工单字段校验
+        WorkOrderDto workOrderDto = new WorkOrderDto();
         List<TalentTemplateVo> talentTemplateVos = talentOrderVo.getTalentTemplateVos();
-        String extInfo = JSONObject.toJSONString(talentTemplateVos);
-        itemOrderVo.setExtInfo(extInfo);
-        String orderId = itemOrderManager.submit(itemOrderVo);
-        talentOrderResponseVo.setOrderId(orderId);
+        List<WorkorderRecordDto> workorderRecordDtos = baseMapper.mapAsList(talentTemplateVos, WorkorderRecordDto.class);
+        workOrderDto.setWorkorderRecords(workorderRecordDtos);
+        TalentTemplateVo talentTemplateVo = talentTemplateVos.get(0);
+        workOrderDto.setBusinessTypeCode(talentTemplateVo.getBusinessTypeCode());
+        workOrderDto.setTemplateCode(talentTemplateVo.getTemplateCode());
+        com.aixuexi.thor.response.ApiResponse<?> apiResponse = workOrderServiceFacade.verifyWorkorder(workOrderDto);
+        Object body = apiResponse.getBody();
+        TalentOrderResponseVo talentOrderResponseVo = new TalentOrderResponseVo();
+        // 判断body是否为空，为空校验成功，反之校验失败
+        if (body == null) {
+            ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
+            reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
+            reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
+            reqTalentCenterConditionVo.setMallItemId(talentOrderVo.getMallItemId());
+            reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
+            ApiResponse<ConfirmTalentVo> confirmTalentVoResponse = mallItemExtServiceFacade.confirmTalentCenter(reqTalentCenterConditionVo, talentOrderVo.getMallSkuId(), talentOrderVo.getNum());
+            ConfirmTalentVo confirmTalentVo = confirmTalentVoResponse.getBody();
+            MallItem mallItem = new MallItem();
+            mallItem.setId(talentOrderVo.getMallItemId());
+            mallItem.setName(confirmTalentVo.getName());
+            mallItem.setCategoryId(MallItemConstant.Category.RCZX.getId());
+            MallSku mallSku = new MallSku();
+            mallSku.setId(confirmTalentVo.getMallSkuId());
+            mallSku.setPrice(confirmTalentVo.getPrice());
+            mallSku.setName(confirmTalentVo.getEducationRemark() + ORDERDETAIL_NAME_DIV + confirmTalentVo.getExperienceRemark());
+            ItemOrderVo itemOrderVo = itemOrderManager.generateItemOrderVo(mallItem, mallSku, talentOrderVo.getNum());
+            String extInfo = JSONObject.toJSONString(talentTemplateVos);
+            itemOrderVo.setExtInfo(extInfo);
+            String orderId = itemOrderManager.submit(itemOrderVo);
+            talentOrderResponseVo.setOrderId(orderId);
+        }else{
+            FieldErrorMsg fieldErrorMsg = (FieldErrorMsg) body;
+            talentOrderResponseVo.setMsg(fieldErrorMsg.getMsg());
+            talentOrderResponseVo.setFieldName(fieldErrorMsg.getFieldName());
+        }
         return ResultData.successed(talentOrderResponseVo);
     }
 
@@ -382,13 +396,11 @@ public class ItemOrderController {
         // 人才类型
         talentWorkOrderVo.setTypeCode(mallItemTalentVo.getTypeCode());
         ApiResponse<DictionaryBo> dictionaryResponse = dictionaryApi.getByTypeAndCode(DictConstants.TALENT_TYPE, mallItemTalentVo.getTypeCode());
-        ApiResponseCheck.check(dictionaryResponse);
         DictionaryBo dictionaryBo = dictionaryResponse.getBody();
         talentWorkOrderVo.setType(dictionaryBo.getName());
         // 学科
         talentWorkOrderVo.setSubjectProductId(mallItemTalentVo.getSubjectProductId());
         ApiResponse<SubjectProductBo> subjectResponse = subjectProductApi.getById(mallItemTalentVo.getSubjectProductId());
-        ApiResponseCheck.check(subjectResponse);
         SubjectProductBo subjectProductBo = subjectResponse.getBody();
         talentWorkOrderVo.setSubjectProduct(subjectProductBo.getName());
         // 学历，经验
@@ -458,7 +470,6 @@ public class ItemOrderController {
     @RequestMapping(value = "/getStatusTotal", method = RequestMethod.GET)
     public ResultData getStatusTotal() {
         ApiResponse<List<OrderStatusTotalVo>> apiResponse = orderServiceFacade.queryOrderStatusTotal(UserHandleUtil.getInsId());
-        ApiResponseCheck.check(apiResponse);
         return ResultData.successed(apiResponse.getBody());
     }
 

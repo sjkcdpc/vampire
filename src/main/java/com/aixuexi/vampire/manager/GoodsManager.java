@@ -1,7 +1,6 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
@@ -78,7 +77,6 @@ public class GoodsManager {
                         @Override
                         public SubjectBo load(Integer subjectId) {
                             ApiResponse<SubjectBo> subjectResponse = subjectApi.getById(subjectId);
-                            ApiResponseCheck.check(subjectResponse);
                             SubjectBo subjectBo = subjectResponse.getBody();
                             return subjectBo;
                         }
@@ -86,7 +84,6 @@ public class GoodsManager {
                         public Map<Integer, SubjectBo> loadAll(List<Integer> subjectIds) {
                             // 查询科目详情
                             ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(subjectIds);
-                            ApiResponseCheck.check(subjectResponse);
                             List<SubjectBo> subjectBos = subjectResponse.getBody();
                             return CollectionCommonUtil.toMapByList(subjectBos, "getId", Integer.class);
                         }
@@ -101,7 +98,6 @@ public class GoodsManager {
                         @Override
                         public SubjectProductBo load(Integer subjectProductId) {
                             ApiResponse<SubjectProductBo> subjectProductResponse = subjectProductApi.getById(subjectProductId);
-                            ApiResponseCheck.check(subjectProductResponse);
                             SubjectProductBo subjectProductBo = subjectProductResponse.getBody();
                             return subjectProductBo;
                         }
@@ -122,7 +118,6 @@ public class GoodsManager {
                         @Override
                         public SchemeBo load(Integer schmeId) {
                             ApiResponse<SchemeBo> schmeResponse = schemeApi.getById(schmeId);
-                            ApiResponseCheck.check(schmeResponse);
                             SchemeBo schemeBo = schmeResponse.getBody();
                             return schemeBo;
                         }
@@ -130,7 +125,6 @@ public class GoodsManager {
                         public Map<Integer, SchemeBo> loadAll(List<Integer> schmeIds) {
                             // 查询体系详情
                             ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(schmeIds);
-                            ApiResponseCheck.check(schemeResponse);
                             List<SchemeBo> schemeBos = schemeResponse.getBody();
                             return CollectionCommonUtil.toMapByList(schemeBos, "getId", Integer.class);
                         }
@@ -145,14 +139,12 @@ public class GoodsManager {
                         @Override
                         public DictionaryBo load(Integer periodId) {
                             ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(Lists.newArrayList(periodId));
-                            ApiResponseCheck.check(periodResponse);
                             List<DictionaryBo> dictionaryBos = periodResponse.getBody();
                             return dictionaryBos.get(0);
                         }
 
                         public Map<Integer, DictionaryBo> loadAll(List<Integer> periodIds) {
                             ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(periodIds);
-                            ApiResponseCheck.check(periodResponse);
                             List<DictionaryBo> dictionaryBos = periodResponse.getBody();
                             return CollectionCommonUtil.toMapByList(dictionaryBos, "getId", Integer.class);
                         }
@@ -167,14 +159,12 @@ public class GoodsManager {
                         @Override
                         public BookVersionBo load(Integer bookVersionId) {
                             ApiResponse<BookVersionBo> bookVersionResponse = bookVersionApi.getById(bookVersionId);
-                            ApiResponseCheck.check(bookVersionResponse);
                             BookVersionBo bookVersionBo = bookVersionResponse.getBody();
                             return bookVersionBo;
                         }
 
                         public Map<Integer, BookVersionBo> loadAll(List<Integer> bookVersionIds) {
                             ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-                            ApiResponseCheck.check(bookVersionResponse);
                             List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
                             return CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
                         }
@@ -189,7 +179,6 @@ public class GoodsManager {
                         @Override
                         public ExamAreaBo load(Integer examAreaId) {
                             ApiResponse<ExamAreaBo> examAreaResponse = examAreaApi.getById(examAreaId);
-                            ApiResponseCheck.check(examAreaResponse);
                             ExamAreaBo examAreaBo = examAreaResponse.getBody();
                             return examAreaBo;
                         }

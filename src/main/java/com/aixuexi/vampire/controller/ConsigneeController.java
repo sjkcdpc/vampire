@@ -2,7 +2,6 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.validate.annotation.common.Valid;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.DistrictApi;
@@ -44,7 +43,6 @@ public class ConsigneeController {
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.insert(consignee);
-        ApiResponseCheck.check(consigneeResponse);
         Consignee newConsignee = consigneeResponse.getBody();
         resultData.setBody(dealConsignee2Vo(newConsignee));
         return resultData;
@@ -60,7 +58,6 @@ public class ConsigneeController {
     public ResultData update(@Valid(groups = ValidateConstant.UPDATE_GROUP) Consignee consignee) {
         ResultData resultData = new ResultData();
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.update(consignee);
-        ApiResponseCheck.check(consigneeResponse);
         Consignee newConsignee = consigneeResponse.getBody();
         resultData.setBody(dealConsignee2Vo(newConsignee));
         return resultData;
@@ -75,7 +72,6 @@ public class ConsigneeController {
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
-        ApiResponseCheck.check(apiResponse);
         Integer effectRows = apiResponse.getBody();
         return ResultData.successed(effectRows);
     }
@@ -89,7 +85,6 @@ public class ConsigneeController {
         ConsigneeVo consigneeVo = baseMapper.map(consignee, ConsigneeVo.class);
         Integer areaId = consigneeVo.getAreaId();
         ApiResponse<AddressDTO> apiResponse = districtApi.getAncestryById(areaId);
-        ApiResponseCheck.check(apiResponse);
         AddressDTO addressDTO = apiResponse.getBody();
         if (addressDTO != null) {
             consigneeVo.setProvinceId(addressDTO.getProvinceId());
@@ -110,7 +105,6 @@ public class ConsigneeController {
     @RequestMapping(value = "/setDefault")
     public ResultData setDefault(@RequestParam Integer id) {
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.setDefault(UserHandleUtil.getInsId(), id);
-        ApiResponseCheck.check(apiResponse);
         Integer effectRows = apiResponse.getBody();
         return ResultData.successed(effectRows);
     }

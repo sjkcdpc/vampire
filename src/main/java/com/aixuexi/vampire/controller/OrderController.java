@@ -4,12 +4,10 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.validate.annotation.NotBlank;
 import com.aixuexi.vampire.manager.OrderManager;
-import com.aixuexi.vampire.util.ApiResponseCheck;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
@@ -83,11 +81,7 @@ public class OrderController {
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
     public ResultData detail(@NotBlank String orderId) {
         ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
-        ApiResponseCheck.check(apiResponse);
         GoodsOrderVo goodsOrderVo = apiResponse.getBody();
-        if (goodsOrderVo == null) {
-            return ResultData.failed("教材订单:" + orderId + "不存在");
-        }
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
         // 订单详情需要加载图片
         orderManager.dealGoodsOrderVos(goodsOrderVos, true);
@@ -248,7 +242,6 @@ public class OrderController {
     private void checkParams4Submit(Integer[] goodsTypeIds, String express) {
         Assert.isTrue(null != goodsTypeIds && goodsTypeIds.length != 0, "所选商品不能为空");
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        ApiResponseCheck.check(expressTypeResponse);
         Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(expressTypeResponse.getBody(), "getCode", String.class);
         Assert.isTrue(expressTypeMap.containsKey(express), "配送方式参数错误");
         Assert.isTrue(expressTypeMap.get(express).getEnable(), "该配送方式停止承运,暂不接单");
