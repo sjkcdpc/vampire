@@ -362,7 +362,7 @@ public class ItemOrderController {
         talentWorkOrderVo.setOrderId(itemOrderVo.getOrderId());
         talentWorkOrderVo.setCreateTime(itemOrderVo.getCreateTime());
         String extInfo = itemOrderVo.getExtInfo();
-        List<TalentTemplateVo> talentTemplateVos = (List<TalentTemplateVo>)JSONObject.parse(extInfo);
+        List<TalentTemplateVo> talentTemplateVos = JSONObject.parseArray(extInfo, TalentTemplateVo.class);
         talentWorkOrderVo.setTalentTemplateVos(talentTemplateVos);
         // 订单详情
         List<ItemOrderDetailVo> itemOrderDetails = itemOrderVo.getItemOrderDetails();
