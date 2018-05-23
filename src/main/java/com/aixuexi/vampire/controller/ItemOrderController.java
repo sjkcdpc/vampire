@@ -51,6 +51,7 @@ import javax.annotation.Resource;
 import java.util.*;
 
 import static com.aixuexi.vampire.util.Constants.ORDERDETAIL_NAME_DIV;
+import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
 
 /**
  * @Description: 订单管理
@@ -295,47 +296,36 @@ public class ItemOrderController {
      */
     @RequestMapping(value = "/pay", method = RequestMethod.POST)
     public ResultData pay(@RequestParam String orderId, @RequestParam String token) {
-        logger.info("userId=[{}] pay order, orderId=[{}], token=[{}].", UserHandleUtil.getUserId(), orderId, token);
-        if (StringUtils.isBlank(orderId)) {
-            return ResultData.failed("订单号为空");
-        }
-        if (StringUtils.isBlank(token)) {
-            return ResultData.failed("token为空");
-        }
-        ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
-        if (itemOrder.getStatus() == OrderConstant.OrderStatus.CANCELLED.getValue()) {
-            // 防止用户在确认支付页面停留时间超过规定支付时间，订单已取消仍可支付的情况出现
-            return ResultData.failed("支付超时，该订单已自动取消");
-        }
-        financialAccountManager.pay(orderId, token, itemOrder.getCategoryId(), itemOrder.getConsumeCount());
-        itemOrderManager.updateOrderStatus(orderId);
-        return ResultData.successed(orderId);
-    }
-
-    @RequestMapping(value = "/lockPay", method = RequestMethod.POST)
-    public ResultData lockPay(@RequestParam String orderId, @RequestParam String token) {
+        Assert.isTrue(StringUtils.isNotBlank(orderId),"订单号为空");
+        Assert.isTrue(StringUtils.isNotBlank(token),"token为空");
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
-        logger.info("userId=[{}] lockPay, orderId=[{}], token=[{}].", userId, orderId, token);
-        // 订单支付
-        ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.payItemOrder(orderId, token, insId, userId);
-        ApiResponseCheck.check(itemOrderResponse);
-        ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
-        // 人才中心工单
-        TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
-        List<String> workOrderIds = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
-        // 更新关联工单号
-        ItemOrder itemOrder = new ItemOrder();
-        itemOrder.setOrderId(orderId);
-        // 工单号分隔符
-        String SEPARATOR = ",";
-        StringBuilder workOrderIdBuilder = new StringBuilder();
-        for (String workOrderId : workOrderIds) {
-            workOrderIdBuilder.append(workOrderId);
-            workOrderIdBuilder.append(SEPARATOR);
+        logger.info("userId=[{}] pay order, orderId=[{}], token=[{}].", userId, orderId, token);
+        ItemOrderVo itemOrderVo = itemOrderManager.getOrderByOrderId(orderId);
+        Assert.isTrue(itemOrderVo.getStatus() == OrderConstant.OrderStatus.NO_PAY.getValue(),
+                "支付超时，该订单状态已修改");
+        if (itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())) {
+            // 人才中心工单
+            TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
+            List<String> workOrderIds = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
+            // 更新关联工单号,订单状态
+            ItemOrder itemOrder = new ItemOrder();
+            itemOrder.setOrderId(orderId);
+            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+            StringBuilder workOrderIdBuilder = new StringBuilder();
+            for (String workOrderId : workOrderIds) {
+                workOrderIdBuilder.append(workOrderId);
+                workOrderIdBuilder.append(SEPARATOR);
+            }
+            workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length()-1);
+            itemOrder.setRelationInfo(workOrderIdBuilder.toString());
+            // 订单支付
+            ApiResponse<?> itemOrderResponse = itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            ApiResponseCheck.check(itemOrderResponse);
+        }else {
+            financialAccountManager.pay(orderId, token, itemOrderVo.getCategoryId(), itemOrderVo.getConsumeCount());
+            itemOrderManager.updateOrderStatus(orderId);
         }
-        itemOrder.setRelationInfo(workOrderIdBuilder.toString());
-        itemOrderServiceFacade.updateOrder(itemOrder);
         return ResultData.successed(orderId);
     }
 

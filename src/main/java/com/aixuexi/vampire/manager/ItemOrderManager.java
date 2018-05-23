@@ -184,7 +184,7 @@ public class ItemOrderManager {
      * @param orderId
      * @return
      */
-    public ItemOrder getOrderByOrderId(String orderId) {
+    public ItemOrderVo getOrderByOrderId(String orderId) {
         ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
         ApiResponseCheck.check(itemOrderResponse);
         ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
