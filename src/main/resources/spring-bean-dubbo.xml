@@ -31,7 +31,7 @@
     <dubbo:reference interface="com.gaosi.api.revolver.facade.InvServiceFacade" id="invServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ExpressServiceFacade" id="expressServiceFacade" />
-    <!-- 在线商城相关接口 -->
+    <!-- 商品相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade" />
@@ -40,6 +40,8 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallCategoryServiceFacade" id="mallCategoryServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPeriodServiceFacade" id="goodsPeriodServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade" id="goodsTypeServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemPicServiceFacade" id="mallItemPicServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuExtTalentServiceFacade" id="mallSkuExtTalentServiceFacade" />
     <!--基础数据-->
     <dubbo:reference id="districtApi" interface="com.gaosi.api.basicdata.DistrictApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi" />

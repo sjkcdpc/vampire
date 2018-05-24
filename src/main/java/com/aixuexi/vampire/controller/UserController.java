@@ -62,7 +62,7 @@ public class UserController {
                 queryCriteria.setCategoryId(MallItemConstant.Category.DZFW.getId());
                 ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria, institutionId);
                 Boolean customService = false;
-                if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE&& CollectionUtils.isNotEmpty(apiResponse.getBody().getList())) {
+                if (CollectionUtils.isNotEmpty(apiResponse.getBody().getList())) {
                     customService = true;
                 }
                 // 机构组织类型（0: 普通机构, 1:集团, 2: 分校）

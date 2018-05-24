@@ -180,17 +180,14 @@ public class GoodsController {
                 barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class));
             }
         }
-        if(CollectionUtils.isNotEmpty(barCodeList)) {
+        if (CollectionUtils.isNotEmpty(barCodeList)) {
             ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<>(barCodeList));
-            // 查询库存成功
-            if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-                Map<String, Integer> invMap = apiResponse.getBody();
-                for (GoodsVo goodsVo : goodsVoList) {
-                    if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                        List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                        for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
-                            typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
-                        }
+            Map<String, Integer> invMap = apiResponse.getBody();
+            for (GoodsVo goodsVo : goodsVoList) {
+                if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
                     }
                 }
             }

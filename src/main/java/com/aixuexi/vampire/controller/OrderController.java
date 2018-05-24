@@ -212,16 +212,8 @@ public class OrderController {
         } else {
             apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
         }
-        //查询订单跟踪响应错误
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
         OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
         ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
-        //查询快递信息响应错误
-        if (expressResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed(expressResponse.getMessage());
-        }
         Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(),"getCode",String.class) ;
         orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
         return ResultData.successed(orderFollowVo);

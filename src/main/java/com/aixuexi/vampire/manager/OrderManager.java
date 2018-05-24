@@ -26,14 +26,10 @@ import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.*;
-import com.gaosi.api.vulcan.model.Consignee;
-import com.gaosi.api.vulcan.model.GoodsPeriod;
-import com.gaosi.api.vulcan.model.GoodsPic;
-import com.gaosi.api.vulcan.model.ShoppingCartList;
+import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -99,6 +95,12 @@ public class OrderManager {
 
     @Resource
     private FinancialAccountManager financialAccountManager;
+
+    @Resource
+    private MallItemPicServiceFacade mallItemPicServiceFacade;
+
+    @Resource
+    private MallSkuExtTalentServiceFacade mallSkuExtTalentServiceFacade;
 
 
     /**
@@ -372,12 +374,9 @@ public class OrderManager {
      * @param areaIds 区ID
      * @return
      */
-    private Map<Integer,AddressDTO> findAddressByIds(Collection<Integer> areaIds) {
+    private Map<Integer, AddressDTO> findAddressByIds(Collection<Integer> areaIds) {
         ApiResponse<Map<Integer, AddressDTO>> apiResponse = districtApi.getAncestryMapByIds(areaIds);
-        if (apiResponse != null && apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-            return apiResponse.getBody();
-        }
-        throw new BusinessException(ExceptionCode.UNKNOWN, "获取收货地址市异常");
+        return apiResponse.getBody();
     }
 
     /**
@@ -517,9 +516,6 @@ public class OrderManager {
      */
     public Map<Integer, List<GoodsPic>> findPicByGoodsIds(List<Integer> goodsIds) {
         ApiResponse<List<GoodsPic>> apiResponse = goodsPicServiceFacade.findGoodsPicByGoodsIds(goodsIds);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, apiResponse.getMessage());
-        }
         List<GoodsPic> goodsPics = apiResponse.getBody();
         Map<Integer, List<GoodsPic>> picMap = Maps.newHashMap();
         if (CollectionUtils.isNotEmpty(goodsPics)){
@@ -613,7 +609,7 @@ public class OrderManager {
             // 获取快递时效
             ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
             Map<String,ExpressPrice> expressPriceMap = new HashMap<>();
-            if(apiResponse.getRetCode()==ApiRetCode.SUCCESS_CODE&&CollectionUtils.isNotEmpty(apiResponse.getBody())){
+            if(CollectionUtils.isNotEmpty(apiResponse.getBody())){
                 List<ExpressPrice> expressPriceList = apiResponse.getBody();
                 expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
             }
@@ -701,5 +697,48 @@ public class OrderManager {
             }
         }
         subGoodsOrderVo.setConsumeAmount(consumeAmount);
+    }
+
+    /**
+     * 补充分类名称，图片，拆单状态,人才中心SKU信息
+     * @param itemOrderVos
+     */
+    public void dealItemOrderVos(List<ItemOrderVo> itemOrderVos){
+        // 提取商品ID，人才中心的SKUID
+        List<ItemOrderDetailVo> itemOrderDetailsTotal = new ArrayList<>();
+        List<ItemOrderDetailVo> itemOrderDetails4RCZX = new ArrayList<>();
+        for (ItemOrderVo itemOrderVo : itemOrderVos) {
+            itemOrderDetailsTotal.addAll(itemOrderVo.getItemOrderDetails());
+            if(itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())){
+                itemOrderDetails4RCZX.addAll(itemOrderVo.getItemOrderDetails());
+            }
+        }
+        List<Integer> mallItemIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderDetailsTotal, "getItemId", Integer.class));
+        List<Integer> mallSkuIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderDetails4RCZX, "getMallSkuId", Integer.class));
+        // 查询商品图片
+        ApiResponse<List<MallItemPic>> mallItemPicResponse = mallItemPicServiceFacade.getMallItemPicByMallItemIds(mallItemIds);
+        List<MallItemPic> mallItemPics = mallItemPicResponse.getBody();
+        Map<Integer, List<MallItemPic>> mallItemPicMap = CollectionCommonUtil.groupByList(mallItemPics, "getMallItemId", Integer.class);
+        // 查询人才中心SKU信息
+        Map<Integer, MallSkuExtTalent> mallSkuExtTalentMap = new HashMap<>();
+        if(com.gaosi.api.common.util.CollectionUtils.isNotEmpty(mallSkuIds)){
+            ApiResponse<List<MallSkuExtTalent>> mallSkuExtTalentsResponse = mallSkuExtTalentServiceFacade.queryMallSkuExtTalentByMallSkuIds(mallSkuIds);
+            List<MallSkuExtTalent> mallSkuExtTalents = mallSkuExtTalentsResponse.getBody();
+            mallSkuExtTalentMap = CollectionCommonUtil.toMapByList(mallSkuExtTalents, "getMallSkuId", Integer.class);
+        }
+        MallSkuExtTalent mallSkuExtTalent;
+        for (ItemOrderVo itemOrderVo : itemOrderVos) {
+            itemOrderVo.setCategoryName(MallItemConstant.Category.getName(itemOrderVo.getCategoryId()));
+            // 虚拟商品订单默认整单未拆
+            itemOrderVo.setSplitNum(1);
+            for (ItemOrderDetailVo itemOrderDetailVo : itemOrderVo.getItemOrderDetails()) {
+                itemOrderDetailVo.setPicUrl(mallItemPicMap.get(itemOrderDetailVo.getItemId()).get(0).getPicUrl());
+                if(mallSkuExtTalentMap.containsKey(itemOrderDetailVo.getMallSkuId())){
+                    mallSkuExtTalent = mallSkuExtTalentMap.get(itemOrderDetailVo.getMallSkuId());
+                    itemOrderDetailVo.setEducationRemark(mallSkuExtTalent.getEducationRemark());
+                    itemOrderDetailVo.setExperienceRemark(mallSkuExtTalent.getEducationRemark());
+                }
+            }
+        }
     }
 }

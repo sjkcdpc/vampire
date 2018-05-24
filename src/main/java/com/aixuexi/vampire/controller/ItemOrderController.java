@@ -33,9 +33,7 @@ import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallCategoryServiceFacade;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
-import com.gaosi.api.vulcan.model.MallCategory;
-import com.gaosi.api.vulcan.model.MallItem;
-import com.gaosi.api.vulcan.model.MallSku;
+import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
@@ -164,8 +162,8 @@ public class ItemOrderController {
             return ResultData.successed(page);
         }
         List<GoodsOrderVo> goodsOrderVos = page.getList();
-        // 列表不需要图片等详情
-        orderManager.dealGoodsOrderVos(goodsOrderVos, false);
+        // 列表也需要图片等详情
+        orderManager.dealGoodsOrderVos(goodsOrderVos, true);
         return ResultData.successed(page);
     }
 
@@ -184,15 +182,7 @@ public class ItemOrderController {
             return ResultData.successed(page);
         }
         List<ItemOrderVo> itemOrderVos = page.getList();
-        List<Integer> categoryIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderVos,"getCategoryId",Integer.class));
-        ApiResponse<List<MallCategory>> mallCategoryByIds = mallCategoryServiceFacade.findMallCategoryByIds(categoryIds);
-        List<MallCategory> mallCategories = mallCategoryByIds.getBody();
-        Map<Integer, MallCategory> map = CollectionCommonUtil.toMapByList(mallCategories, "getId", Integer.class);
-        for (ItemOrderVo itemOrderVo : itemOrderVos) {
-            String categoryName = map.get(itemOrderVo.getCategoryId()).getName();
-            itemOrderVo.setCategoryName(categoryName);
-        }
-        page.setList(itemOrderVos);
+        orderManager.dealItemOrderVos(itemOrderVos);
         return ResultData.successed(page);
     }
 
@@ -275,11 +265,10 @@ public class ItemOrderController {
         TalentTemplateVo talentTemplateVo = talentTemplateVos.get(0);
         workOrderDto.setBusinessTypeCode(talentTemplateVo.getBusinessTypeCode());
         workOrderDto.setTemplateCode(talentTemplateVo.getTemplateCode());
-        com.aixuexi.thor.response.ApiResponse<?> apiResponse = workOrderServiceFacade.verifyWorkorder(workOrderDto);
-        Object body = apiResponse.getBody();
+        FieldErrorMsg fieldErrorMsg = workOrderServiceFacade.verifyWorkorder(workOrderDto);
         TalentOrderResponseVo talentOrderResponseVo = new TalentOrderResponseVo();
-        // 判断body是否为空，为空校验成功，反之校验失败
-        if (body == null) {
+        // 判断是否校验成功
+        if (fieldErrorMsg.isSuccess()) {
             ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
             reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
             reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
@@ -301,7 +290,6 @@ public class ItemOrderController {
             String orderId = itemOrderManager.submit(itemOrderVo);
             talentOrderResponseVo.setOrderId(orderId);
         }else{
-            FieldErrorMsg fieldErrorMsg = (FieldErrorMsg) body;
             talentOrderResponseVo.setMsg(fieldErrorMsg.getMsg());
             talentOrderResponseVo.setFieldName(fieldErrorMsg.getFieldName());
         }
@@ -425,9 +413,6 @@ public class ItemOrderController {
     public ResultData getTypeStatus() {
         Map<String, Object> map = new HashMap<>();
         ApiResponse<List<MallCategory>> apiResponse = mallCategoryServiceFacade.findMallCategoryByLevel(1);
-        if (apiResponse.getRetCode() != ApiRetCode.SUCCESS_CODE) {
-            return ResultData.failed("获取商品类型失败" + apiResponse.getMessage());
-        }
         List<MallCategory> mallCategories = apiResponse.getBody();
         List<CategoryVo> categoryVos = baseMapper.mapAsList(mallCategories, CategoryVo.class);
         map.put("category", categoryVos);

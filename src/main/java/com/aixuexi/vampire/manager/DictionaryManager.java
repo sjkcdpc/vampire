@@ -94,10 +94,7 @@ public class DictionaryManager {
                 @Override
                 public List<DictionaryBo> load(String key) throws Exception {
                     ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, key);
-                    if (apiResponse.getRetCode() == ApiRetCode.SUCCESS_CODE) {
-                        return apiResponse.getBody();
-                    }
-                    return null;
+                    return apiResponse.getBody();
                 }
             });
 
