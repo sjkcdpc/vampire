@@ -267,6 +267,7 @@ public class ItemOrderController {
         workOrderDto.setTemplateCode(talentTemplateVo.getTemplateCode());
         FieldErrorMsg fieldErrorMsg = workOrderServiceFacade.verifyWorkorder(workOrderDto);
         TalentOrderResponseVo talentOrderResponseVo = new TalentOrderResponseVo();
+        baseMapper.map(fieldErrorMsg,talentOrderResponseVo);
         // 判断是否校验成功
         if (fieldErrorMsg.isSuccess()) {
             ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
@@ -289,8 +290,6 @@ public class ItemOrderController {
             itemOrderVo.setExtInfo(extInfo);
             String orderId = itemOrderManager.submit(itemOrderVo);
             talentOrderResponseVo.setOrderId(orderId);
-        }else{
-            baseMapper.map(fieldErrorMsg,talentOrderResponseVo);
         }
         return ResultData.successed(talentOrderResponseVo);
     }
