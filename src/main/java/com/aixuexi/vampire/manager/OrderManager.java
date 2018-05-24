@@ -736,7 +736,7 @@ public class OrderManager {
                 if(mallSkuExtTalentMap.containsKey(itemOrderDetailVo.getMallSkuId())){
                     mallSkuExtTalent = mallSkuExtTalentMap.get(itemOrderDetailVo.getMallSkuId());
                     itemOrderDetailVo.setEducationRemark(mallSkuExtTalent.getEducationRemark());
-                    itemOrderDetailVo.setExperienceRemark(mallSkuExtTalent.getEducationRemark());
+                    itemOrderDetailVo.setExperienceRemark(mallSkuExtTalent.getExperienceRemark());
                 }
             }
         }

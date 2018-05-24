@@ -290,8 +290,7 @@ public class ItemOrderController {
             String orderId = itemOrderManager.submit(itemOrderVo);
             talentOrderResponseVo.setOrderId(orderId);
         }else{
-            talentOrderResponseVo.setMsg(fieldErrorMsg.getMsg());
-            talentOrderResponseVo.setFieldName(fieldErrorMsg.getFieldName());
+            baseMapper.map(fieldErrorMsg,talentOrderResponseVo);
         }
         return ResultData.successed(talentOrderResponseVo);
     }
