@@ -75,9 +75,9 @@ public class ItemOrderManager {
         itemOrderVo.setRemark(StringUtils.EMPTY);
         itemOrderVo.setExtInfo(StringUtils.EMPTY);
         itemOrderVo.setRelationInfo(StringUtils.EMPTY);
-        //虚拟商品没有收货人，默认收货人为当前用户,收货人电话为当前用户的电话
-        itemOrderVo.setConsigneeName(UserSessionHandler.getUsername());
         User user = userService.getUserById(UserHandleUtil.getUserId());
+        //虚拟商品没有收货人，默认收货人为当前用户,收货人电话为当前用户的电话
+        itemOrderVo.setConsigneeName(user.getName());
         itemOrderVo.setConsigneePhone(user.getTelephone());
         //只要提交订单就是待支付，确认支付后再更改状态
         itemOrderVo.setStatus(OrderConstant.OrderStatus.NO_PAY.getValue());
