@@ -290,7 +290,7 @@ public class MallItemExtController {
     }
 
     /**
-     * 处理人才中心VO（补充销售量）TODO 取消订单需要扣除销量
+     * 处理人才中心VO（补充销售量）
      * @param mallItemTalentVos
      */
     private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {

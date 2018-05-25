@@ -36,9 +36,7 @@ public class BaseMapper extends ConfigurableMapper {
                 .customize(new CustomMapper<ConfirmGoodsVo, OrderDetailVo>(){
                     @Override
                     public void mapAtoB(ConfirmGoodsVo confirmGoodsVo, OrderDetailVo orderDetailVo, MappingContext context) {
-                        orderDetailVo.setName(confirmGoodsVo.getGoodsName() +
-                                Constants.ORDERDETAIL_NAME_DIV +
-                                confirmGoodsVo.getGoodsTypeName());
+                        orderDetailVo.setName(confirmGoodsVo.getGoodsName());
                         orderDetailVo.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
                     }
                 })

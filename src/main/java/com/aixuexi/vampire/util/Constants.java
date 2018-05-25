@@ -20,9 +20,6 @@ public final class Constants {
      */
     public static final long CACHE_TIME = 1800;
 
-    //订单详情中商品名称拼接的分隔符
-    public static final String ORDERDETAIL_NAME_DIV ="-";
-
     /**
      * 学期映射
      */

@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.aixuexi.vampire.util.Constants.ORDERDETAIL_NAME_DIV;
 
 /**
  * @Description:商品订单管理，供controller使用
@@ -88,9 +87,6 @@ public class ItemOrderManager {
         ItemOrderDetailVo itemOrderDetailVo = new ItemOrderDetailVo();
         itemOrderDetailVo.setItemId(mallItem.getId());
         itemOrderDetailVo.setItemName(mallItem.getName());
-        if (StringUtils.isNotBlank(mallSku.getName())) {
-            itemOrderDetailVo.setItemName(mallItem.getName() + ORDERDETAIL_NAME_DIV + mallSku.getName());
-        }
         itemOrderDetailVo.setMallSkuId(0);
         if (mallSku.getId() != null) {
             itemOrderDetailVo.setMallSkuId(mallSku.getId());

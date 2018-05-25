@@ -46,6 +46,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -101,6 +102,15 @@ public class OrderManager {
 
     @Resource
     private MallSkuExtTalentServiceFacade mallSkuExtTalentServiceFacade;
+
+    @Resource
+    private GoodsTypeServiceFacade goodsTypeServiceFacade;
+
+    @Resource
+    private MallSkuPicServiceFacade mallSkuPicServiceFacade;
+
+    @Resource
+    private MallItemExtServiceFacade mallItemExtServiceFacade;
 
 
     /**
@@ -517,11 +527,20 @@ public class OrderManager {
     public Map<Integer, List<GoodsPic>> findPicByGoodsIds(List<Integer> goodsIds) {
         ApiResponse<List<GoodsPic>> apiResponse = goodsPicServiceFacade.findGoodsPicByGoodsIds(goodsIds);
         List<GoodsPic> goodsPics = apiResponse.getBody();
-        Map<Integer, List<GoodsPic>> picMap = Maps.newHashMap();
-        if (CollectionUtils.isNotEmpty(goodsPics)){
-            picMap = CollectionCommonUtil.groupByList(goodsPics, "getGoodsId", Integer.class);
-        }
+        Map<Integer, List<GoodsPic>> picMap = CollectionCommonUtil.groupByList(goodsPics, "getGoodsId", Integer.class);
         return picMap;
+    }
+
+    /**
+     * 查询商品SKU信息
+     * @param goodsTypeIds
+     * @return
+     */
+    public Map<Integer,GoodsType> findGoodsTypeByGoodsTypeIds(List<Integer> goodsTypeIds){
+        ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.findGoodsTypeByIds(goodsTypeIds);
+        List<GoodsType> goodsTypes = goodsTypeResponse.getBody();
+        Map<Integer, GoodsType> goodsTypeMap = CollectionCommonUtil.toMapByList(goodsTypes, "getId", Integer.class);
+        return goodsTypeMap;
     }
 
     /**
@@ -560,15 +579,16 @@ public class OrderManager {
     /**
      * 处理多个订单使用
      * @param goodsOrderVos
-     * @param needDetail 是否需要图等详细信息
      */
-    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos, boolean needDetail){
+    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos){
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
             Set<Integer> goodsIds = Sets.newHashSet();
             // 查询快递时效的条件
             List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
             // 订单中物流方式下的目的地ID
             Set<Integer> areaIds = Sets.newHashSet();
+            // 商品SKUID集合
+            Set<Integer> goodsTypeIds = Sets.newHashSet();
             // 准备工作,防止多次调用微服务
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
                 QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
@@ -579,21 +599,15 @@ public class OrderManager {
                 if(!goodsOrderVo.getExpressType().equals(ExpressConstant.Express.WULIU.getId().toString())){
                     areaIds.add(goodsOrderVo.getAreaId());
                 }
-                if (goodsOrderVo.getSplitNum() > 1){
-                    // 拆单的处理子订单
-                    List<SubGoodsOrderVo> subGoodsOrderVos = goodsOrderVo.getSubGoodsOrderVos();
-                    for (SubGoodsOrderVo subGoodsOrderVo : subGoodsOrderVos) {
-                        goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(subGoodsOrderVo.getSubOrderDetailVos(),"getGoodsId",Integer.class));
-                    }
-                }else {
-                    goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),"getGoodsId",Integer.class));
-                }
+                goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),
+                        "getGoodsId", Integer.class));
+                goodsTypeIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),
+                        "getGoodTypeId", Integer.class));
             }
-            Map<Integer, List<GoodsPic>> picMap = null;
-            if (needDetail) {
-                // 订单详情查看需要获取图片
-                picMap = this.findPicByGoodsIds(new ArrayList<>(goodsIds));
-            }
+            // 查询商品图片
+            Map<Integer, List<GoodsPic>> picMap = findPicByGoodsIds(new ArrayList<>(goodsIds));
+            // 查询商品SKU信息
+            Map<Integer, GoodsType> goodsTypeMap = findGoodsTypeByGoodsTypeIds(new ArrayList<>(goodsTypeIds));
             // 查询区ID对应的省ID
             Map<Integer, AddressDTO> provinceIdMap = new HashMap<>();
             if(CollectionUtils.isNotEmpty(areaIds)) {
@@ -614,7 +628,7 @@ public class OrderManager {
                 expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
             }
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                this.dealGoodsOrderVo(goodsOrderVo, picMap,expressPriceMap,provinceIdMap);
+                dealGoodsOrderVo(goodsOrderVo, picMap,expressPriceMap,provinceIdMap,goodsTypeMap);
             }
         }
     }
@@ -625,9 +639,11 @@ public class OrderManager {
      * @param picMap
      * @param expressPriceMap
      * @param provinceIdMap
+     * @param goodsTypeMap
      */
     private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<Integer, List<GoodsPic>> picMap,
-                                  Map<String,ExpressPrice> expressPriceMap, Map<Integer,AddressDTO> provinceIdMap){
+                                  Map<String,ExpressPrice> expressPriceMap, Map<Integer,AddressDTO> provinceIdMap,
+                                  Map<Integer, GoodsType> goodsTypeMap){
         String expressType = goodsOrderVo.getExpressType();
         Integer districtId ;
         // 非物流方式的订单，需要查询目的地的省ID
@@ -655,7 +671,7 @@ public class OrderManager {
                 if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
                     subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
                 }
-                dealSubGoodsOrderVo(subGoodsOrderVo, picMap);
+                dealSubGoodsOrderVo(subGoodsOrderVo, picMap,goodsTypeMap);
             }
         }else {
             //非DIY订单补充仓库提示
@@ -665,13 +681,8 @@ public class OrderManager {
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue(), 2));
-                if (null != picMap){
-                    List<GoodsPic> subPicList = picMap.get(orderDetailVo.getGoodsId());
-                    if (CollectionUtils.isNotEmpty(subPicList)) {
-                        Collections.sort(subPicList);
-                        orderDetailVo.setPicUrl(subPicList.get(0).getPicUrl());
-                    }
-                }
+                orderDetailVo.setPicUrl(picMap.get(orderDetailVo.getGoodsId()).get(0).getPicUrl());
+                orderDetailVo.setMallSkuName(goodsTypeMap.get(orderDetailVo.getGoodTypeId()).getName());
             }
         }
     }
@@ -680,21 +691,18 @@ public class OrderManager {
      * 处理子订单
      * @param subGoodsOrderVo
      * @param picMap
+     * @param goodsTypeMap
      */
-    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, List<GoodsPic>> picMap){
+    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, List<GoodsPic>> picMap,
+                                     Map<Integer, GoodsType> goodsTypeMap){
         List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
             subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue(), 2));
-            consumeAmount = AmountUtil.add(consumeAmount,subOrderDetailVo.getTotal(), 2);
-            if (null != picMap){
-                List<GoodsPic> subPicList = picMap.get(subOrderDetailVo.getGoodsId());
-                if (CollectionUtils.isNotEmpty(subPicList)) {
-                    Collections.sort(subPicList);
-                    subOrderDetailVo.setPicUrl(subPicList.get(0).getPicUrl());
-                }
-            }
+            consumeAmount = AmountUtil.add(consumeAmount, subOrderDetailVo.getTotal(), 2);
+            subOrderDetailVo.setPicUrl(picMap.get(subOrderDetailVo.getGoodsId()).get(0).getPicUrl());
+            subOrderDetailVo.setMallSkuName(goodsTypeMap.get(subOrderDetailVo.getGoodTypeId()).getName());
         }
         subGoodsOrderVo.setConsumeAmount(consumeAmount);
     }
@@ -707,10 +715,17 @@ public class OrderManager {
         // 提取商品ID，人才中心的SKUID
         List<ItemOrderDetailVo> itemOrderDetailsTotal = new ArrayList<>();
         List<ItemOrderDetailVo> itemOrderDetails4RCZX = new ArrayList<>();
+        // 是否存在校长培训订单
+        Boolean existNailOrder = false;
         for (ItemOrderVo itemOrderVo : itemOrderVos) {
-            itemOrderDetailsTotal.addAll(itemOrderVo.getItemOrderDetails());
-            if(itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())){
+            Integer categoryId = itemOrderVo.getCategoryId();
+            if(categoryId.equals(MallItemConstant.Category.LDPXSC.getId())){
+                existNailOrder = true;
+            }
+            if(categoryId.equals(MallItemConstant.Category.RCZX.getId())){
                 itemOrderDetails4RCZX.addAll(itemOrderVo.getItemOrderDetails());
+            }else{
+                itemOrderDetailsTotal.addAll(itemOrderVo.getItemOrderDetails());
             }
         }
         List<Integer> mallItemIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderDetailsTotal, "getItemId", Integer.class));
@@ -719,6 +734,10 @@ public class OrderManager {
         ApiResponse<List<MallItemPic>> mallItemPicResponse = mallItemPicServiceFacade.getMallItemPicByMallItemIds(mallItemIds);
         List<MallItemPic> mallItemPics = mallItemPicResponse.getBody();
         Map<Integer, List<MallItemPic>> mallItemPicMap = CollectionCommonUtil.groupByList(mallItemPics, "getMallItemId", Integer.class);
+        // 查询商品SKU图片
+        ApiResponse<List<MallSkuPic>> mallSkuPicResponse = mallSkuPicServiceFacade.queryMallSkuPicByMallSkuIds(mallSkuIds);
+        List<MallSkuPic> mallSkuPics = mallSkuPicResponse.getBody();
+        Map<Integer, List<MallSkuPic>> mallSkuPicMap = CollectionCommonUtil.groupByList(mallSkuPics, "getMallSkuId", Integer.class);
         // 查询人才中心SKU信息
         Map<Integer, MallSkuExtTalent> mallSkuExtTalentMap = new HashMap<>();
         if(com.gaosi.api.common.util.CollectionUtils.isNotEmpty(mallSkuIds)){
@@ -726,17 +745,42 @@ public class OrderManager {
             List<MallSkuExtTalent> mallSkuExtTalents = mallSkuExtTalentsResponse.getBody();
             mallSkuExtTalentMap = CollectionCommonUtil.toMapByList(mallSkuExtTalents, "getMallSkuId", Integer.class);
         }
+        // 查询校长培训商品信息
+        Map<Integer, MallItemExtTrain> mallItemExtTrainMap = new HashMap<>();
+        if(existNailOrder) {
+            ApiResponse<List<MallItemExtTrain>> mallItemExtTrainResponse = mallItemExtServiceFacade.queryMallItemExtTrainByMallItemIds(mallItemIds);
+            List<MallItemExtTrain> mallItemExtTrains = mallItemExtTrainResponse.getBody();
+            mallItemExtTrainMap = CollectionCommonUtil.toMapByList(mallItemExtTrains, "getMallItemId", Integer.class);
+        }
         MallSkuExtTalent mallSkuExtTalent;
+        // 校长培训报名时间格式化
+        SimpleDateFormat sdf = new SimpleDateFormat("MM月dd日 HH:mm");
         for (ItemOrderVo itemOrderVo : itemOrderVos) {
-            itemOrderVo.setCategoryName(MallItemConstant.Category.getName(itemOrderVo.getCategoryId()));
+            Integer categoryId = itemOrderVo.getCategoryId();
+            itemOrderVo.setCategoryName(MallItemConstant.Category.getName(categoryId));
             // 虚拟商品订单默认整单未拆
             itemOrderVo.setSplitNum(1);
             for (ItemOrderDetailVo itemOrderDetailVo : itemOrderVo.getItemOrderDetails()) {
-                itemOrderDetailVo.setPicUrl(mallItemPicMap.get(itemOrderDetailVo.getItemId()).get(0).getPicUrl());
-                if(mallSkuExtTalentMap.containsKey(itemOrderDetailVo.getMallSkuId())){
-                    mallSkuExtTalent = mallSkuExtTalentMap.get(itemOrderDetailVo.getMallSkuId());
+                Integer mallSkuId = itemOrderDetailVo.getMallSkuId();
+                Integer mallItemId = itemOrderDetailVo.getItemId();
+                // 人才中心取SKU图片，其他商品取SPU图片
+                if(categoryId.equals(MallItemConstant.Category.RCZX.getId())){
+                    itemOrderDetailVo.setPicUrl(mallSkuPicMap.get(mallSkuId).get(0).getPicUrl());
+                }else {
+                    itemOrderDetailVo.setPicUrl(mallItemPicMap.get(mallItemId).get(0).getPicUrl());
+                }
+                // 人才中心附加内容
+                if(mallSkuExtTalentMap.containsKey(mallSkuId)){
+                    mallSkuExtTalent = mallSkuExtTalentMap.get(mallSkuId);
                     itemOrderDetailVo.setEducationRemark(mallSkuExtTalent.getEducationRemark());
                     itemOrderDetailVo.setExperienceRemark(mallSkuExtTalent.getExperienceRemark());
+                }
+                // 校长培训附加内容
+                if(mallItemExtTrainMap.containsKey(mallItemId)){
+                    MallItemExtTrain mallItemExtTrain = mallItemExtTrainMap.get(mallItemId);
+                    itemOrderDetailVo.setActivityAddress(mallItemExtTrain.getActivityAddress());
+                    itemOrderDetailVo.setActivityStartTimeDis(sdf.format(mallItemExtTrain.getActivityStartTime()));
+                    itemOrderDetailVo.setActivityEndTimeDis(sdf.format(mallItemExtTrain.getActivityEndTime()));
                 }
             }
         }

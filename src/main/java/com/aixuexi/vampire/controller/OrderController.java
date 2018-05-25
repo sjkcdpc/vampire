@@ -83,8 +83,7 @@ public class OrderController {
         ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
         GoodsOrderVo goodsOrderVo = apiResponse.getBody();
         List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
-        // 订单详情需要加载图片
-        orderManager.dealGoodsOrderVos(goodsOrderVos, true);
+        orderManager.dealGoodsOrderVos(goodsOrderVos);
         return ResultData.successed(goodsOrderVo);
     }
 
@@ -185,17 +184,6 @@ public class OrderController {
         Map<String, Object> map = new HashMap<>(1);
         map.put("orderId", orderId);
         return ResultData.successed(map);
-    }
-
-    /**
-     * 取消订单
-     *
-     * @return
-     */
-    @RequestMapping(value = "/cancel")
-    public ResultData cancel() {
-        // TODO
-        return null;
     }
 
     /**

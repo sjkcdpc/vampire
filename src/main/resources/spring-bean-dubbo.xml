@@ -42,6 +42,8 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade" id="goodsTypeServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemPicServiceFacade" id="mallItemPicServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuExtTalentServiceFacade" id="mallSkuExtTalentServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuPicServiceFacade" id="mallSkuPicServiceFacade" />
+
     <!--基础数据-->
     <dubbo:reference id="districtApi" interface="com.gaosi.api.basicdata.DistrictApi"/>
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi" />

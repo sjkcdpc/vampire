@@ -53,7 +53,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.*;
 
-import static com.aixuexi.vampire.util.Constants.ORDERDETAIL_NAME_DIV;
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
 
 /**
@@ -162,8 +161,7 @@ public class ItemOrderController {
             return ResultData.successed(page);
         }
         List<GoodsOrderVo> goodsOrderVos = page.getList();
-        // 列表也需要图片等详情
-        orderManager.dealGoodsOrderVos(goodsOrderVos, true);
+        orderManager.dealGoodsOrderVos(goodsOrderVos);
         return ResultData.successed(page);
     }
 
@@ -284,7 +282,7 @@ public class ItemOrderController {
             MallSku mallSku = new MallSku();
             mallSku.setId(confirmTalentVo.getMallSkuId());
             mallSku.setPrice(confirmTalentVo.getPrice());
-            mallSku.setName(confirmTalentVo.getEducationRemark() + ORDERDETAIL_NAME_DIV + confirmTalentVo.getExperienceRemark());
+            mallSku.setName(confirmTalentVo.getName());
             ItemOrderVo itemOrderVo = itemOrderManager.generateItemOrderVo(mallItem, mallSku, talentOrderVo.getNum());
             String extInfo = JSONObject.toJSONString(talentTemplateVos);
             itemOrderVo.setExtInfo(extInfo);
