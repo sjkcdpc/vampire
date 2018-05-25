@@ -65,5 +65,5 @@
     <dubbo:reference interface="com.gaosi.api.workorder.facade.WorkOrderServiceFacade" id="workOrderServiceFacade"/>
     <!-- 人才中心服务 -->
     <dubbo:reference interface="com.gaosi.api.xmen.service.TalentDemandService" id="talentDemandService"/>
-
+    <dubbo:reference interface="com.gaosi.api.xmen.service.TalentOperatorRecordsService" id="talentOperatorRecordsService"/>
 </beans>

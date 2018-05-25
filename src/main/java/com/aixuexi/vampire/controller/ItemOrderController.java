@@ -17,6 +17,7 @@ import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.UserService;
 import com.gaosi.api.davincicode.model.User;
+import com.gaosi.api.revolver.bean.common.LogisticsTrackDetail;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.QueryOrderDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
@@ -39,10 +40,13 @@ import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
 import com.gaosi.api.workorder.dto.WorkOrderDto;
+import com.gaosi.api.workorder.dto.WorkorderDetailDto;
 import com.gaosi.api.workorder.dto.WorkorderRecordDto;
 import com.gaosi.api.workorder.facade.WorkOrderServiceFacade;
 import com.gaosi.api.xmen.constant.DictConstants;
+import com.gaosi.api.xmen.model.TalentOperatorRecords;
 import com.gaosi.api.xmen.service.TalentDemandService;
+import com.gaosi.api.xmen.service.TalentOperatorRecordsService;
 import com.gaosi.api.xmen.vo.WorkOrderRes;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -56,6 +60,7 @@ import javax.annotation.Resource;
 import java.util.*;
 
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
+import static com.gaosi.api.xmen.model.TalentOperatorRecords.ORDER_TRACK_TYPE;
 
 /**
  * @Description: 订单管理
@@ -115,6 +120,9 @@ public class ItemOrderController {
 
     @Resource
     private ExpressServiceFacade expressServiceFacade;
+
+    @Resource
+    private TalentOperatorRecordsService talentOperatorRecordsService;
 
     @Resource
     private BaseMapper baseMapper;
@@ -476,6 +484,10 @@ public class ItemOrderController {
                 ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
                 List<ItemOrderVo> itemOrderVos = Lists.newArrayList(itemOrderVo);
                 orderManager.dealItemOrderVos(itemOrderVos);
+                String[] workOrderCodes = itemOrderVo.getRelationInfo().split(OrderConstant.SEPARATOR);
+                // 查询工单详情
+                List<WorkorderDetailDto> workorderDetailDtoList = workOrderServiceFacade.getWorkOrderByWorkcode(workOrderCodes[0]).getBody();
+                itemOrderVo.setWorkorderDetailDtos(workorderDetailDtoList);
                 return ResultData.successed(itemOrderVo);
             case JCZB:
                 ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
@@ -496,11 +508,13 @@ public class ItemOrderController {
      */
     @RequestMapping(value = "/logistics", method = RequestMethod.GET)
     public ResultData getLogisticsData(@RequestParam String orderId,@RequestParam Integer categoryId) {
+        OrderFollowVo orderFollowVo = new OrderFollowVo();
         switch (MallItemConstant.Category.get(categoryId)) {
             case RCZX:
-                ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
-                ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
-                return ResultData.successed(null);
+                List<TalentOperatorRecords> talentOperatorRecords = talentOperatorRecordsService.queryOperatorRecordsByBusinessId(orderId, ORDER_TRACK_TYPE);
+                List<LogisticsTrackDetail> logisticsDatas = baseMapper.mapAsList(talentOperatorRecords,LogisticsTrackDetail.class);
+                orderFollowVo.setLogdata(logisticsDatas);
+                return ResultData.successed(orderFollowVo);
             case JCZB:
                 ApiResponse<?> apiResponse;
                 if (orderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
@@ -508,7 +522,7 @@ public class ItemOrderController {
                 } else {
                     apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
                 }
-                OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
+                orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
                 ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
                 Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(), "getCode", String.class);
                 orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
