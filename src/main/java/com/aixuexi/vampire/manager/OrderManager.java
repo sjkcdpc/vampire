@@ -1,6 +1,5 @@
 package com.aixuexi.vampire.manager;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.bean.GoodsFreightSubtotalBo;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.Constants;
@@ -10,7 +9,6 @@ import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.ExpressConstant;
@@ -33,9 +31,8 @@ import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -735,12 +732,15 @@ public class OrderManager {
         List<MallItemPic> mallItemPics = mallItemPicResponse.getBody();
         Map<Integer, List<MallItemPic>> mallItemPicMap = CollectionCommonUtil.groupByList(mallItemPics, "getMallItemId", Integer.class);
         // 查询商品SKU图片
-        ApiResponse<List<MallSkuPic>> mallSkuPicResponse = mallSkuPicServiceFacade.queryMallSkuPicByMallSkuIds(mallSkuIds);
-        List<MallSkuPic> mallSkuPics = mallSkuPicResponse.getBody();
-        Map<Integer, List<MallSkuPic>> mallSkuPicMap = CollectionCommonUtil.groupByList(mallSkuPics, "getMallSkuId", Integer.class);
+        Map<Integer, List<MallSkuPic>> mallSkuPicMap = new HashMap<>();
+        if(CollectionUtils.isNotEmpty(mallSkuIds)) {
+            ApiResponse<List<MallSkuPic>> mallSkuPicResponse = mallSkuPicServiceFacade.queryMallSkuPicByMallSkuIds(mallSkuIds);
+            List<MallSkuPic> mallSkuPics = mallSkuPicResponse.getBody();
+            mallSkuPicMap = CollectionCommonUtil.groupByList(mallSkuPics, "getMallSkuId", Integer.class);
+        }
         // 查询人才中心SKU信息
         Map<Integer, MallSkuExtTalent> mallSkuExtTalentMap = new HashMap<>();
-        if(com.gaosi.api.common.util.CollectionUtils.isNotEmpty(mallSkuIds)){
+        if(CollectionUtils.isNotEmpty(mallSkuIds)){
             ApiResponse<List<MallSkuExtTalent>> mallSkuExtTalentsResponse = mallSkuExtTalentServiceFacade.queryMallSkuExtTalentByMallSkuIds(mallSkuIds);
             List<MallSkuExtTalent> mallSkuExtTalents = mallSkuExtTalentsResponse.getBody();
             mallSkuExtTalentMap = CollectionCommonUtil.toMapByList(mallSkuExtTalents, "getMallSkuId", Integer.class);

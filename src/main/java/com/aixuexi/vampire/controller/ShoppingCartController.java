@@ -124,14 +124,6 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
         ApiResponse<Double> apiResponse = shoppingCartServiceFacade.updateShoppingCart(shoppingCartList);
-        if (null == apiResponse) {
-            logger.error("修改购物车失败!  goods_type_id: [{}]", goodsTypeId);
-            return ResultData.failed("修改购物车失败");
-        }
-        if (apiResponse.isNotSuccess()) {
-            logger.error("修改购物车失败!  goods_type_id: [{}] msg:[{}]", goodsTypeId, apiResponse.getMessage());
-            return ResultData.failed(apiResponse.getMessage());
-        }
         Map<String, Object> map = new HashMap<>();
         map.put("goodsTypeId", goodsTypeId);
         map.put("price", apiResponse.getBody());

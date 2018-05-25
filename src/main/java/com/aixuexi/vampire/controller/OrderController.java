@@ -2,21 +2,13 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
-import com.aixuexi.thor.validate.annotation.NotBlank;
 import com.aixuexi.vampire.manager.OrderManager;
-import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
-import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
-import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.ExpressType;
-import com.gaosi.api.revolver.vo.GoodsOrderVo;
-import com.gaosi.api.revolver.vo.OrderFollowVo;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
@@ -64,28 +56,7 @@ public class OrderController {
     private TaskProducerApi taskProducerApi;
 
     @Resource
-    private SubOrderServiceFacade subOrderServiceFacade;
-
-    @Resource
     private ExpressServiceFacade expressServiceFacade;
-
-    @Resource
-    private BaseMapper baseMapper;
-
-    /**
-     * 订单详情
-     *
-     * @param orderId 订单号
-     * @return
-     */
-    @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@NotBlank String orderId) {
-        ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
-        GoodsOrderVo goodsOrderVo = apiResponse.getBody();
-        List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
-        orderManager.dealGoodsOrderVos(goodsOrderVos);
-        return ResultData.successed(goodsOrderVo);
-    }
 
     /**
      * 确认订单
@@ -95,11 +66,9 @@ public class OrderController {
     @RequestMapping(value = "/confirm", method = RequestMethod.GET)
     public ResultData confirm() {
         ResultData resultData = new ResultData();
-
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
         ConfirmOrderVo conOrderVo = orderManager.confirmOrder(userId, insId);
-
         resultData.setBody(conOrderVo);
         return resultData;
     }
@@ -176,35 +145,10 @@ public class OrderController {
         if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数不能为空");
         }
-        ApiResponse<?> apiResponse = orderServiceFacade.updateOrderToComplete(orderId);
-        //响应错误直接返回
-        if (apiResponse.isNotSuccess()) {
-            return ResultData.failed(apiResponse.getMessage());
-        }
+        orderServiceFacade.updateOrderToComplete(orderId);
         Map<String, Object> map = new HashMap<>(1);
         map.put("orderId", orderId);
         return ResultData.successed(map);
-    }
-
-    /**
-     * 订单跟踪
-     *
-     * @param orderId
-     * @return
-     */
-    @RequestMapping(value = "/logistics", method = RequestMethod.GET)
-    public ResultData getLogisticsData(@RequestParam String orderId) {
-        ApiResponse<?> apiResponse;
-        if (orderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
-            apiResponse = subOrderServiceFacade.getSubGoodsOrderById(orderId);
-        } else {
-            apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
-        }
-        OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
-        ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
-        Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(),"getCode",String.class) ;
-        orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
-        return ResultData.successed(orderFollowVo);
     }
 
     /*

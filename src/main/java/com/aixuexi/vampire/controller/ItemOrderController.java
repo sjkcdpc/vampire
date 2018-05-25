@@ -14,15 +14,16 @@ import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.SubjectProductApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davincicode.UserService;
 import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.QueryOrderDto;
+import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
+import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
+import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.util.ConstantsUtil;
 import com.gaosi.api.revolver.vo.*;
@@ -44,6 +45,7 @@ import com.gaosi.api.xmen.constant.DictConstants;
 import com.gaosi.api.xmen.service.TalentDemandService;
 import com.gaosi.api.xmen.vo.WorkOrderRes;
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -107,6 +109,12 @@ public class ItemOrderController {
 
     @Resource
     private WorkOrderServiceFacade workOrderServiceFacade;
+
+    @Resource
+    private SubOrderServiceFacade subOrderServiceFacade;
+
+    @Resource
+    private ExpressServiceFacade expressServiceFacade;
 
     @Resource
     private BaseMapper baseMapper;
@@ -454,8 +462,59 @@ public class ItemOrderController {
         return ResultData.successed(apiResponse.getBody());
     }
 
+    /**
+     * 订单详情
+     * @param orderId
+     * @param categoryId
+     * @return
+     */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@RequestParam String orderId) {
-        return ResultData.successed(null);
+    public ResultData detail(@RequestParam String orderId, @RequestParam Integer categoryId) {
+        switch (MallItemConstant.Category.get(categoryId)){
+            case RCZX:
+                ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
+                ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
+                List<ItemOrderVo> itemOrderVos = Lists.newArrayList(itemOrderVo);
+                orderManager.dealItemOrderVos(itemOrderVos);
+                return ResultData.successed(itemOrderVo);
+            case JCZB:
+                ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
+                GoodsOrderVo goodsOrderVo = apiResponse.getBody();
+                List<GoodsOrderVo> goodsOrderVos = Lists.newArrayList(goodsOrderVo);
+                orderManager.dealGoodsOrderVos(goodsOrderVos);
+                return ResultData.successed(goodsOrderVo);
+            default:
+                return ResultData.failed("参数类型错误");
+        }
+    }
+
+    /**
+     * 订单跟踪
+     * @param orderId
+     * @param categoryId
+     * @return
+     */
+    @RequestMapping(value = "/logistics", method = RequestMethod.GET)
+    public ResultData getLogisticsData(@RequestParam String orderId,@RequestParam Integer categoryId) {
+        switch (MallItemConstant.Category.get(categoryId)) {
+            case RCZX:
+                ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
+                ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
+                return ResultData.successed(null);
+            case JCZB:
+                ApiResponse<?> apiResponse;
+                if (orderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
+                    apiResponse = subOrderServiceFacade.getSubGoodsOrderById(orderId);
+                } else {
+                    apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
+                }
+                OrderFollowVo orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
+                ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
+                Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(), "getCode", String.class);
+                orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
+                return ResultData.successed(orderFollowVo);
+            default:
+                return ResultData.failed("参数类型错误");
+        }
     }
 }
