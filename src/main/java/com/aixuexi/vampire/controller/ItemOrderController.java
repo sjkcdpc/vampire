@@ -420,13 +420,14 @@ public class ItemOrderController {
      */
     @RequestMapping(value = "/getTypeStatus", method = RequestMethod.GET)
     public ResultData getTypeStatus() {
-        Map<String, Object> map = new HashMap<>();
+        // 获取一级类别
         ApiResponse<List<MallCategory>> apiResponse = mallCategoryServiceFacade.findMallCategoryByLevel(1);
         List<MallCategory> mallCategories = apiResponse.getBody();
         List<CategoryVo> categoryVos = baseMapper.mapAsList(mallCategories, CategoryVo.class);
-        map.put("category", categoryVos);
-        map.put("status", ConstantsUtil.getOrderStatusVos());
-        return ResultData.successed(map);
+        for (CategoryVo categoryVo : categoryVos) {
+            categoryVo.setStatusList(ConstantsUtil.getStatusVosByCategory(MallItemConstant.Category.get(categoryVo.getId())));
+        }
+        return ResultData.successed(categoryVos);
     }
 
     /**

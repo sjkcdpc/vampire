@@ -3,12 +3,12 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.aixuexi.vampire.util.Constants;
 import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.vo.DistrictVO;
 import com.gaosi.api.common.basedao.PageParam;
 import com.gaosi.api.common.basedao.SortTypeEnum;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.vo.AreaVo;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -82,7 +82,7 @@ public class AreaController {
      * 缓存市区
      */
     private final LoadingCache<Integer, List<AreaVo>> cacheBuilderCity =
-            CacheBuilder.newBuilder().expireAfterWrite(Constants.CACHE_TIME, TimeUnit.SECONDS).build(new CacheLoader<Integer, List<AreaVo>>() {
+            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(new CacheLoader<Integer, List<AreaVo>>() {
                 @Override
                 public List<AreaVo> load(Integer key) {
                     DistrictVO districtVO = new DistrictVO();//查询条件
@@ -102,7 +102,7 @@ public class AreaController {
      * 缓存省
      */
     private final LoadingCache<Integer, List<AreaVo>> cacheBuilderProvince =
-            CacheBuilder.newBuilder().expireAfterWrite(Constants.CACHE_TIME, TimeUnit.SECONDS).build(new CacheLoader<Integer, List<AreaVo>>() {
+            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(new CacheLoader<Integer, List<AreaVo>>() {
                 @Override
                 public List<AreaVo> load(Integer key) {
                     DistrictVO districtVO = new DistrictVO();

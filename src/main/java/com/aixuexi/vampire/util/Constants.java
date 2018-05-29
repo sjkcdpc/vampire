@@ -16,11 +16,6 @@ import java.util.Map;
 public final class Constants {
 
     /**
-     * 缓存0.5个小时
-     */
-    public static final long CACHE_TIME = 1800;
-
-    /**
      * 学期映射
      */
     public final static Map<Integer, Integer> PERIOD_MAP = new HashMap<>();

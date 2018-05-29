@@ -1,10 +1,9 @@
 package com.aixuexi.vampire.manager;
 
-import com.aixuexi.vampire.util.Constants;
 import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -89,7 +88,7 @@ public class DictionaryManager {
      * 缓存字典
      */
     private final LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder()
-            .expireAfterWrite(Constants.CACHE_TIME, TimeUnit.SECONDS)
+            .expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS)
             .build(new CacheLoader<String, List<DictionaryBo>>() {
                 @Override
                 public List<DictionaryBo> load(String key) throws Exception {
