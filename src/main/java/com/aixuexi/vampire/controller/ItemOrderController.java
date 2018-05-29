@@ -484,10 +484,6 @@ public class ItemOrderController {
                 ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
                 List<ItemOrderVo> itemOrderVos = Lists.newArrayList(itemOrderVo);
                 orderManager.dealItemOrderVos(itemOrderVos);
-                String[] workOrderCodes = itemOrderVo.getRelationInfo().split(OrderConstant.SEPARATOR);
-                // 查询工单详情
-                List<WorkorderDetailDto> workorderDetailDtoList = workOrderServiceFacade.getWorkOrderByWorkcode(workOrderCodes[0]).getBody();
-                itemOrderVo.setWorkorderDetailDtos(workorderDetailDtoList);
                 return ResultData.successed(itemOrderVo);
             case JCZB:
                 ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
