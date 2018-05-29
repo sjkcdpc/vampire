@@ -781,16 +781,18 @@ public class OrderManager {
                 }
             }
             // 处理fieldValue传ID时的展示文案
-            String extInfo = itemOrderVo.getExtInfo();
-            List<TalentTemplateVo> talentTemplateVos = JSONObject.parseArray(extInfo, TalentTemplateVo.class);
-            String key;
-            for (TalentTemplateVo talentTemplateVo : talentTemplateVos) {
-                key = talentTemplateVo.getKey();
-                if(StringUtils.isNotBlank(key)){
-                    talentTemplateVo.setFieldValue(key);
+            if(categoryId.equals(MallItemConstant.Category.RCZX.getId())) {
+                String extInfo = itemOrderVo.getExtInfo();
+                List<TalentTemplateVo> talentTemplateVos = JSONObject.parseArray(extInfo, TalentTemplateVo.class);
+                String key;
+                for (TalentTemplateVo talentTemplateVo : talentTemplateVos) {
+                    key = talentTemplateVo.getKey();
+                    if (StringUtils.isNotBlank(key)) {
+                        talentTemplateVo.setFieldValue(key);
+                    }
                 }
+                itemOrderVo.setExtInfo(JSONObject.toJSONString(talentTemplateVos));
             }
-            itemOrderVo.setExtInfo(JSONObject.toJSONString(talentTemplateVos));
         }
     }
 }
