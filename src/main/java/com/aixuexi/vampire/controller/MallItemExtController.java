@@ -3,21 +3,20 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.DictionaryManager;
+import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.basicdata.DictionaryApi;
-import com.gaosi.api.basicdata.SubjectProductApi;
+import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
-import com.gaosi.api.revolver.util.AmountUtil;
-import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
-import com.aixuexi.vampire.manager.FinancialAccountManager;
-import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
+import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
+import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
+import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
@@ -59,10 +58,7 @@ public class MallItemExtController {
     private FinancialAccountManager financialAccountManager;
 
     @Resource
-    private DictionaryApi dictionaryApi;
-
-    @Resource
-    private SubjectProductApi subjectProductApi;
+    private DictionaryManager dictionaryManager;
 
     @Resource
     private TemplateServiceFacade templateServiceFacade;
@@ -209,8 +205,7 @@ public class MallItemExtController {
         List<String> typeCodes = talentFilterCondition.getTypeCode();
         List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
         // 查询字典表中的人才类型
-        ApiResponse<List<DictionaryBo>> dictionaryResponse = dictionaryApi.findByType(DictConstants.TALENT_TYPE);
-        List<DictionaryBo> dictionaryBos = dictionaryResponse.getBody();
+        List<DictionaryBo> dictionaryBos = dictionaryManager.selectDictByType(DictConstants.TALENT_TYPE);
         List<CommonConditionVo> typeCodeCondition = new ArrayList<>();
         for (DictionaryBo dictionaryBo : dictionaryBos) {
             if(typeCodes.contains(dictionaryBo.getCode())){
@@ -220,7 +215,7 @@ public class MallItemExtController {
         typeCodeCondition.add(0, goodsManager.addAllCondition());
         allCondition.add(new CommonConditionVo(0,"人才类型",typeCodeCondition));
         // 查询基础数据的学科
-        List<SubjectProductBo> subjectProductList = subjectProductApi.findSubjectProductList(subjectProductIds);
+        List<SubjectProductBo> subjectProductList = goodsManager.querySubjectProduct(subjectProductIds);
         List<CommonConditionVo> subjectProductCondition = baseMapper.mapAsList(subjectProductList,CommonConditionVo.class);
         subjectProductCondition.add(0, goodsManager.addAllCondition());
         allCondition.add(new CommonConditionVo(1,"所属学科",subjectProductCondition));
