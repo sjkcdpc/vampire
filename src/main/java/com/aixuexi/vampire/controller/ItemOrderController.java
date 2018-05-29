@@ -2,17 +2,12 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
-import com.aixuexi.vampire.manager.FinancialAccountManager;
-import com.aixuexi.vampire.manager.ItemOrderManager;
-import com.aixuexi.vampire.manager.OrderManager;
+import com.aixuexi.vampire.manager.*;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.basicdata.DictionaryApi;
-import com.gaosi.api.basicdata.SubjectProductApi;
-import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.UserService;
@@ -35,12 +30,13 @@ import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallCategoryServiceFacade;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
-import com.gaosi.api.vulcan.model.*;
+import com.gaosi.api.vulcan.model.MallCategory;
+import com.gaosi.api.vulcan.model.MallItem;
+import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
 import com.gaosi.api.workorder.dto.WorkOrderDto;
-import com.gaosi.api.workorder.dto.WorkorderDetailDto;
 import com.gaosi.api.workorder.dto.WorkorderRecordDto;
 import com.gaosi.api.workorder.facade.WorkOrderServiceFacade;
 import com.gaosi.api.xmen.constant.DictConstants;
@@ -57,7 +53,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
 import static com.gaosi.api.xmen.model.TalentOperatorRecords.ORDER_TRACK_TYPE;
@@ -104,10 +103,10 @@ public class ItemOrderController {
     private InstitutionService institutionService;
 
     @Resource
-    private DictionaryApi dictionaryApi;
+    private DictionaryManager dictionaryManager;
 
     @Resource
-    private SubjectProductApi subjectProductApi;
+    private GoodsManager goodsManager;
 
     @Resource
     private TalentDemandService talentDemandService;
@@ -395,14 +394,12 @@ public class ItemOrderController {
         MallItemTalentVo mallItemTalentVo = mallItemTalentResponse.getBody();
         // 人才类型
         talentWorkOrderVo.setTypeCode(mallItemTalentVo.getTypeCode());
-        ApiResponse<DictionaryBo> dictionaryResponse = dictionaryApi.getByTypeAndCode(DictConstants.TALENT_TYPE, mallItemTalentVo.getTypeCode());
-        DictionaryBo dictionaryBo = dictionaryResponse.getBody();
-        talentWorkOrderVo.setType(dictionaryBo.getName());
+        String category = dictionaryManager.getCategory(DictConstants.TALENT_TYPE, mallItemTalentVo.getTypeCode());
+        talentWorkOrderVo.setType(category);
         // 学科
         talentWorkOrderVo.setSubjectProductId(mallItemTalentVo.getSubjectProductId());
-        ApiResponse<SubjectProductBo> subjectResponse = subjectProductApi.getById(mallItemTalentVo.getSubjectProductId());
-        SubjectProductBo subjectProductBo = subjectResponse.getBody();
-        talentWorkOrderVo.setSubjectProduct(subjectProductBo.getName());
+        List<SubjectProductBo> subjectProductBos = goodsManager.querySubjectProduct(Lists.newArrayList(mallItemTalentVo.getSubjectProductId()));
+        talentWorkOrderVo.setSubjectProduct(subjectProductBos.get(0).getName());
         // 学历，经验
         List<MallSkuExtTalentVo> mallSkuExtTalentVos = mallItemTalentVo.getMallSkuExtTalentVos();
         for (MallSkuExtTalentVo mallSkuExtTalentVo : mallSkuExtTalentVos) {
