@@ -757,11 +757,6 @@ public class OrderManager {
         SimpleDateFormat sdf = new SimpleDateFormat("MM月dd日 HH:mm");
         for (ItemOrderVo itemOrderVo : itemOrderVos) {
             Integer categoryId = itemOrderVo.getCategoryId();
-            itemOrderVo.setCategoryName(MallItemConstant.Category.getName(categoryId));
-            // 虚拟商品订单默认整单未拆
-            itemOrderVo.setSplitNum(1);
-            // 商品总数量
-            Integer itemTotalCount = 0;
             for (ItemOrderDetailVo itemOrderDetailVo : itemOrderVo.getItemOrderDetails()) {
                 Integer mallSkuId = itemOrderDetailVo.getMallSkuId();
                 Integer mallItemId = itemOrderDetailVo.getItemId();
@@ -784,12 +779,7 @@ public class OrderManager {
                     itemOrderDetailVo.setActivityStartTimeDis(sdf.format(mallItemExtTrain.getActivityStartTime()));
                     itemOrderDetailVo.setActivityEndTimeDis(sdf.format(mallItemExtTrain.getActivityEndTime()));
                 }
-                // 商品小计
-                itemOrderDetailVo.setItemTotalPrice(AmountUtil.multiply(itemOrderDetailVo.getItemPrice(),
-                        itemOrderDetailVo.getItemCount()));
-                itemTotalCount += itemOrderDetailVo.getItemCount();
             }
-            itemOrderVo.setItemTotalCount(itemTotalCount);
             // 处理fieldValue传ID时的展示文案
             String extInfo = itemOrderVo.getExtInfo();
             List<TalentTemplateVo> talentTemplateVos = JSONObject.parseArray(extInfo, TalentTemplateVo.class);
