@@ -503,6 +503,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/logistics", method = RequestMethod.GET)
     public ResultData getLogisticsData(@RequestParam String orderId,@RequestParam Integer categoryId) {
         OrderFollowVo orderFollowVo = new OrderFollowVo();
+        orderFollowVo.setCategoryId(categoryId);
         switch (MallItemConstant.Category.get(categoryId)) {
             case RCZX:
                 List<TalentOperatorRecords> talentOperatorRecords = talentOperatorRecordsService.queryOperatorRecordsByBusinessId(orderId, ORDER_TRACK_TYPE);
