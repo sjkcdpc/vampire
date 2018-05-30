@@ -38,7 +38,10 @@ import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
 import com.gaosi.api.workorder.dto.WorkOrderDto;
 import com.gaosi.api.workorder.dto.WorkorderRecordDto;
+import com.gaosi.api.workorder.facade.FieldConfServiceFacade;
 import com.gaosi.api.workorder.facade.WorkOrderServiceFacade;
+import com.gaosi.api.workorder.model.FieldConfValue;
+import com.gaosi.api.workorder.vo.FieldConfVo;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.gaosi.api.xmen.model.TalentOperatorRecords;
 import com.gaosi.api.xmen.service.TalentDemandService;
@@ -53,11 +56,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static com.aixuexi.vampire.util.Constants.SPECIAL_FIELD_TYPE;
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
 import static com.gaosi.api.xmen.model.TalentOperatorRecords.ORDER_TRACK_TYPE;
 
@@ -122,6 +123,9 @@ public class ItemOrderController {
 
     @Resource
     private TalentOperatorRecordsService talentOperatorRecordsService;
+
+    @Resource
+    private FieldConfServiceFacade fieldConfServiceFacade;
 
     @Resource
     private BaseMapper baseMapper;
@@ -299,12 +303,43 @@ public class ItemOrderController {
             mallSku.setPrice(confirmTalentVo.getPrice());
             mallSku.setName(confirmTalentVo.getName());
             ItemOrderVo itemOrderVo = itemOrderManager.generateItemOrderVo(mallItem, mallSku, talentOrderVo.getNum());
+            dealTalentTemplateVos(talentTemplateVos);
             String extInfo = JSONObject.toJSONString(talentTemplateVos);
             itemOrderVo.setExtInfo(extInfo);
             String orderId = itemOrderManager.submit(itemOrderVo);
             talentOrderResponseVo.setOrderId(orderId);
         }
         return ResultData.successed(talentOrderResponseVo);
+    }
+
+    /**
+     * 人才中心工单数据处理，补充特殊字段类型的默认值
+     * @param talentTemplateVos
+     */
+    private void dealTalentTemplateVos(List<TalentTemplateVo> talentTemplateVos) {
+        List<String> fieldCodes = new ArrayList<>();
+        for (TalentTemplateVo templateVo : talentTemplateVos) {
+            if(SPECIAL_FIELD_TYPE.contains(templateVo.getFieldType())){
+                fieldCodes.add(templateVo.getFieldCode());
+            }
+        }
+        if(CollectionUtils.isNotEmpty(fieldCodes)){
+            // 特殊字段类型的默认值
+            com.aixuexi.thor.response.ApiResponse<List<FieldConfVo>> fieldConfVoResponse = fieldConfServiceFacade.queryByFieldCodes(fieldCodes);
+            List<FieldConfVo> fieldConfVos = fieldConfVoResponse.getBody();
+            Map<String, FieldConfVo> fieldConfVoMap = CollectionCommonUtil.toMapByList(fieldConfVos, "getFieldCode", String.class);
+            Map<String, TalentTemplateVo> talentTemplateVoMap = CollectionCommonUtil.toMapByList(talentTemplateVos, "getFieldCode", String.class);
+            for (String fieldCode : fieldCodes) {
+                TalentTemplateVo templateVo = talentTemplateVoMap.get(fieldCode);
+                List<FieldConfValue> fieldConfValues = fieldConfVoMap.get(fieldCode).getFieldConfValues();
+                for (FieldConfValue fieldConfValue : fieldConfValues) {
+                    // 前端传的是默认值的ID
+                    if(fieldConfValue.getId().toString().equals(templateVo.getFieldValue())){
+                        templateVo.setKey(fieldConfValue.getKey());
+                    }
+                }
+            }
+        }
     }
 
     /**
