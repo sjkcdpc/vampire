@@ -199,7 +199,7 @@ public class ItemOrderController {
             return ResultData.successed(page);
         }
         List<ItemOrderVo> itemOrderVos = page.getList();
-        orderManager.dealItemOrderVos(itemOrderVos);
+        orderManager.dealItemOrderVos(itemOrderVos,false);
         return ResultData.successed(page);
     }
 
@@ -516,7 +516,7 @@ public class ItemOrderController {
                 ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
                 ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
                 List<ItemOrderVo> itemOrderVos = Lists.newArrayList(itemOrderVo);
-                orderManager.dealItemOrderVos(itemOrderVos);
+                orderManager.dealItemOrderVos(itemOrderVos,true);
                 return ResultData.successed(itemOrderVo);
             case JCZB:
                 ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);

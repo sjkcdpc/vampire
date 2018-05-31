@@ -707,8 +707,9 @@ public class OrderManager {
     /**
      * 补充分类名称，图片，拆单状态,人才中心SKU信息
      * @param itemOrderVos
+     * @param isDetail
      */
-    public void dealItemOrderVos(List<ItemOrderVo> itemOrderVos){
+    public void dealItemOrderVos(List<ItemOrderVo> itemOrderVos,Boolean isDetail){
         // 提取商品ID，人才中心的SKUID
         List<ItemOrderDetailVo> itemOrderDetailsTotal = new ArrayList<>();
         List<ItemOrderDetailVo> itemOrderDetails4RCZX = new ArrayList<>();
@@ -779,6 +780,19 @@ public class OrderManager {
                     itemOrderDetailVo.setActivityStartTimeDis(sdf.format(mallItemExtTrain.getActivityStartTime()));
                     itemOrderDetailVo.setActivityEndTimeDis(sdf.format(mallItemExtTrain.getActivityEndTime()));
                 }
+            }
+            if (MallItemConstant.Category.RCZX.getId().equals(categoryId) && isDetail) {
+                // 处理fieldValue传ID时的展示文案
+                String extInfo = itemOrderVo.getExtInfo();
+                List<TalentTemplateVo> talentTemplateVos = JSONObject.parseArray(extInfo, TalentTemplateVo.class);
+                String key;
+                for (TalentTemplateVo talentTemplateVo : talentTemplateVos) {
+                    key = talentTemplateVo.getKey();
+                    if (StringUtils.isNotBlank(key)) {
+                        talentTemplateVo.setFieldValue(key);
+                    }
+                }
+                itemOrderVo.setExtInfo(JSONObject.toJSONString(talentTemplateVos));
             }
         }
     }
