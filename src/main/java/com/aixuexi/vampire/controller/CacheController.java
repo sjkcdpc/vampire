@@ -1,5 +1,6 @@
 package com.aixuexi.vampire.controller;
 
+import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.manager.CacheManager;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -21,7 +22,8 @@ public class CacheController {
      * 清空缓存
      */
     @RequestMapping(value = "/refresh",method = RequestMethod.GET)
-    public void invalidateAllCache() {
+    public ResultData invalidateAll() {
         cacheManager.invalidateAll();
+        return ResultData.successed();
     }
 }

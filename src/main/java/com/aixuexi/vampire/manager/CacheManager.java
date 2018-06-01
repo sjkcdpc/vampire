@@ -104,9 +104,10 @@ public class CacheManager {
                             return subjectBo;
                         }
 
-                        public Map<Integer, SubjectBo> loadAll(List<Integer> subjectIds) {
+                        @Override
+                        public Map<Integer, SubjectBo> loadAll(Iterable<? extends Integer> subjectIds) {
                             // 查询科目详情
-                            ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(subjectIds);
+                            ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(Lists.newArrayList(subjectIds));
                             List<SubjectBo> subjectBos = subjectResponse.getBody();
                             return CollectionCommonUtil.toMapByList(subjectBos, "getId", Integer.class);
                         }
@@ -125,9 +126,10 @@ public class CacheManager {
                             return subjectProductBo;
                         }
 
-                        public Map<Integer, SubjectProductBo> loadAll(List<Integer> subjectProductIds) {
+                        @Override
+                        public Map<Integer, SubjectProductBo> loadAll(Iterable<? extends Integer> subjectProductIds) {
                             // 查询学科详情
-                            List<SubjectProductBo> subjectProductBos = subjectProductApi.findSubjectProductList(subjectProductIds);
+                            List<SubjectProductBo> subjectProductBos = subjectProductApi.findSubjectProductList(Lists.newArrayList(subjectProductIds));
                             return CollectionCommonUtil.toMapByList(subjectProductBos, "getId", Integer.class);
                         }
                     });
@@ -145,9 +147,10 @@ public class CacheManager {
                             return schemeBo;
                         }
 
-                        public Map<Integer, SchemeBo> loadAll(List<Integer> schmeIds) {
+                        @Override
+                        public Map<Integer, SchemeBo> loadAll(Iterable<? extends Integer> schmeIds) {
                             // 查询体系详情
-                            ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(schmeIds);
+                            ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(Lists.newArrayList(schmeIds));
                             List<SchemeBo> schemeBos = schemeResponse.getBody();
                             return CollectionCommonUtil.toMapByList(schemeBos, "getId", Integer.class);
                         }
@@ -166,8 +169,9 @@ public class CacheManager {
                             return dictionaryBos.get(0);
                         }
 
-                        public Map<Integer, DictionaryBo> loadAll(List<Integer> periodIds) {
-                            ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(periodIds);
+                        @Override
+                        public Map<Integer, DictionaryBo> loadAll(Iterable<? extends Integer> periodIds) {
+                            ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(Lists.newArrayList(periodIds));
                             List<DictionaryBo> dictionaryBos = periodResponse.getBody();
                             return CollectionCommonUtil.toMapByList(dictionaryBos, "getId", Integer.class);
                         }
@@ -186,8 +190,9 @@ public class CacheManager {
                             return bookVersionBo;
                         }
 
-                        public Map<Integer, BookVersionBo> loadAll(List<Integer> bookVersionIds) {
-                            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
+                        @Override
+                        public Map<Integer, BookVersionBo> loadAll(Iterable<? extends Integer> bookVersionIds) {
+                            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(Lists.newArrayList(bookVersionIds));
                             List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
                             return CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
                         }
@@ -206,8 +211,9 @@ public class CacheManager {
                             return examAreaBo;
                         }
 
-                        public Map<Integer, ExamAreaBo> loadAll(List<Integer> examAreaIds) {
-                            List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(examAreaIds);
+                        @Override
+                        public Map<Integer, ExamAreaBo> loadAll(Iterable<? extends Integer> examAreaIds) {
+                            List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(Lists.newArrayList(examAreaIds));
                             return CollectionCommonUtil.toMapByList(examAreaBos, "getId", Integer.class);
                         }
                     });
