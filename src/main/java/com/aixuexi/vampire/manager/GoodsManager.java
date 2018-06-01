@@ -181,7 +181,7 @@ public class GoodsManager {
             periods.add(0,addAllCondition());
             return periods;
         } catch (Exception e) {
-            logger.error("获取学期筛选条件异常 periodIds : {} ",periodIds);
+            logger.error("获取学期筛选条件异常 periodIds : " + periodIds.toString(), e);
             throw new BusinessException(ExceptionCode.UNKNOWN,"获取学期筛选条件异常");
         }
     }
