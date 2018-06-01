@@ -1,12 +1,6 @@
 package com.aixuexi.vampire.manager;
 
-import com.gaosi.api.basicdata.DictionaryApi;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
-import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.vulcan.constant.GoodsConstant;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -15,7 +9,6 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by gaoxinzhong on 2017/6/2.
@@ -24,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class DictionaryManager {
 
     @Resource
-    private DictionaryApi dictionaryApi;
+    private CacheManager cacheManager;
 
     /**
      * 根据类型和code查询类别名称
@@ -77,24 +70,13 @@ public class DictionaryManager {
      */
     public List<DictionaryBo> selectDictByType(final String type) {
         try {
-            return cacheBuilderDict.get(type);
+            return cacheManager.getCacheBuilderDict().get(type);
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    /**
-     * 缓存字典
-     */
-    private final LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder()
-            .expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS)
-            .build(new CacheLoader<String, List<DictionaryBo>>() {
-                @Override
-                public List<DictionaryBo> load(String key) throws Exception {
-                    ApiResponse<List<DictionaryBo>> apiResponse = dictionaryApi.listAllByStatus(1, key);
-                    return apiResponse.getBody();
-                }
-            });
+
 
 }
