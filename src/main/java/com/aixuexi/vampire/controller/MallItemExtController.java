@@ -231,6 +231,7 @@ public class MallItemExtController {
         reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
+        reqTalentCenterConditionVo.setManager(false);
         ApiResponse<Page<MallItemTalentVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4Talent(reqTalentCenterConditionVo);
         Page<MallItemTalentVo> mallItemTalentVoPage = apiResponse.getBody();
         List<MallItemTalentVo> mallItemTalentVos = mallItemTalentVoPage.getList();
