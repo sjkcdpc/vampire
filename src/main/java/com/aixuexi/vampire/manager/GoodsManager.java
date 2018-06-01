@@ -2,18 +2,11 @@ package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.util.BaseMapper;
-import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
-import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
-import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.CommonConditionVo;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +16,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ruanyanjie on 2018/1/19.
@@ -33,22 +25,7 @@ public class GoodsManager {
     private final Logger logger = LoggerFactory.getLogger(GoodsManager.class);
 
     @Resource
-    private SubjectProductApi subjectProductApi;
-
-    @Resource
-    private ExamAreaApi examAreaApi;
-
-    @Resource
-    private BookVersionApi bookVersionApi;
-
-    @Resource
-    private DictionaryApi dictionaryApi;
-
-    @Resource
-    private SchemeApi schemeApi;
-
-    @Resource
-    private SubjectApi subjectApi;
+    private CacheManager cacheManager;
 
     @Resource
     private BaseMapper baseMapper;
@@ -68,126 +45,7 @@ public class GoodsManager {
     }
 
 
-    /**
-     * 缓存科目
-     */
-    private LoadingCache<Integer, SubjectBo> cacheSubject =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, SubjectBo>() {
-                        @Override
-                        public SubjectBo load(Integer subjectId) {
-                            ApiResponse<SubjectBo> subjectResponse = subjectApi.getById(subjectId);
-                            SubjectBo subjectBo = subjectResponse.getBody();
-                            return subjectBo;
-                        }
 
-                        public Map<Integer, SubjectBo> loadAll(List<Integer> subjectIds) {
-                            // 查询科目详情
-                            ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(subjectIds);
-                            List<SubjectBo> subjectBos = subjectResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(subjectBos, "getId", Integer.class);
-                        }
-                    });
-
-    /**
-     * 缓存学科
-     */
-    private LoadingCache<Integer, SubjectProductBo> cacheSubjectProduct =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, SubjectProductBo>() {
-                        @Override
-                        public SubjectProductBo load(Integer subjectProductId) {
-                            ApiResponse<SubjectProductBo> subjectProductResponse = subjectProductApi.getById(subjectProductId);
-                            SubjectProductBo subjectProductBo = subjectProductResponse.getBody();
-                            return subjectProductBo;
-                        }
-
-                        public Map<Integer, SubjectProductBo> loadAll(List<Integer> subjectProductIds) {
-                            // 查询学科详情
-                            List<SubjectProductBo> subjectProductBos = subjectProductApi.findSubjectProductList(subjectProductIds);
-                            return CollectionCommonUtil.toMapByList(subjectProductBos, "getId", Integer.class);
-                        }
-                    });
-
-    /**
-     * 缓存体系
-     */
-    private LoadingCache<Integer, SchemeBo> cacheScheme =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, SchemeBo>() {
-                        @Override
-                        public SchemeBo load(Integer schmeId) {
-                            ApiResponse<SchemeBo> schmeResponse = schemeApi.getById(schmeId);
-                            SchemeBo schemeBo = schmeResponse.getBody();
-                            return schemeBo;
-                        }
-
-                        public Map<Integer, SchemeBo> loadAll(List<Integer> schmeIds) {
-                            // 查询体系详情
-                            ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(schmeIds);
-                            List<SchemeBo> schemeBos = schemeResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(schemeBos, "getId", Integer.class);
-                        }
-                    });
-
-    /**
-     * 缓存学期
-     */
-    private LoadingCache<Integer, DictionaryBo> cachePeriod =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, DictionaryBo>() {
-                        @Override
-                        public DictionaryBo load(Integer periodId) {
-                            ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(Lists.newArrayList(periodId));
-                            List<DictionaryBo> dictionaryBos = periodResponse.getBody();
-                            return dictionaryBos.get(0);
-                        }
-
-                        public Map<Integer, DictionaryBo> loadAll(List<Integer> periodIds) {
-                            ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(periodIds);
-                            List<DictionaryBo> dictionaryBos = periodResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(dictionaryBos, "getId", Integer.class);
-                        }
-                    });
-
-    /**
-     * 缓存教材版本
-     */
-    private LoadingCache<Integer, BookVersionBo> cacheBookVersion =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, BookVersionBo>() {
-                        @Override
-                        public BookVersionBo load(Integer bookVersionId) {
-                            ApiResponse<BookVersionBo> bookVersionResponse = bookVersionApi.getById(bookVersionId);
-                            BookVersionBo bookVersionBo = bookVersionResponse.getBody();
-                            return bookVersionBo;
-                        }
-
-                        public Map<Integer, BookVersionBo> loadAll(List<Integer> bookVersionIds) {
-                            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-                            List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
-                        }
-                    });
-
-    /**
-     * 缓存考区版本
-     */
-    private LoadingCache<Integer, ExamAreaBo> cacheExamArea =
-            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(
-                    new CacheLoader<Integer, ExamAreaBo>() {
-                        @Override
-                        public ExamAreaBo load(Integer examAreaId) {
-                            ApiResponse<ExamAreaBo> examAreaResponse = examAreaApi.getById(examAreaId);
-                            ExamAreaBo examAreaBo = examAreaResponse.getBody();
-                            return examAreaBo;
-                        }
-
-                        public Map<Integer, ExamAreaBo> loadAll(List<Integer> examAreaIds) {
-                            List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(examAreaIds);
-                            return CollectionCommonUtil.toMapByList(examAreaBos, "getId", Integer.class);
-                        }
-                    });
 
     /**
      * 查询科目筛选条件
@@ -196,7 +54,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> querySubjectCondition(List<Integer> subjectIds){
         try {
-            ImmutableCollection<SubjectBo> subjectBos = cacheSubject.getAll(subjectIds).values();
+            ImmutableCollection<SubjectBo> subjectBos = cacheManager.getCacheSubject().getAll(subjectIds).values();
             List<SubjectBo> subjectBoList = new ArrayList<>(subjectBos);
             // 按照ID排序
             Collections.sort(subjectBoList, new Comparator<SubjectBo>() {
@@ -221,7 +79,7 @@ public class GoodsManager {
      */
     public List<SubjectProductBo> querySubjectProduct(List<Integer> subjectProductIds){
         try {
-            ImmutableCollection<SubjectProductBo> subjectProductBos = cacheSubjectProduct.getAll(subjectProductIds).values();
+            ImmutableCollection<SubjectProductBo> subjectProductBos = cacheManager.getCacheSubjectProduct().getAll(subjectProductIds).values();
             // 学科列表
             List<SubjectProductBo> subjectProducts = new ArrayList<>(subjectProductBos);
             // 学科按orderIndex排序
@@ -262,7 +120,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> querySchemeCondition(List<Integer> schmeIds,List<CommonConditionVo> subjectProducts){
         try {
-            ImmutableCollection<SchemeBo> schemeBos = cacheScheme.getAll(schmeIds).values();
+            ImmutableCollection<SchemeBo> schemeBos = cacheManager.getCacheScheme().getAll(schmeIds).values();
             List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
             // 体系按ID排序
             Collections.sort(schemeBoList, new Comparator<SchemeBo>() {
@@ -307,7 +165,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> queryPeriodCondition(List<Integer> periodIds){
         try {
-            ImmutableCollection<DictionaryBo> dictionaryBos = cachePeriod.getAll(periodIds).values();
+            ImmutableCollection<DictionaryBo> dictionaryBos = cacheManager.getCachePeriod().getAll(periodIds).values();
             List<DictionaryBo> dictionaryList = new ArrayList<>(dictionaryBos);
             // 学期按照orderIndex排序
             for (DictionaryBo dictionaryBo : dictionaryList) {
@@ -335,7 +193,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> queryBookVersionCondition(List<Integer> bookVersionIds){
         try {
-            ImmutableCollection<BookVersionBo> bookVersionBos = cacheBookVersion.getAll(bookVersionIds).values();
+            ImmutableCollection<BookVersionBo> bookVersionBos = cacheManager.getCacheBookVersion().getAll(bookVersionIds).values();
             List<BookVersionBo> bookVersionBoList = new ArrayList<>(bookVersionBos);
             // 教材版本按照orderIndex排序
             Collections.sort(bookVersionBoList, new Comparator<BookVersionBo>() {
@@ -360,7 +218,7 @@ public class GoodsManager {
      */
     public List<CommonConditionVo> queryExamAreaCondition(List<Integer> examAreaIds){
         try {
-            ImmutableCollection<ExamAreaBo> examAreaBos = cacheExamArea.getAll(examAreaIds).values();
+            ImmutableCollection<ExamAreaBo> examAreaBos = cacheManager.getCacheExamArea().getAll(examAreaIds).values();
             List<ExamAreaBo> examAreaBoList = new ArrayList<>(examAreaBos);
             // 考区版本按照orderIndex排序
             Collections.sort(examAreaBoList, new Comparator<ExamAreaBo>() {
