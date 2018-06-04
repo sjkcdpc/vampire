@@ -215,7 +215,7 @@ public class CacheManager {
     /**
      * 缓存字典
      */
-    private final LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder()
+    private LoadingCache<String, List<DictionaryBo>> cacheBuilderDict = CacheBuilder.newBuilder()
             .expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS)
             .build(new CacheLoader<String, List<DictionaryBo>>() {
                 @Override
