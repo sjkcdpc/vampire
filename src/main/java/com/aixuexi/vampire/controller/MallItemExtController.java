@@ -1,6 +1,5 @@
 package com.aixuexi.vampire.controller;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
@@ -16,7 +15,7 @@ import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
+import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
 import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
@@ -142,9 +141,9 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/nail/confirm", method = RequestMethod.GET)
     public ResultData confirmMallItemNail(@RequestParam Integer mallItemId, @RequestParam Integer goodsPieces) {
-        if (goodsPieces < 1) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "报名人数错误");
-        }
+        logger.info("confirmMallItemNail userId :{} mallItemId :{} num :{}",
+                UserHandleUtil.getUserId(), mallItemId,  goodsPieces);
+        Assert.isTrue(goodsPieces >= 1,"商品数量错误");
         ResultData resultData = new ResultData();
         ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId, goodsPieces);
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();
@@ -181,9 +180,9 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/customService/confirm", method = RequestMethod.GET)
     public ResultData confirmCustomService(@RequestParam Integer mallItemId,@RequestParam Integer goodsPieces ){
-        if (goodsPieces < 1) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "商品数量错误");
-        }
+        logger.info("confirmCustomService userId :{} mallItemId :{} num :{}",
+                UserHandleUtil.getUserId(), mallItemId,  goodsPieces);
+        Assert.isTrue(goodsPieces >= 1,"商品数量错误");
         ResultData resultData = new ResultData();
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(mallItemId, goodsPieces);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
@@ -208,13 +207,10 @@ public class MallItemExtController {
         TalentFilterCondition talentFilterCondition = talentResponse.getBody();
         List<String> typeCodes = talentFilterCondition.getTypeCode();
         List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
-        logger.info("typeCodes : " + typeCodes.toString());
         // 查询字典表中的人才类型
         List<DictionaryBo> dictionaryBos = dictionaryManager.selectDictByType(DictConstants.TALENT_TYPE);
-        logger.info("dictionaryBos size : " + dictionaryBos.size());
         List<CommonConditionVo> typeCodeCondition = new ArrayList<>();
         for (DictionaryBo dictionaryBo : dictionaryBos) {
-            logger.info("dictionaryBo.getCode : " + dictionaryBo.getCode());
             if(typeCodes.contains(dictionaryBo.getCode())){
                 typeCodeCondition.add(new CommonConditionVo(dictionaryBo.getId(),dictionaryBo.getCode(),dictionaryBo.getName()));
             }
@@ -274,6 +270,9 @@ public class MallItemExtController {
     @RequestMapping(value = "/talentCenter/confirm", method = RequestMethod.GET)
     public ResultData confirmTalentCenter(@RequestParam Integer mallItemId,@RequestParam Integer mallSkuId,
                                           @RequestParam Integer num) {
+        logger.info("confirmTalentCenter userId :{} mallItemId :{} mallSkuId :{} num :{}",
+                UserHandleUtil.getUserId(), mallItemId, mallSkuId, num);
+        Assert.isTrue(num >= 1,"商品数量错误");
         ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
         reqTalentCenterConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
