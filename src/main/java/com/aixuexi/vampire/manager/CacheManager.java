@@ -169,12 +169,6 @@ public class CacheManager {
                             return dictionaryBos.get(0);
                         }
 
-                        @Override
-                        public Map<Integer, DictionaryBo> loadAll(Iterable<? extends Integer> periodIds) {
-                            ApiResponse<List<DictionaryBo>> periodResponse = dictionaryApi.findGoodsPeriodByCode(Lists.newArrayList(periodIds));
-                            List<DictionaryBo> dictionaryBos = periodResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(dictionaryBos, "getCode", Integer.class);
-                        }
                     });
 
     /**

@@ -29,6 +29,8 @@ import com.gaosi.api.workorder.vo.TemplateFieldVo;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +49,8 @@ import static com.aixuexi.vampire.util.Constants.RCZX_TEMPLATE_CODE;
 @RestController
 @RequestMapping(value = "/item")
 public class MallItemExtController {
+
+    private final Logger logger = LoggerFactory.getLogger(MallItemExtController.class);
 
     @Resource
     private MallItemExtServiceFacade mallItemExtServiceFacade;
@@ -204,10 +208,13 @@ public class MallItemExtController {
         TalentFilterCondition talentFilterCondition = talentResponse.getBody();
         List<String> typeCodes = talentFilterCondition.getTypeCode();
         List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
+        logger.info("typeCodes : " + typeCodes.toString());
         // 查询字典表中的人才类型
         List<DictionaryBo> dictionaryBos = dictionaryManager.selectDictByType(DictConstants.TALENT_TYPE);
+        logger.info("dictionaryBos size : " + dictionaryBos.size());
         List<CommonConditionVo> typeCodeCondition = new ArrayList<>();
         for (DictionaryBo dictionaryBo : dictionaryBos) {
+            logger.info("dictionaryBo.getCode : " + dictionaryBo.getCode());
             if(typeCodes.contains(dictionaryBo.getCode())){
                 typeCodeCondition.add(new CommonConditionVo(dictionaryBo.getId(),dictionaryBo.getCode(),dictionaryBo.getName()));
             }
