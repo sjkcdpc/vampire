@@ -28,6 +28,7 @@ import com.gaosi.api.workorder.vo.TemplateFieldVo;
 import com.gaosi.api.xmen.constant.DictConstants;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -206,7 +208,6 @@ public class MallItemExtController {
         ApiResponse<TalentFilterCondition> talentResponse = mallItemExtServiceFacade.queryTalentFilterCondition();
         TalentFilterCondition talentFilterCondition = talentResponse.getBody();
         List<String> typeCodes = talentFilterCondition.getTypeCode();
-        List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
         // 查询字典表中的人才类型
         List<DictionaryBo> dictionaryBos = dictionaryManager.selectDictByType(DictConstants.TALENT_TYPE);
         List<CommonConditionVo> typeCodeCondition = new ArrayList<>();
@@ -218,9 +219,26 @@ public class MallItemExtController {
         typeCodeCondition.add(0, goodsManager.addAllCondition());
         allCondition.add(new CommonConditionVo(0,"人才类型",typeCodeCondition));
         // 查询基础数据的学科
-        List<SubjectProductBo> subjectProductList = goodsManager.querySubjectProduct(subjectProductIds);
-        List<CommonConditionVo> subjectProductCondition = baseMapper.mapAsList(subjectProductList,CommonConditionVo.class);
-        subjectProductCondition.add(0, goodsManager.addAllCondition());
+        List<Integer> subjectProductIds = talentFilterCondition.getSubjectProductId();
+        // 是否包含其他学科
+        Boolean containOther = false;
+        // 特殊处理其他学科
+        Iterator<Integer> iterator = subjectProductIds.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next() == 0) {
+                iterator.remove();
+                containOther = true;
+            }
+        }
+        List<CommonConditionVo> subjectProductCondition = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(subjectProductIds)) {
+            List<SubjectProductBo> subjectProductList = goodsManager.querySubjectProduct(subjectProductIds);
+            subjectProductCondition = baseMapper.mapAsList(subjectProductList, CommonConditionVo.class);
+        }
+        if (containOther) {
+            subjectProductCondition.add(new CommonConditionVo(0, StringUtils.EMPTY, "其他"));
+        }
+        subjectProductCondition.add(0, new CommonConditionVo(null, StringUtils.EMPTY, "全部"));
         allCondition.add(new CommonConditionVo(1,"所属学科",subjectProductCondition));
         return ResultData.successed(allCondition);
     }

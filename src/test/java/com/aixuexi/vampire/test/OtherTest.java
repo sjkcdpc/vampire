@@ -18,11 +18,17 @@ import java.util.*;
 public class OtherTest {
     @Test
     public void fun1() throws Exception {
-        Map<Integer,Integer> m1 = new HashMap(1);
-        m1.put(1,1);
-        m1.put(2,2);
-        m1.put(3,3);
-        System.out.println(m1.size());
+        List<Integer> integers = Lists.newArrayList(1, 2, 3, 0);
+        if(integers.contains(0)){
+            integers.remove(Integer.valueOf(0));
+        }
+        System.out.println(integers);
+
+//        Map<Integer, Integer> m1 = new HashMap(1);
+//        m1.put(1, 1);
+//        m1.put(2, 2);
+//        m1.put(3, 3);
+//        System.out.println(m1.size());
 //        List<String> list = new ArrayList<String>();
 //        list.add("1");
 //        list.add("2");

@@ -214,7 +214,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/submit", method = RequestMethod.POST)
     public ResultData nailSubmit(@RequestParam Integer itemId, @RequestParam Integer itemCount) {
         logger.info("userId=[{}] submit order, itemId=[{}], itemCount=[{}].", UserHandleUtil.getUserId(), itemId, itemCount);
-        Assert.isTrue(itemCount >= 1,"商品数量错误");
+        Assert.isTrue(itemCount >= 1 && itemCount <= 9999, "商品数量错误");
         //根据商品id查询商品
         ApiResponse<MallItemNailVo> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailDetail(itemId,MallItemConstant.ShelvesStatus.ON);
         MallItemNailVo mallItemNailVo = mallItemNailVoResponse.getBody();
@@ -257,7 +257,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/customService/submit", method = RequestMethod.POST)
     public ResultData customServiceSubmit(@RequestParam Integer itemId, @RequestParam Integer itemCount) {
         logger.info("userId=[{}] customServiceSubmit, itemId=[{}], itemCount=[{}].", UserHandleUtil.getUserId(), itemId, itemCount);
-        Assert.isTrue(itemCount >= 1,"商品数量错误");
+        Assert.isTrue(itemCount >= 1 && itemCount <= 9999, "商品数量错误");
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(itemId,itemCount);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
         MallItem mallItem = baseMapper.map(confirmCustomServiceVo,MallItem.class);
@@ -276,7 +276,8 @@ public class ItemOrderController {
     @RequestMapping(value = "/talentCenter/submit", method = RequestMethod.POST)
     public ResultData talentCenterSubmit(@RequestBody TalentOrderVo talentOrderVo) {
         logger.info("userId=[{}] talentCenterSubmit, talentOrderVo=[{}]", UserHandleUtil.getUserId(), talentOrderVo);
-        Assert.isTrue(talentOrderVo.getNum() >= 1,"商品数量错误");
+        Assert.isTrue(talentOrderVo != null && talentOrderVo.getNum() != null, "参数错误");
+        Assert.isTrue(talentOrderVo.getNum() >= 1 && talentOrderVo.getNum() <= 9999, "商品数量错误");
         // 工单字段校验
         WorkOrderDto workOrderDto = new WorkOrderDto();
         List<TalentTemplateVo> talentTemplateVos = talentOrderVo.getTalentTemplateVos();

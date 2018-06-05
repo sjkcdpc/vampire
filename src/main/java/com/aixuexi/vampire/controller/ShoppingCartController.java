@@ -80,7 +80,7 @@ public class ShoppingCartController {
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
 
-        ApiResponse<Integer> addSCResponse = shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
+        shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
         return ResultData.successed();
     }
 
