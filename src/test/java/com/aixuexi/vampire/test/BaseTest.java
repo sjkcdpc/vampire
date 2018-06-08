@@ -21,7 +21,7 @@ import javax.annotation.Resource;
         "classpath:spring-bean-dubbo.xml",
         "classpath:spring-bean-web.xml",
         "classpath:spring-bean-redis.xml",
-        "classpath:spring-web-main.xml"
+        "classpath:springmvc.xml"
 })
 @WebAppConfiguration
 public class BaseTest {
