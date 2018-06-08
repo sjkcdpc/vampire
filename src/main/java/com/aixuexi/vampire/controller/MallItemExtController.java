@@ -253,6 +253,7 @@ public class MallItemExtController {
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
         reqTalentCenterConditionVo.setManager(false);
+        reqTalentCenterConditionVo.setSkuShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         ApiResponse<Page<MallItemTalentVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4Talent(reqTalentCenterConditionVo);
         Page<MallItemTalentVo> mallItemTalentVoPage = apiResponse.getBody();
         List<MallItemTalentVo> mallItemTalentVos = mallItemTalentVoPage.getList();
@@ -272,6 +273,7 @@ public class MallItemExtController {
         reqTalentCenterConditionVo.setShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         reqTalentCenterConditionVo.setMallItemId(mallItemId);
         reqTalentCenterConditionVo.setPriceChannel(GoodsTypePriceConstant.PriceChannel.WEB.getValue());
+        reqTalentCenterConditionVo.setSkuShelvesStatus(MallItemConstant.ShelvesStatus.ON);
         ApiResponse<MallItemTalentVo> apiResponse = mallItemExtServiceFacade.queryMallItem4Talent(reqTalentCenterConditionVo);
         MallItemTalentVo mallItemTalentVo = apiResponse.getBody();
         dealMallItemTalentVo(Lists.newArrayList(mallItemTalentVo));
