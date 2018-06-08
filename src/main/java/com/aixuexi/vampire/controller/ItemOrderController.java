@@ -433,12 +433,8 @@ public class ItemOrderController {
         MallItemTalentVo mallItemTalentVo = mallItemTalentResponse.getBody();
         // 人才类型
         talentWorkOrderVo.setTypeCode(mallItemTalentVo.getTypeCode());
-        String category = dictionaryManager.getCategory(DictConstants.TALENT_TYPE, mallItemTalentVo.getTypeCode());
-        talentWorkOrderVo.setType(category);
         // 学科
         talentWorkOrderVo.setSubjectProductId(mallItemTalentVo.getSubjectProductId());
-        List<SubjectProductBo> subjectProductBos = goodsManager.querySubjectProduct(Lists.newArrayList(mallItemTalentVo.getSubjectProductId()));
-        talentWorkOrderVo.setSubjectProduct(subjectProductBos.get(0).getName());
         // 学历，经验
         List<MallSkuExtTalentVo> mallSkuExtTalentVos = mallItemTalentVo.getMallSkuExtTalentVos();
         for (MallSkuExtTalentVo mallSkuExtTalentVo : mallSkuExtTalentVos) {
