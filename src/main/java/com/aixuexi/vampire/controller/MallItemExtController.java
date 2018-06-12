@@ -100,7 +100,7 @@ public class MallItemExtController {
             for (MallItemNailVo mno : mallItemNailVos) {
                 Integer mallItemId = mno.getMallItemId();
                 Integer signedUpNum = signedUpNumMap.get(mallItemId).getSignedTotal();
-                mno.setSignedUpNum(signedUpNum);
+                mno.setSalesNum(signedUpNum);
                 //添加名额已满的状态
                 if (mno.getSignUpNum() > 0 && signedUpNum >= mno.getSignUpNum()) {
                     mno.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
@@ -126,7 +126,7 @@ public class MallItemExtController {
         List<ItemOrderStatisVo> itemOrderStatisVos = itemOrderStatisVoResponse.getBody();
         Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
         int signedUpNum = map.get(mallItemNailVo.getMallItemId()).getSignedTotal();
-        mallItemNailVo.setSignedUpNum(signedUpNum);
+        mallItemNailVo.setSalesNum(signedUpNum);
         //添加名额已满的状态
         if (mallItemNailVo.getSignUpNum() > 0 && signedUpNum >= mallItemNailVo.getSignUpNum()) {
             mallItemNailVo.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
@@ -323,7 +323,7 @@ public class MallItemExtController {
         Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
                 "getMallItemId", Integer.class);
         for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
-            mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getSalesNum());
+            mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getNum());
         }
     }
 }

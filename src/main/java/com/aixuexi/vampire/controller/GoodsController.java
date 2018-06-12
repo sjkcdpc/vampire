@@ -11,9 +11,10 @@ import com.gaosi.api.basicdata.model.bo.BookVersionBo;
 import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
 import com.gaosi.api.basicdata.model.bo.SchemeBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
-import com.gaosi.api.common.constants.ApiRetCode;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
+import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
+import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
@@ -63,6 +64,8 @@ public class GoodsController {
     @Resource(name = "goodsManager")
     private GoodsManager goodsManager;
 
+    @Resource
+    private ItemOrderServiceFacade itemOrderServiceFacade;
     /**
      * 通过商品名模糊查找商品
      *
@@ -74,7 +77,6 @@ public class GoodsController {
     @RequestMapping(value = "/getByGoodsName",method = RequestMethod.GET)
     public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
                                       @RequestParam Integer pageSize) throws UnsupportedEncodingException {
-        ResultData resultData = new ResultData();
         ReqGoodsConditionVo conditionVo = new ReqGoodsConditionVo();
         conditionVo.setInstitutionId(UserHandleUtil.getInsId());
         conditionVo.setPageNum(pageNum);
@@ -82,9 +84,8 @@ public class GoodsController {
         conditionVo.setGoodsName(goodName);
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(conditionVo);
         Page<GoodsVo> page = response.getBody();
-        dealGoodsVo(Lists.newArrayList(page.getList()));
-        resultData.setBody(page);
-        return resultData;
+        loadGoodsSalesNum(page.getList());
+        return ResultData.successed(page);
     }
 
     /**
@@ -164,34 +165,8 @@ public class GoodsController {
         reqGoodsConditionVo.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Page<GoodsVo>> response = goodsServiceFacade.queryGoodsList(reqGoodsConditionVo);
         Page<GoodsVo> page = response.getBody();
-        dealGoodsVo(Lists.newArrayList(page.getList()));
+        loadGoodsSalesNum(page.getList());
         return ResultData.successed(page);
-    }
-
-    /**
-     * 补全商品库存信息
-     * @param goodsVoList
-     */
-    private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
-        Set<String> barCodeList = new HashSet<>();
-        for (GoodsVo goodsVo : goodsVoList) {
-            if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class));
-            }
-        }
-        if (CollectionUtils.isNotEmpty(barCodeList)) {
-            ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<>(barCodeList));
-            Map<String, Integer> invMap = apiResponse.getBody();
-            for (GoodsVo goodsVo : goodsVoList) {
-                if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
-                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -211,48 +186,6 @@ public class GoodsController {
         goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
         dealGoodsVo(Lists.newArrayList(goodsVo));
         return ResultData.successed(response.getBody());
-    }
-
-    /**
-     * 补全关联商品的名称
-     * @param list
-     */
-    private void loadRelationName(List<GoodsVo> list) {
-        //获取教材版本ID和考区ID的集合
-        Set<Integer> bookVersionIds = new HashSet<>();
-        Set<Integer> examAreaIds = new HashSet<>();
-        for (GoodsVo goodsVo : list) {
-            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            bookVersionIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
-                    "getBookVersion", Integer.class));
-            examAreaIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
-                    "getExamAreaId", Integer.class));
-        }
-        //排除非教材版本ID和非考区ID
-        bookVersionIds.remove(0);
-        examAreaIds.remove(0);
-        //获取教材版本和考区的信息
-        Map<Integer, ExamAreaBo> examAreaMap = getExamAreaInfo(new ArrayList<>(examAreaIds));
-        Map<Integer, BookVersionBo> bookVersionMap = getBookVersionInfo(new ArrayList<>(bookVersionIds));
-        //获取关联商品名称
-        for (GoodsVo goodsVo : list) {
-            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation : relationGoods) {
-                List<?> relationGoodsTypes = relation.getRelationGoodsType();
-                if (bookVersionMap.containsKey(relation.getBookVersion())) {
-                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
-                    relation.setRelationName(bookVersion.getName());
-                }
-                if (examAreaMap.containsKey(relation.getExamAreaId())) {
-                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
-                    relation.setRelationName(examArea.getName());
-                }
-                if (StringUtils.isNotBlank(relation.getRelationName()) &&
-                        CollectionUtils.isNotEmpty(relationGoodsTypes)) {
-                    combineRelationName(relation, relationGoodsTypes);
-                }
-            }
-        }
     }
 
     /**
@@ -325,24 +258,96 @@ public class GoodsController {
     }
 
     /**
-     * 集合类按照ID排序
-     * @param conditionVos
-     */
-    private void sort(List<CommonConditionVo> conditionVos){
-        Collections.sort(conditionVos, new Comparator<CommonConditionVo>() {
-            @Override
-            public int compare(CommonConditionVo o1, CommonConditionVo o2) {
-                return o1.getId().compareTo(o2.getId());
-            }
-        });
-    }
-
-    /**
      * 处理GoodsVo
      * @param goodsVoList
      */
     private void dealGoodsVo(List<GoodsVo> goodsVoList){
         loadRelationName(goodsVoList);
         loadGoodsInventory(goodsVoList);
+    }
+
+    /**
+     * 补全关联商品的名称
+     * @param list
+     */
+    private void loadRelationName(List<GoodsVo> list) {
+        //获取教材版本ID和考区ID的集合
+        Set<Integer> bookVersionIds = new HashSet<>();
+        Set<Integer> examAreaIds = new HashSet<>();
+        for (GoodsVo goodsVo : list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            bookVersionIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
+                    "getBookVersion", Integer.class));
+            examAreaIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
+                    "getExamAreaId", Integer.class));
+        }
+        //排除非教材版本ID和非考区ID
+        bookVersionIds.remove(0);
+        examAreaIds.remove(0);
+        //获取教材版本和考区的信息
+        Map<Integer, ExamAreaBo> examAreaMap = getExamAreaInfo(new ArrayList<>(examAreaIds));
+        Map<Integer, BookVersionBo> bookVersionMap = getBookVersionInfo(new ArrayList<>(bookVersionIds));
+        //获取关联商品名称
+        for (GoodsVo goodsVo : list) {
+            List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
+            for (RelationGoodsVo relation : relationGoods) {
+                List<?> relationGoodsTypes = relation.getRelationGoodsType();
+                if (bookVersionMap.containsKey(relation.getBookVersion())) {
+                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
+                    relation.setRelationName(bookVersion.getName());
+                }
+                if (examAreaMap.containsKey(relation.getExamAreaId())) {
+                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
+                    relation.setRelationName(examArea.getName());
+                }
+                if (StringUtils.isNotBlank(relation.getRelationName()) &&
+                        CollectionUtils.isNotEmpty(relationGoodsTypes)) {
+                    combineRelationName(relation, relationGoodsTypes);
+                }
+            }
+        }
+    }
+
+    /**
+     * 补全商品库存信息
+     * @param goodsVoList
+     */
+    private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
+        Set<String> barCodeList = new HashSet<>();
+        for (GoodsVo goodsVo : goodsVoList) {
+            if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(barCodeList)) {
+            ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<>(barCodeList));
+            Map<String, Integer> invMap = apiResponse.getBody();
+            for (GoodsVo goodsVo : goodsVoList) {
+                if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
+                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
+                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 补全商品销量
+     * @param goodsVos
+     */
+    private void loadGoodsSalesNum(List<GoodsVo> goodsVos) {
+        if(CollectionUtils.isNotEmpty(goodsVos)) {
+            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(goodsVos, "getMallItemId", Integer.class);
+            ApiResponse<List<MallItemSalesNumVo>> response = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
+            List<MallItemSalesNumVo> goodsSalesNumVos = response.getBody();
+            Map<Integer, Integer> goodsSalesNumMap = CollectionCommonUtil.toMapByList(goodsSalesNumVos,
+                    "getMallItemId", Integer.class, "getNum", Integer.class);
+            for (GoodsVo goodsVo : goodsVos) {
+                goodsVo.setSalesNum(goodsSalesNumMap.get(goodsVo.getMallItemId()));
+            }
+        }
     }
 }
