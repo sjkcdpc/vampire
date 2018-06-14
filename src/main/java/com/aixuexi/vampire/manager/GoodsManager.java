@@ -153,7 +153,7 @@ public class GoodsManager {
             schemes.add(0, addAllCondition());
             return schemes;
         } catch (Exception e) {
-            logger.error("查询学科筛选条件异常 schmeIds : {} , subjectProducts : {}", schmeIds, subjectProducts);
+            logger.error("查询体系筛选条件异常 schmeIds : {} , subjectProducts : {}", schmeIds, subjectProducts);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询体系筛选条件异常");
         }
     }
