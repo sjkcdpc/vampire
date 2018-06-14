@@ -5,6 +5,7 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.DictionaryManager;
 import com.aixuexi.vampire.manager.FinancialAccountManager;
 import com.aixuexi.vampire.manager.GoodsManager;
+import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.axxBank.model.RemainResult;
@@ -13,7 +14,6 @@ import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.util.AmountUtil;
-import com.gaosi.api.revolver.vo.ItemOrderStatisVo;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
@@ -72,6 +72,9 @@ public class MallItemExtController {
     private GoodsManager goodsManager;
 
     @Resource
+    private ItemOrderManager itemOrderManager;
+
+    @Resource
     private BaseMapper baseMapper;
 
     /**
@@ -82,33 +85,14 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/nail", method = RequestMethod.GET)
     public ResultData queryMallItemNailList(@RequestParam Integer pageNum, @RequestParam Integer pageSize) {
-        ResultData resultData = new ResultData();
         QueryCriteria queryCriteria = new QueryCriteria();
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
         ApiResponse<Page<MallItemNailVo>> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailList(queryCriteria);
         Page<MallItemNailVo> mallItemNailVoPage = mallItemNailVoResponse.getBody();
-        List<MallItemNailVo> mallItemNailVos = mallItemNailVoPage.getList();
-        if (CollectionUtils.isNotEmpty(mallItemNailVos)) {
-            List<Integer> ids = CollectionCommonUtil.getFieldListByObjectList(mallItemNailVos,
-                    "getMallItemId",Integer.class);
-            ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(ids);
-            List<ItemOrderStatisVo> signedUpNums = itemOrderStatisVoResponse.getBody();
-            Map<Integer, ItemOrderStatisVo> signedUpNumMap = CollectionCommonUtil.toMapByList(signedUpNums,
-                    "getItemId", Integer.class);
-            for (MallItemNailVo mno : mallItemNailVos) {
-                Integer mallItemId = mno.getMallItemId();
-                Integer signedUpNum = signedUpNumMap.get(mallItemId).getSignedTotal();
-                mno.setSalesNum(signedUpNum);
-                //添加名额已满的状态
-                if (mno.getSignUpNum() > 0 && signedUpNum >= mno.getSignUpNum()) {
-                    mno.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
-                }
-            }
-        }
-        resultData.setBody(mallItemNailVoPage);
-        return resultData;
+        dealMallItemNailVo(mallItemNailVoPage.getList());
+        return ResultData.successed(mallItemNailVoPage);
     }
 
     /**
@@ -118,21 +102,10 @@ public class MallItemExtController {
      */
     @RequestMapping(value = "/nail/detail", method = RequestMethod.GET)
     public ResultData queryMallItemNailDetail(@RequestParam Integer mallItemId) {
-        ResultData resultData = new ResultData();
         ApiResponse<MallItemNailVo> mallItemNailVoResponse = mallItemExtServiceFacade.queryMallItemNailDetail(mallItemId, MallItemConstant.ShelvesStatus.ON);
         MallItemNailVo mallItemNailVo = mallItemNailVoResponse.getBody();
-        //已报名数量查询
-        ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(mallItemNailVo.getMallItemId()));
-        List<ItemOrderStatisVo> itemOrderStatisVos = itemOrderStatisVoResponse.getBody();
-        Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
-        int signedUpNum = map.get(mallItemNailVo.getMallItemId()).getSignedTotal();
-        mallItemNailVo.setSalesNum(signedUpNum);
-        //添加名额已满的状态
-        if (mallItemNailVo.getSignUpNum() > 0 && signedUpNum >= mallItemNailVo.getSignUpNum()) {
-            mallItemNailVo.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
-        }
-        resultData.setBody(mallItemNailVo);
-        return resultData;
+        dealMallItemNailVo(Lists.newArrayList(mallItemNailVo));
+        return ResultData.successed(mallItemNailVo);
     }
 
     /**
@@ -313,17 +286,39 @@ public class MallItemExtController {
 
     /**
      * 处理人才中心VO（补充销售量）
+     *
      * @param mallItemTalentVos
      */
     private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {
-        List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
-                "getMallItemId", Integer.class);
-        ApiResponse<List<MallItemSalesNumVo>> apiResponse = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
-        List<MallItemSalesNumVo> mallItemSalesNumVos = apiResponse.getBody();
-        Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
-                "getMallItemId", Integer.class);
-        for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
-            mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getNum());
+        if(CollectionUtils.isNotEmpty(mallItemTalentVos)) {
+            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
+                    "getMallItemId", Integer.class);
+            Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
+            for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
+                mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getNum());
+            }
+        }
+    }
+
+    /**
+     * 处理校长培训VO（补充销售量,报名状态）
+     *
+     * @param mallItemNailVos
+     */
+    private void dealMallItemNailVo(List<MallItemNailVo> mallItemNailVos) {
+        if (CollectionUtils.isNotEmpty(mallItemNailVos)) {
+            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemNailVos,
+                    "getMallItemId", Integer.class);
+            Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
+            for (MallItemNailVo mno : mallItemNailVos) {
+                Integer mallItemId = mno.getMallItemId();
+                Integer salesNum = salesNumVoMap.get(mallItemId).getNum();
+                mno.setSalesNum(salesNum);
+                //添加名额已满的状态
+                if (mno.getSignUpNum() > 0 && salesNum >= mno.getSignUpNum()) {
+                    mno.setSignUpStatus(MallItemConstant.SignUpStatus.NUM_FULL);
+                }
+            }
         }
     }
 }

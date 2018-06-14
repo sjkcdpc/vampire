@@ -4,6 +4,7 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.GoodsManager;
+import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.*;
@@ -13,7 +14,6 @@ import com.gaosi.api.basicdata.model.bo.SchemeBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
-import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
@@ -65,7 +65,7 @@ public class GoodsController {
     private GoodsManager goodsManager;
 
     @Resource
-    private ItemOrderServiceFacade itemOrderServiceFacade;
+    private ItemOrderManager itemOrderManager;
     /**
      * 通过商品名模糊查找商品
      *
@@ -264,6 +264,7 @@ public class GoodsController {
     private void dealGoodsVo(List<GoodsVo> goodsVoList){
         loadRelationName(goodsVoList);
         loadGoodsInventory(goodsVoList);
+        loadGoodsSalesNum(goodsVoList);
     }
 
     /**
@@ -341,12 +342,9 @@ public class GoodsController {
     private void loadGoodsSalesNum(List<GoodsVo> goodsVos) {
         if(CollectionUtils.isNotEmpty(goodsVos)) {
             List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(goodsVos, "getMallItemId", Integer.class);
-            ApiResponse<List<MallItemSalesNumVo>> response = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
-            List<MallItemSalesNumVo> goodsSalesNumVos = response.getBody();
-            Map<Integer, Integer> goodsSalesNumMap = CollectionCommonUtil.toMapByList(goodsSalesNumVos,
-                    "getMallItemId", Integer.class, "getNum", Integer.class);
+            Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
             for (GoodsVo goodsVo : goodsVos) {
-                goodsVo.setSalesNum(goodsSalesNumMap.get(goodsVo.getMallItemId()));
+                goodsVo.setSalesNum(salesNumVoMap.get(goodsVo.getMallItemId()).getNum());
             }
         }
     }

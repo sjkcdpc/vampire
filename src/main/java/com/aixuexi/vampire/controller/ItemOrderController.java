@@ -104,12 +104,6 @@ public class ItemOrderController {
     private InstitutionService institutionService;
 
     @Resource
-    private DictionaryManager dictionaryManager;
-
-    @Resource
-    private GoodsManager goodsManager;
-
-    @Resource
     private TalentDemandService talentDemandService;
 
     @Resource
@@ -390,8 +384,11 @@ public class ItemOrderController {
             }
 
         }else {
-            financialAccountManager.pay(orderId, token, itemOrderVo.getCategoryId(), itemOrderVo.getConsumeCount());
-            itemOrderManager.updateOrderStatus(orderId);
+            ItemOrder itemOrder = new ItemOrder();
+            itemOrder.setOrderId(orderId);
+            itemOrder.setStatus(OrderConstant.OrderStatus.COMPLETED.getValue());
+            // 订单支付
+            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
             return ResultData.successed(orderId);
         }
 
