@@ -68,7 +68,7 @@ public class GoodsControllerTest extends BaseTest {
     public void queryGoodsDetail() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.
                 get("/goods/detail")
-                .param("goodsId","1100086")
+                .param("mallItemId","636")
         );
     }
 }

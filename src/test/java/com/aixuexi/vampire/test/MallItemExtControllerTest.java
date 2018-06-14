@@ -27,6 +27,14 @@ public class MallItemExtControllerTest extends BaseTest {
     }
 
     @Test
+    public void queryMallItemNail() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/item/nail/detail")
+                .param("mallItemId","379")
+        );
+    }
+
+    @Test
     public void queryCondition4TalentCenter() throws Exception{
         mockMvc.perform(MockMvcRequestBuilders.
                 get("/item/talentCenter/queryCondition")

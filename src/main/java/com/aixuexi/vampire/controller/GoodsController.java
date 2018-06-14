@@ -1,13 +1,14 @@
 package com.aixuexi.vampire.controller;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.CacheManager;
 import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.basicdata.*;
+import com.gaosi.api.basicdata.BookVersionApi;
+import com.gaosi.api.basicdata.ExamAreaApi;
 import com.gaosi.api.basicdata.model.bo.BookVersionBo;
 import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
 import com.gaosi.api.basicdata.model.bo.SchemeBo;
@@ -15,7 +16,6 @@ import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
@@ -23,8 +23,6 @@ import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,8 +39,6 @@ import java.util.*;
 @RequestMapping(value = "/goods")
 public class GoodsController {
 
-    private final Logger logger = LoggerFactory.getLogger(GoodsController.class);
-
     @Resource
     private GoodsServiceFacade goodsServiceFacade;
 
@@ -51,9 +47,6 @@ public class GoodsController {
 
     @Resource
     private BookVersionApi bookVersionApi;
-
-    @Resource
-    private SchemeApi schemeApi;
 
     @Resource
     private BaseMapper baseMapper;
@@ -66,6 +59,7 @@ public class GoodsController {
 
     @Resource
     private ItemOrderManager itemOrderManager;
+
     /**
      * 通过商品名模糊查找商品
      *
@@ -172,18 +166,17 @@ public class GoodsController {
     /**
      * 商品详情
      *
-     * @param goodsId
+     * @param mallItemId
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData queryGoodsDetail(@RequestParam Integer goodsId){
+    public ResultData queryGoodsDetail(@RequestParam Integer mallItemId){
         Integer insId = UserHandleUtil.getInsId();
-        ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(goodsId, insId);
+        ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(mallItemId, insId);
         GoodsVo goodsVo = response.getBody();
-        if (goodsVo == null) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "商品不存在!");
-        }
-        goodsVo.setSchemeStr(getScheme(goodsVo.getScheme()));
+        List<SchemeBo> schemeBos = goodsManager.queryScheme(Lists.newArrayList(goodsVo.getScheme()));
+        SchemeBo schemeBo = schemeBos.get(0);
+        goodsVo.setSchemeStr(schemeBo.getName());
         dealGoodsVo(Lists.newArrayList(goodsVo));
         return ResultData.successed(response.getBody());
     }
@@ -244,17 +237,6 @@ public class GoodsController {
         }
         relationNameBuilder.append(")");
         relation.setRelationName(relationNameBuilder.toString());
-    }
-
-    /**
-     * 获取体系名称
-     * @param scheme
-     * @return
-     */
-    private String getScheme(Integer scheme){
-        ApiResponse<SchemeBo> response = schemeApi.getById(scheme);
-        SchemeBo schemeBo = response.getBody();
-        return schemeBo.getName();
     }
 
     /**

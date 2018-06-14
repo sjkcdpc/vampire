@@ -153,7 +153,7 @@ public class GoodsManager {
             schemes.add(0, addAllCondition());
             return schemes;
         } catch (Exception e) {
-            logger.error("查询学科筛选条件异常 schmeIds : {} , subjectProducts : {}", schmeIds, subjectProducts);
+            logger.error("查询体系筛选条件异常 schmeIds : {} , subjectProducts : {}", schmeIds, subjectProducts);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询体系筛选条件异常");
         }
     }
@@ -233,6 +233,22 @@ public class GoodsManager {
         } catch (Exception e) {
             logger.error("获取考区版本筛选条件异常 examAreaIds : {} ",examAreaIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"获取考区版本筛选条件异常");
+        }
+    }
+
+    /**
+     * 查询体系
+     * @param schemeIds
+     * @return
+     */
+    public List<SchemeBo> queryScheme(List<Integer> schemeIds){
+        try {
+            ImmutableCollection<SchemeBo> schemeBos = cacheManager.getCacheScheme().getAll(schemeIds).values();
+            List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
+            return schemeBoList;
+        } catch (Exception e) {
+            logger.error("查询体系异常 schmeIds : {} ", schemeIds);
+            throw new BusinessException(ExceptionCode.UNKNOWN,"查询体系异常");
         }
     }
 
