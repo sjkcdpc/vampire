@@ -316,14 +316,16 @@ public class MallItemExtController {
      * @param mallItemTalentVos
      */
     private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {
-        List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
-                "getMallItemId", Integer.class);
-        ApiResponse<List<MallItemSalesNumVo>> apiResponse = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
-        List<MallItemSalesNumVo> mallItemSalesNumVos = apiResponse.getBody();
-        Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
-                "getMallItemId", Integer.class);
-        for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
-            mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getSalesNum());
+        if(CollectionUtils.isNotEmpty(mallItemTalentVos)) {
+            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
+                    "getMallItemId", Integer.class);
+            ApiResponse<List<MallItemSalesNumVo>> apiResponse = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
+            List<MallItemSalesNumVo> mallItemSalesNumVos = apiResponse.getBody();
+            Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
+                    "getMallItemId", Integer.class);
+            for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
+                mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getSalesNum());
+            }
         }
     }
 }
