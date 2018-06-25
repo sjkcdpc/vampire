@@ -180,13 +180,14 @@ public class OrderManager {
         List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId,categoryId,goodsTypeIds);
         // 创建订单对象
         GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartListVos, userId, insId, consigneeId, receivePhone, express);
-        logger.info("submitOrder --> goodsOrder info : {}", JSONObject.toJSONString(goodsOrderVo));
+        logger.info("submitOrder --> goodsOrderVo: {}", goodsOrderVo);
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
         // 账号余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         financialAccountManager.checkRemainMoney(rr,amount.longValue());
         // 创建订单
+        logger.info("ruanyj test createOrder" + goodsOrderVo.getOrderDetailVos().toString());
         ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token);
         SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
         logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
