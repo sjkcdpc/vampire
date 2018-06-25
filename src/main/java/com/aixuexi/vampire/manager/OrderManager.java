@@ -187,7 +187,6 @@ public class OrderManager {
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         financialAccountManager.checkRemainMoney(rr,amount.longValue());
         // 创建订单
-        logger.info("ruanyj test createOrder" + goodsOrderVo.getOrderDetailVos().toString());
         ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token);
         SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
         logger.info("submitOrder --> orderId : {}", simpleGoodsOrderVo);
