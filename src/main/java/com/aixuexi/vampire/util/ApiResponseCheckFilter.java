@@ -14,9 +14,7 @@ public class ApiResponseCheckFilter implements Filter {
         Object resultValue = result.getValue();
         if (result instanceof RpcResult) {
             RpcResult rpcResult = (RpcResult) result;
-            if (null == resultValue){
-                rpcResult.setException(new NullPointerException("result is null."));
-            }else if (resultValue instanceof ApiResponse){
+            if (resultValue instanceof ApiResponse){
                 ApiResponse apiResponse =(ApiResponse)resultValue;
                 if (apiResponse.isNotSuccess()){
                     rpcResult.setException(new RuntimeException(apiResponse.getMessage()));
