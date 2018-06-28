@@ -357,16 +357,21 @@ public class ItemOrderController {
         Assert.isTrue(itemOrderVo.getStatus() == OrderConstant.OrderStatus.NO_PAY.getValue(),
                 "支付超时，该订单状态已修改");
         if (itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())) {
+            ItemOrder itemOrder = new ItemOrder();
+            itemOrder.setOrderId(orderId);
+            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+            // 订单支付
+            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            // 支付成功，再创建工单
+            // 订单创建人ID
+            Integer creatorId = itemOrderVo.getUserId();
             // 人才中心工单
-            TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
+            TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo, creatorId, insId);
             com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
             WorkOrderRes workOrderRes = workOrderResResponse.getBody();
             List<String> workOrderList = workOrderRes.getWorkOrderList();
-            if(CollectionUtils.isNotEmpty(workOrderList)) {
-                // 更新关联工单号,订单状态
-                ItemOrder itemOrder = new ItemOrder();
-                itemOrder.setOrderId(orderId);
-                itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+            if (CollectionUtils.isNotEmpty(workOrderList)) {
+                // 更新关联工单号
                 StringBuilder workOrderIdBuilder = new StringBuilder();
                 for (String workOrderId : workOrderList) {
                     workOrderIdBuilder.append(workOrderId);
@@ -374,15 +379,13 @@ public class ItemOrderController {
                 }
                 workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
                 itemOrder.setRelationInfo(workOrderIdBuilder.toString());
-                // 订单支付
-                itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
-                return ResultData.successed(orderId);
-            }else{
+                itemOrderServiceFacade.updateOrder(itemOrder);
+            } else {
                 // 工单模板修改，字段校验失败
                 FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
-                return ResultData.failed(fieldErrorMsg.getMsg());
+                logger.error("工单模板修改，字段校验失败，错误信息{}，订单号{}", fieldErrorMsg.getMsg(), orderId);
             }
-
+            return ResultData.successed(orderId);
         }else {
             ItemOrder itemOrder = new ItemOrder();
             itemOrder.setOrderId(orderId);
