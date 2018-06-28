@@ -1,5 +1,6 @@
 package com.aixuexi.vampire.util;
 
+import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +25,10 @@ public class AccessVerifyFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         List<String> roles = UserSessionHandler.getRoles();
-        if (roles.contains("super_manager") || roles.contains("manage")) {
+        if (CollectionUtils.isNotEmpty(roles) && (roles.contains("super_manager") || roles.contains("manage"))) {
             chain.doFilter(request, response);
             return;
         }
-        //throw new IllegalArgException(ExceptionCode.UNKNOWN, "无权访问");
     }
 
     @Override
