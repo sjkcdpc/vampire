@@ -369,29 +369,27 @@ public class ItemOrderController {
             // 订单支付
             itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
             // 支付成功，再创建工单
-            if(StringUtils.isBlank(itemOrderVo.getRelationInfo())){
-                // 订单创建人ID
-                Integer creatorId = itemOrderVo.getUserId();
-                // 人才中心工单
-                TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,creatorId,insId);
-                com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
-                WorkOrderRes workOrderRes = workOrderResResponse.getBody();
-                List<String> workOrderList = workOrderRes.getWorkOrderList();
-                if(CollectionUtils.isNotEmpty(workOrderList)) {
-                    // 更新关联工单号
-                    StringBuilder workOrderIdBuilder = new StringBuilder();
-                    for (String workOrderId : workOrderList) {
-                        workOrderIdBuilder.append(workOrderId);
-                        workOrderIdBuilder.append(SEPARATOR);
-                    }
-                    workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
-                    itemOrder.setRelationInfo(workOrderIdBuilder.toString());
-                    itemOrderServiceFacade.updateOrder(itemOrder);
-                }else{
-                    // 工单模板修改，字段校验失败
-                    FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
-                    logger.error("工单模板修改，字段校验失败，错误信息{}，订单号{}",fieldErrorMsg.getMsg(),orderId);
+            // 订单创建人ID
+            Integer creatorId = itemOrderVo.getUserId();
+            // 人才中心工单
+            TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo, creatorId, insId);
+            com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
+            WorkOrderRes workOrderRes = workOrderResResponse.getBody();
+            List<String> workOrderList = workOrderRes.getWorkOrderList();
+            if (CollectionUtils.isNotEmpty(workOrderList)) {
+                // 更新关联工单号
+                StringBuilder workOrderIdBuilder = new StringBuilder();
+                for (String workOrderId : workOrderList) {
+                    workOrderIdBuilder.append(workOrderId);
+                    workOrderIdBuilder.append(SEPARATOR);
                 }
+                workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
+                itemOrder.setRelationInfo(workOrderIdBuilder.toString());
+                itemOrderServiceFacade.updateOrder(itemOrder);
+            } else {
+                // 工单模板修改，字段校验失败
+                FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
+                logger.error("工单模板修改，字段校验失败，错误信息{}，订单号{}", fieldErrorMsg.getMsg(), orderId);
             }
             return ResultData.successed(orderId);
         }else {
