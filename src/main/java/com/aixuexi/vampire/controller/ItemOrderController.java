@@ -363,32 +363,39 @@ public class ItemOrderController {
         Assert.isTrue(itemOrderVo.getStatus() == OrderConstant.OrderStatus.NO_PAY.getValue(),
                 "支付超时，该订单状态已修改");
         if (itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())) {
-            // 人才中心工单
-            TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,userId,insId);
-            com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
-            WorkOrderRes workOrderRes = workOrderResResponse.getBody();
-            List<String> workOrderList = workOrderRes.getWorkOrderList();
-            if(CollectionUtils.isNotEmpty(workOrderList)) {
-                // 更新关联工单号,订单状态
-                ItemOrder itemOrder = new ItemOrder();
-                itemOrder.setOrderId(orderId);
-                itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
-                StringBuilder workOrderIdBuilder = new StringBuilder();
-                for (String workOrderId : workOrderList) {
-                    workOrderIdBuilder.append(workOrderId);
-                    workOrderIdBuilder.append(SEPARATOR);
+            // 未创建工单
+            if(StringUtils.isBlank(itemOrderVo.getRelationInfo())){
+                // 订单创建人ID
+                Integer creatorId = itemOrderVo.getUserId();
+                // 人才中心工单
+                TalentWorkOrderVo talentWorkOrderVo = generateTalentWorkOrderVo(itemOrderVo,creatorId,insId);
+                com.aixuexi.thor.response.ApiResponse<WorkOrderRes> workOrderResResponse = talentDemandService.saveTicketsRetWorkOrderList(talentWorkOrderVo);
+                WorkOrderRes workOrderRes = workOrderResResponse.getBody();
+                List<String> workOrderList = workOrderRes.getWorkOrderList();
+                if(CollectionUtils.isNotEmpty(workOrderList)) {
+                    // 更新关联工单号,订单状态
+                    ItemOrder itemOrder = new ItemOrder();
+                    itemOrder.setOrderId(orderId);
+                    StringBuilder workOrderIdBuilder = new StringBuilder();
+                    for (String workOrderId : workOrderList) {
+                        workOrderIdBuilder.append(workOrderId);
+                        workOrderIdBuilder.append(SEPARATOR);
+                    }
+                    workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
+                    itemOrder.setRelationInfo(workOrderIdBuilder.toString());
+                    itemOrderServiceFacade.updateOrder(itemOrder);
+                }else{
+                    // 工单模板修改，字段校验失败
+                    FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
+                    return ResultData.failed(fieldErrorMsg.getMsg());
                 }
-                workOrderIdBuilder.deleteCharAt(workOrderIdBuilder.length() - 1);
-                itemOrder.setRelationInfo(workOrderIdBuilder.toString());
-                // 订单支付
-                itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
-                return ResultData.successed(orderId);
-            }else{
-                // 工单模板修改，字段校验失败
-                FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
-                return ResultData.failed(fieldErrorMsg.getMsg());
             }
-
+            ItemOrder itemOrder = new ItemOrder();
+            itemOrder.setOrderId(orderId);
+            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+            // 订单支付
+            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            return ResultData.successed(orderId);
         }else {
             financialAccountManager.pay(orderId, token, itemOrderVo.getCategoryId(), itemOrderVo.getConsumeCount());
             itemOrderManager.updateOrderStatus(orderId);
