@@ -363,7 +363,12 @@ public class ItemOrderController {
         Assert.isTrue(itemOrderVo.getStatus() == OrderConstant.OrderStatus.NO_PAY.getValue(),
                 "支付超时，该订单状态已修改");
         if (itemOrderVo.getCategoryId().equals(MallItemConstant.Category.RCZX.getId())) {
-            // 未创建工单
+            ItemOrder itemOrder = new ItemOrder();
+            itemOrder.setOrderId(orderId);
+            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
+            // 订单支付
+            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            // 支付成功，再创建工单
             if(StringUtils.isBlank(itemOrderVo.getRelationInfo())){
                 // 订单创建人ID
                 Integer creatorId = itemOrderVo.getUserId();
@@ -373,9 +378,7 @@ public class ItemOrderController {
                 WorkOrderRes workOrderRes = workOrderResResponse.getBody();
                 List<String> workOrderList = workOrderRes.getWorkOrderList();
                 if(CollectionUtils.isNotEmpty(workOrderList)) {
-                    // 更新关联工单号,订单状态
-                    ItemOrder itemOrder = new ItemOrder();
-                    itemOrder.setOrderId(orderId);
+                    // 更新关联工单号
                     StringBuilder workOrderIdBuilder = new StringBuilder();
                     for (String workOrderId : workOrderList) {
                         workOrderIdBuilder.append(workOrderId);
@@ -387,14 +390,9 @@ public class ItemOrderController {
                 }else{
                     // 工单模板修改，字段校验失败
                     FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
-                    return ResultData.failed(fieldErrorMsg.getMsg());
+                    logger.error("工单模板修改，字段校验失败，错误信息{}，订单号{}",fieldErrorMsg.getMsg(),orderId);
                 }
             }
-            ItemOrder itemOrder = new ItemOrder();
-            itemOrder.setOrderId(orderId);
-            itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
-            // 订单支付
-            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
             return ResultData.successed(orderId);
         }else {
             financialAccountManager.pay(orderId, token, itemOrderVo.getCategoryId(), itemOrderVo.getConsumeCount());
