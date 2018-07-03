@@ -4,6 +4,7 @@ import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.*;
 import com.gaosi.api.basicdata.model.bo.*;
+import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.basicdata.model.vo.DistrictVO;
 import com.gaosi.api.common.basedao.PageParam;
 import com.gaosi.api.common.basedao.SortTypeEnum;
@@ -88,6 +89,25 @@ public class CacheManager {
                     Page<DistrictVO> districtVOPage = apiResponse.getBody();
                     List<DistrictVO> districtVOs = districtVOPage.getList();
                     return baseMapper.mapAsList(districtVOs, AreaVo.class);
+                }
+            });
+
+    /**
+     * 缓存地址
+     */
+    private LoadingCache<Integer,AddressDTO> cacheBuilderAddress =
+            CacheBuilder.newBuilder().expireAfterWrite(GoodsConstant.BASIC_DATA_CACHE_TIME, TimeUnit.SECONDS).build(new CacheLoader<Integer, AddressDTO>() {
+                @Override
+                public AddressDTO load(Integer areaId) {
+                    ApiResponse<AddressDTO> addressResponse = districtApi.getAncestryById(areaId);
+                    AddressDTO address = addressResponse.getBody();
+                    return address;
+                }
+
+                @Override
+                public Map<Integer, AddressDTO> loadAll(Iterable<? extends Integer> areaIds) {
+                    ApiResponse<Map<Integer, AddressDTO>> apiResponse = districtApi.getAncestryMapByIds(Lists.newArrayList(areaIds));
+                    return apiResponse.getBody();
                 }
             });
 
@@ -233,6 +253,10 @@ public class CacheManager {
         return cacheBuilderProvince;
     }
 
+    public LoadingCache<Integer, AddressDTO> getCacheBuilderAddress() {
+        return cacheBuilderAddress;
+    }
+
     public LoadingCache<Integer, SubjectBo> getCacheSubject() {
         return cacheSubject;
     }
@@ -267,6 +291,7 @@ public class CacheManager {
     public void invalidateAll(){
         cacheBuilderCity.invalidateAll();
         cacheBuilderProvince.invalidateAll();
+        cacheBuilderAddress.invalidateAll();
         cacheSubject.invalidateAll();
         cacheSubjectProduct.invalidateAll();
         cacheScheme.invalidateAll();

@@ -2,13 +2,11 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
-import com.aixuexi.vampire.manager.CacheManager;
+import com.aixuexi.vampire.manager.BasicDataManager;
 import com.aixuexi.vampire.manager.GoodsManager;
 import com.aixuexi.vampire.manager.ItemOrderManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.basicdata.BookVersionApi;
-import com.gaosi.api.basicdata.ExamAreaApi;
 import com.gaosi.api.basicdata.model.bo.BookVersionBo;
 import com.gaosi.api.basicdata.model.bo.ExamAreaBo;
 import com.gaosi.api.basicdata.model.bo.SchemeBo;
@@ -43,12 +41,6 @@ public class GoodsController {
     private GoodsServiceFacade goodsServiceFacade;
 
     @Resource
-    private ExamAreaApi examAreaApi;
-
-    @Resource
-    private BookVersionApi bookVersionApi;
-
-    @Resource
     private BaseMapper baseMapper;
 
     @Resource
@@ -59,6 +51,9 @@ public class GoodsController {
 
     @Resource
     private ItemOrderManager itemOrderManager;
+
+    @Resource
+    private BasicDataManager basicDataManager;
 
     /**
      * 通过商品名模糊查找商品
@@ -182,37 +177,6 @@ public class GoodsController {
     }
 
     /**
-     * 获取教材版本信息
-     *
-     * @param bookVersionIds
-     */
-    private Map<Integer, BookVersionBo> getBookVersionInfo(List<Integer> bookVersionIds) {
-        Map<Integer, BookVersionBo> bookVersionMap = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(bookVersionIds)) {
-            ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(bookVersionIds);
-            List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
-            bookVersionMap = CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
-        }
-        return bookVersionMap;
-    }
-
-    /**
-     * 获取考区信息
-     *
-     * @param examAreaIds
-     * @return
-     */
-    private Map<Integer, ExamAreaBo> getExamAreaInfo(List<Integer> examAreaIds) {
-        Map<Integer, ExamAreaBo> examAreaMap = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(examAreaIds)) {
-            ApiResponse<List<ExamAreaBo>> examAreaResponse = examAreaApi.findByExamAreaIds(examAreaIds);
-            List<ExamAreaBo> examAreaBos = examAreaResponse.getBody();
-            examAreaMap = CollectionCommonUtil.toMapByList(examAreaBos, "getId", Integer.class);
-        }
-        return examAreaMap;
-    }
-
-    /**
      * 拼接关联商品类型的名称
      * @param relation
      * @param relationGoodsTypes
@@ -268,8 +232,8 @@ public class GoodsController {
         bookVersionIds.remove(0);
         examAreaIds.remove(0);
         //获取教材版本和考区的信息
-        Map<Integer, ExamAreaBo> examAreaMap = getExamAreaInfo(new ArrayList<>(examAreaIds));
-        Map<Integer, BookVersionBo> bookVersionMap = getBookVersionInfo(new ArrayList<>(bookVersionIds));
+        Map<Integer, ExamAreaBo> examAreaMap = basicDataManager.getExamAreaByIds(new ArrayList<>(examAreaIds));
+        Map<Integer, BookVersionBo> bookVersionMap = basicDataManager.getBookVersionByIds(new ArrayList<>(bookVersionIds));
         //获取关联商品名称
         for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();

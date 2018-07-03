@@ -2,18 +2,20 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.validate.annotation.common.Valid;
+import com.aixuexi.vampire.manager.BasicDataManager;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.ValidateConstant;
 import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
+import com.google.common.collect.Lists;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.Map;
 
 /**
  * 收货地址管理
@@ -27,7 +29,7 @@ public class ConsigneeController {
     private ConsigneeServiceFacade consigneeServiceFacade;
 
     @Resource
-    private DistrictApi districtApi;
+    private BasicDataManager basicDataManager;
 
     @Resource
     private BaseMapper baseMapper;
@@ -84,8 +86,8 @@ public class ConsigneeController {
     private ConsigneeVo dealConsignee2Vo(Consignee consignee) {
         ConsigneeVo consigneeVo = baseMapper.map(consignee, ConsigneeVo.class);
         Integer areaId = consigneeVo.getAreaId();
-        ApiResponse<AddressDTO> apiResponse = districtApi.getAncestryById(areaId);
-        AddressDTO addressDTO = apiResponse.getBody();
+        Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaId));
+        AddressDTO addressDTO = addressDTOMap.get(areaId);
         if (addressDTO != null) {
             consigneeVo.setProvinceId(addressDTO.getProvinceId());
             consigneeVo.setProvince(addressDTO.getProvince());

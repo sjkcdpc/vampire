@@ -7,7 +7,6 @@ import com.aixuexi.vampire.util.ExpressUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
@@ -65,7 +64,7 @@ public class OrderManager {
     private FinancialAccountService financialAccountService;
 
     @Resource
-    private DistrictApi districtApi;
+    private BasicDataManager basicDataManager;
 
     @Resource
     private GoodsServiceFacade goodsServiceFacade;
@@ -254,19 +253,18 @@ public class OrderManager {
         // 收货人信息
         Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
         Assert.notNull(consignee,"请选择收货地址");
-        goodsOrderVo.setAreaId(consignee.getAreaId());
+        Integer areaId = consignee.getAreaId();
+        goodsOrderVo.setAreaId(areaId);
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
         goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone);
         // 地址信息
-        ApiResponse<AddressDTO> addressResponse = districtApi.getAncestryById(consignee.getAreaId());
-        AddressDTO address = addressResponse.getBody();
-        Assert.notNull(address,"收货人地址查询失败，请联系管理员");
+        Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaId));
+        AddressDTO address = addressDTOMap.get(areaId);
         goodsOrderVo.setAddress(address);
         goodsOrderVo.setConsigneeAddress(getConsigneeAddress(address,consignee));
         // 计算运费
         Integer provinceId = address.getProvinceId();
-        Integer areaId = address.getDistrictId();
         Map<String, Integer> expressMap = new HashMap<>();
         if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
             expressMap.put(express, areaId);
@@ -361,7 +359,7 @@ public class OrderManager {
             List<ConsigneeVo> consigneeVos = baseMapper.mapAsList(consignees, ConsigneeVo.class);
             // 区ids
             Set<Integer> areaIds = CollectionCommonUtil.getFieldSetByObjectList(consigneeVos, "getAreaId", Integer.class);
-            Map<Integer, AddressDTO> addressDTOMap = findAddressByIds(areaIds);
+            Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
             for (ConsigneeVo consigneeVo : consigneeVos) {
                 AddressDTO addressDTO = addressDTOMap.get(consigneeVo.getAreaId());
                 consigneeVo.setProvinceId(addressDTO.getProvinceId());
@@ -373,17 +371,6 @@ public class OrderManager {
             return consigneeVos;
         }
         return Lists.newArrayList();
-    }
-
-    /**
-     * 批量查询省市区
-     *
-     * @param areaIds 区ID
-     * @return
-     */
-    private Map<Integer, AddressDTO> findAddressByIds(Collection<Integer> areaIds) {
-        ApiResponse<Map<Integer, AddressDTO>> apiResponse = districtApi.getAncestryMapByIds(areaIds);
-        return apiResponse.getBody();
     }
 
     /**
@@ -608,7 +595,7 @@ public class OrderManager {
             // 查询区ID对应的省ID
             Map<Integer, AddressDTO> provinceIdMap = new HashMap<>();
             if(CollectionUtils.isNotEmpty(areaIds)) {
-                provinceIdMap = findAddressByIds(new ArrayList<>(areaIds));
+                provinceIdMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
                 // 把顺丰和普快递的目的地ID重置为省ID
                 for (QueryExpressPriceDto queryExpressPriceDto : queryExpressPriceDtoList) {
                     if (provinceIdMap.containsKey(queryExpressPriceDto.getDestAreaId())&&
