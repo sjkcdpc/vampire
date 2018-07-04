@@ -576,12 +576,14 @@ public class OrderManager {
             // 准备工作,防止多次调用微服务
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
                 QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
-                queryExpressPriceDto.setExpressId(Integer.parseInt(goodsOrderVo.getExpressType()));
-                queryExpressPriceDto.setDestAreaId(goodsOrderVo.getAreaId());
+                String expressType = goodsOrderVo.getExpressType();
+                Integer areaId = goodsOrderVo.getAreaId();
+                queryExpressPriceDto.setExpressId(Integer.parseInt(expressType));
+                queryExpressPriceDto.setDestAreaId(areaId);
                 queryExpressPriceDtoList.add(queryExpressPriceDto);
                 // 获取订单中非物流的目的地ID
-                if(!goodsOrderVo.getExpressType().equals(ExpressConstant.Express.WULIU.getId().toString())){
-                    areaIds.add(goodsOrderVo.getAreaId());
+                if (!expressType.equals(ExpressConstant.Express.WULIU.getId().toString()) && areaId != null) {
+                    areaIds.add(areaId);
                 }
                 goodsIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsOrderVo.getOrderDetailVos(),
                         "getGoodsId", Integer.class));
