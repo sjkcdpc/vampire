@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 收货地址管理
@@ -34,6 +35,9 @@ public class ConsigneeController {
     @Resource
     private BaseMapper baseMapper;
 
+    // 收货地址不能包含的特殊字符
+    private static final String ADDRESS_REGEX = ".*(&|<|>|\"|\').*";
+
     /**
      * 保存收货地址
      *
@@ -42,6 +46,9 @@ public class ConsigneeController {
      */
     @RequestMapping(value = "/save", method = RequestMethod.POST)
     public ResultData save(@RequestBody @Valid(groups = ValidateConstant.INSERT_GROUP) Consignee consignee) {
+        if (Pattern.matches(ADDRESS_REGEX, consignee.getAddress())){
+            return ResultData.failed("收货地址中含有特殊字符");
+        }
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.insert(consignee);
@@ -58,6 +65,9 @@ public class ConsigneeController {
      */
     @RequestMapping(value = "/update")
     public ResultData update(@Valid(groups = ValidateConstant.UPDATE_GROUP) Consignee consignee) {
+        if (Pattern.matches(ADDRESS_REGEX, consignee.getAddress())){
+            return ResultData.failed("收货地址中含有特殊字符");
+        }
         ResultData resultData = new ResultData();
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.update(consignee);
         Consignee newConsignee = consigneeResponse.getBody();
