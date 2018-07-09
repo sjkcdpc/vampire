@@ -31,6 +31,7 @@
     <dubbo:reference interface="com.gaosi.api.revolver.facade.InvServiceFacade" id="invServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ExpressServiceFacade" id="expressServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.WorkOrderRefundFacade" id="workOrderRefundFacade" />
     <!-- 商品相关接口 -->
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
@@ -43,9 +44,9 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemPicServiceFacade" id="mallItemPicServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuExtTalentServiceFacade" id="mallSkuExtTalentServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuPicServiceFacade" id="mallSkuPicServiceFacade" />
-
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsExtServiceFacade"  id="goodsExtServiceFacade" />
     <!--基础数据-->
-    <dubbo:reference id="districtApi" interface="com.gaosi.api.basicdata.DistrictApi"/>
+    <dubbo:reference interface="com.gaosi.api.basicdata.DistrictApi" id="districtApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.DictionaryApi" id="dictionaryApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.SubjectProductApi" id="subjectProductApi" />
     <dubbo:reference interface="com.gaosi.api.basicdata.ExamAreaApi" id="examAreaApi" />
@@ -67,4 +68,9 @@
     <!-- 人才中心服务 -->
     <dubbo:reference interface="com.gaosi.api.xmen.service.TalentDemandService" id="talentDemandService"/>
     <dubbo:reference interface="com.gaosi.api.xmen.service.TalentOperatorRecordsService" id="talentOperatorRecordsService"/>
+    <!-- 审批流服务 -->
+    <dubbo:reference interface="com.gaosi.api.dragonball.service.WorkFlowApplyService" id="workFlowApplyService" />
+    <!-- 用户服务 -->
+    <dubbo:reference interface="com.gaosi.api.davinciNew.service.UserService" id="newUserService" />
+
 </beans>
