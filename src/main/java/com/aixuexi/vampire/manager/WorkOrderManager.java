@@ -7,6 +7,7 @@ import com.gaosi.api.davincicode.model.bo.UserBo;
 import com.gaosi.api.dragonball.model.bo.ApprovalAuthorityBo;
 import com.gaosi.api.dragonball.service.WorkFlowApplyService;
 import com.gaosi.api.revolver.constant.WorkOrderConstant;
+import com.gaosi.api.revolver.util.WorkOrderUtil;
 import com.gaosi.api.revolver.vo.WorkOrderRefundDetailVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundVo;
 import com.gaosi.api.turing.model.po.Institution;
@@ -21,9 +22,6 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static com.gaosi.api.revolver.constant.WorkOrderConstant.RefundStatus.*;
-import static com.gaosi.api.revolver.constant.WorkOrderConstant.WorkOrderButton.*;
 
 /**
  * @author liuxinyun
@@ -58,48 +56,11 @@ public class WorkOrderManager {
             if (authorityMap.containsKey(workOrderRefundVo.getApproveId())){
                 appoveAuth = authorityMap.get(workOrderRefundVo.getApproveId()).getFlag();
             }
-            workOrderRefundVo.setButtonType(queryButtonType(appoveAuth,workOrderRefundVo.getStatus(),
-                    workOrderRefundVo.getApproveType(),workOrderRefundVo.getType()));
+            workOrderRefundVo.setButtonType(WorkOrderUtil.queryButtonType(appoveAuth,workOrderRefundVo.getStatus(),workOrderRefundVo.getType()));
             for(WorkOrderRefundDetailVo workOrderRefundDetailVo :workOrderRefundVo.getWorkOrderRefundDetailVos()){
                 workOrderRefundDetailVo.setInsName(institutionsMap.get(workOrderRefundDetailVo.getInstitutionId()).getName());
             }
         }
-    }
-
-    /**
-     * 获取按钮名称对应类型
-     * @param approveAuth 是否有审批权限
-     * @param status 工单状态
-     * @param approveType 审批类型
-     * @param refundType 退款类型
-     * @return
-     */
-    private Integer queryButtonType(Boolean approveAuth, Integer status, Integer approveType, Integer refundType){
-        WorkOrderConstant.WorkOrderButton button = DEFAULT;
-        if (approveAuth) {
-            switch (status) {
-                case NO_APPROVE:
-                    // 待审批=》审批
-                    button = APPROVE;
-                    break;
-                case ONE_SUCCESS:
-                    if (refundType == WorkOrderConstant.DetailType.ONLY_REFUND) {
-                        // 审批类型是一级审批，退款类型是仅退款=》退款
-                        button = REFUND;
-                    } else {
-                        // 审批类型是一级审批，退款类型是退货退款=》补充退货物流
-                        button = FILL_EXPRESS;
-                    }
-                    break;
-                case RETURN_GOODS_COMPLETED:
-                    // 退货已完成=》退款
-                    button = REFUND;
-                    break;
-                default:
-                    break;
-            }
-        }
-        return button.getValue();
     }
 
     /**
