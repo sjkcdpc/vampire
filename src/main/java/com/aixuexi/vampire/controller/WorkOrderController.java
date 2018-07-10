@@ -2,8 +2,8 @@ package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
+import com.aixuexi.vampire.manager.BasicDataManager;
 import com.aixuexi.vampire.manager.WorkOrderManager;
-import com.gaosi.api.basicdata.DistrictApi;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.common.util.CollectionUtils;
@@ -16,6 +16,7 @@ import com.gaosi.api.revolver.constant.WorkOrderConstant;
 import com.gaosi.api.revolver.dto.QueryWorkOrderRefundDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
+import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.facade.WorkOrderRefundFacade;
 import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.WorkOrderRefund;
@@ -35,6 +36,7 @@ import com.gaosi.api.vulcan.vo.MallItemVo;
 import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.Interval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -65,11 +67,13 @@ public class WorkOrderController {
     @Resource
     private WorkFlowApplyService workFlowApplyService;
     @Resource
-    private DistrictApi districtApi;
+    private BasicDataManager basicDataManager;
     @Resource
     private GoodsExtServiceFacade goodsExtServiceFacade;
     @Resource
     private MallItemServiceFacade mallItemServiceFacade;
+    @Resource
+    private SubOrderServiceFacade subOrderServiceFacade;
 
     /**
      * 售后工单列表查询
@@ -137,28 +141,52 @@ public class WorkOrderController {
                 return ResultData.failed("包含不能申请售后商品，请查看");
             }
         }
+        // 原始订单号
         String oldOrderId = workOrderRefundVo.getOldOrderId();
+        // 父订单号
+        String parentOrderId = oldOrderId;
         if (oldOrderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
-            oldOrderId = oldOrderId.substring(0,oldOrderId.indexOf(OrderConstant.SUB_ORDER_ID_FLAG));
+            parentOrderId = oldOrderId.substring(0,oldOrderId.indexOf(OrderConstant.SUB_ORDER_ID_FLAG));
         }
         // 查询原始订单信息
-        ApiResponse<GoodsOrderVo> goodsOrderVoResponse = orderServiceFacade.getGoodsOrderById(oldOrderId);
+        ApiResponse<GoodsOrderVo> goodsOrderVoResponse = orderServiceFacade.getGoodsOrderById(parentOrderId);
         GoodsOrderVo goodsOrderVo = goodsOrderVoResponse.getBody();
+        // 订单状态
+        Integer status;
+        // 订单完成时间
+        Date updateTime;
+        if (oldOrderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
+            ApiResponse<SubGoodsOrderVo> subGoodsOrderResponse = subOrderServiceFacade.getSubGoodsOrderById(oldOrderId);
+            SubGoodsOrderVo subGoodsOrderVo = subGoodsOrderResponse.getBody();
+            status = subGoodsOrderVo.getStatus();
+            updateTime = subGoodsOrderVo.getUpdateTime();
+        }else {
+            status = goodsOrderVo.getStatus();
+            updateTime = goodsOrderVo.getUpdateTime();
+        }
+        //审批类型
+        workOrderRefundVo.setApproveType(WorkOrderConstant.ApproveType.AUTO_APPROVE);
+        if (status.equals(OrderConstant.OrderStatus.COMPLETED.getValue())) {
+            Interval interval = new Interval(updateTime.getTime(), System.currentTimeMillis());
+            long between = interval.toDurationMillis();
+            if (between > WorkOrderConstant.APPROVE_TIMESPAN){
+                workOrderRefundVo.setApproveType(WorkOrderConstant.ApproveType.ARTIFICIAL_APPROVE);
+            }
+        }
         workOrderRefundVo.setAreaId(goodsOrderVo.getAreaId());
         // 地址信息
-        ApiResponse<AddressDTO> addressResponse = districtApi.getAncestryById(workOrderRefundVo.getAreaId());
-        AddressDTO address = addressResponse.getBody();
+        Integer areaId = workOrderRefundVo.getAreaId();
+        Map<Integer, AddressDTO> addressMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaId));
+        AddressDTO address = addressMap.get(areaId);
         workOrderRefundVo.setProvinceId(address.getProvinceId());
         // 创建退货审批流
         Integer approveId = createWorkFlow(workOrderRefundVo.getApproveType(), workOrderRefundVo.getType());
         workOrderRefundVo.setApproveId(approveId);
         workOrderRefundVo.setCreatorId(UserSessionHandler.getId());
-        // 查询商品详情
-        Map<Integer, Goods> goodsMap = queryGoods(workOrderRefundDetailVos);
         // 查询商品规格详情
         Map<Integer, GoodsType> goodsTypeMap = queryGoodsTypes(workOrderRefundDetailVos);
-        // 填充重量，商品ID
-        workOrderManager.dealWorkOrderRefundVo(workOrderRefundVo,goodsMap,goodsTypeMap);
+        // 填充重量
+        workOrderManager.dealWorkOrderRefundVo(workOrderRefundVo,goodsTypeMap);
         // 创建退款工单
         ApiResponse<String> apiResponse = workOrderRefundFacade.create(workOrderRefundVo);
         return ResultData.successed(apiResponse.getBody());
@@ -203,10 +231,10 @@ public class WorkOrderController {
      * @return
      */
     private Map<Integer, GoodsType> queryGoodsTypes(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
-        Set<Integer> goodsTypeIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundDetailVos,
-                "getGoodTypeId", Integer.class);
-        ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.findGoodsTypeByIds(Lists.newArrayList(goodsTypeIds));
-        return CollectionCommonUtil.toMapByList(goodsTypeResponse.getBody(), "getId", Integer.class);
+        Set<Integer> mallSkuIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundDetailVos,
+                "getMallSkuId", Integer.class);
+        ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.queryByMallSkuIds(Lists.newArrayList(mallSkuIds));
+        return CollectionCommonUtil.toMapByList(goodsTypeResponse.getBody(), "getMallSkuId", Integer.class);
     }
 
     /**

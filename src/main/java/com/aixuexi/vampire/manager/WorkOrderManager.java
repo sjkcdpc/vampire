@@ -145,16 +145,12 @@ public class WorkOrderManager {
      *  填充重量，商品ID
      * @param workOrderRefundVo
      */
-    public void dealWorkOrderRefundVo(WorkOrderRefundVo workOrderRefundVo, Map<Integer, Goods> goodsMap, Map<Integer, GoodsType> goodsTypeMap) {
+    public void dealWorkOrderRefundVo(WorkOrderRefundVo workOrderRefundVo, Map<Integer, GoodsType> goodsTypeMap) {
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundVo.getWorkOrderRefundDetailVos()) {
-            Integer goodsTypeId = workOrderRefundDetailVo.getGoodTypeId();
-            Integer goodsId = workOrderRefundDetailVo.getGoodsId();
-            if (goodsTypeMap != null && goodsTypeMap.containsKey(goodsTypeId)) {
-                GoodsType goodsType = goodsTypeMap.get(goodsTypeId);
+            Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+            if (goodsTypeMap != null && goodsTypeMap.containsKey(mallSkuId)) {
+                GoodsType goodsType = goodsTypeMap.get(mallSkuId);
                 workOrderRefundDetailVo.setWeight(goodsType.getWeight());
-            }
-            if (goodsMap != null && goodsMap.containsKey(goodsId)) {
-                workOrderRefundDetailVo.setMallItemId(goodsMap.get(goodsId).getMallItemId());
             }
         }
     }
