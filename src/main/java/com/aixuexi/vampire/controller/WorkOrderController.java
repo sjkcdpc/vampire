@@ -4,9 +4,9 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.util.Page;
 import com.aixuexi.vampire.manager.BasicDataManager;
 import com.aixuexi.vampire.manager.WorkOrderManager;
+import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.dragonball.constants.ApprovalConstant;
 import com.gaosi.api.dragonball.model.co.WorkFlowApplyCondition;
@@ -59,8 +59,6 @@ public class WorkOrderController {
     @Resource
     private GoodsTypeServiceFacade goodsTypeServiceFacade;
     @Resource
-    private GoodsServiceFacade goodsServiceFacade;
-    @Resource
     private WorkOrderManager workOrderManager;
     @Resource
     private ExpressServiceFacade expressServiceFacade;
@@ -70,8 +68,6 @@ public class WorkOrderController {
     private BasicDataManager basicDataManager;
     @Resource
     private GoodsExtServiceFacade goodsExtServiceFacade;
-    @Resource
-    private MallItemServiceFacade mallItemServiceFacade;
     @Resource
     private SubOrderServiceFacade subOrderServiceFacade;
 
@@ -84,6 +80,8 @@ public class WorkOrderController {
         if (queryWorkOrderRefundDto == null){
             return ResultData.failed("查询条件不能为空");
         }
+        // 查询当前机构下发起的工单
+        queryWorkOrderRefundDto.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Page<WorkOrderRefundVo>> pageResponse = workOrderRefundFacade.queryRefundVoList(queryWorkOrderRefundDto);
         Page<WorkOrderRefundVo> page = pageResponse.getBody();
         //总数为0就不进行其他操作了
@@ -104,25 +102,17 @@ public class WorkOrderController {
         if (isDiy(mallSkuId)){
             return ResultData.failed("该商品不能申请售后");
         }
-        ApiResponse<AfterSalesTemplateVo> afterSalesResponse = workOrderRefundFacade.applyAfterSales(oldOrderId, mallSkuId);
-        AfterSalesTemplateVo salesTemplateVo = afterSalesResponse.getBody();
-        ApiResponse<MallItemVo> mallItemVoResponse = mallItemServiceFacade.findMallItemVoById(salesTemplateVo.getMallItemId());
-        MallItemVo mallItemVo = mallItemVoResponse.getBody();
-        // 商品名称
-        salesTemplateVo.setName(mallItemVo.getName());
-        // 商品图片
-        List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
-        if(CollectionUtils.isNotEmpty(mallItemPics)) {
-            salesTemplateVo.setPicUrl(mallItemPics.get(0).getPicUrl());
-        }
-        // 商品规格名称
-        List<MallSkuVo> mallSkuVos = mallItemVo.getMallSkuVos();
-        for (MallSkuVo mallSkuVo : mallSkuVos) {
-            if(mallSkuVo.getId().equals(mallSkuId)){
-                salesTemplateVo.setSkuName(mallSkuVo.getName());
-            }
-        }
-        return ResultData.successed(salesTemplateVo);
+        ApiResponse<WorkOrderRefundDetailVo> afterSalesResponse = workOrderRefundFacade.applyAfterSales(oldOrderId, mallSkuId);
+        WorkOrderRefundDetailVo workOrderRefundDetailVo = afterSalesResponse.getBody();
+        workOrderManager.dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
+        Map<String, Object> map = new HashMap<>();
+        // 工单详情
+        map.put("detail", workOrderRefundDetailVo);
+        // 售后类型
+        map.put("afterSalesTypes",WorkOrderConstant.AfterSalesType.getAll());
+        // 退款原因
+        map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
+        return ResultData.successed(map);
     }
 
     /**
@@ -238,18 +228,6 @@ public class WorkOrderController {
     }
 
     /**
-     * 查询商品信息
-     * @param workOrderRefundDetailVos
-     * @return
-     */
-    private Map<Integer, Goods> queryGoods(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
-        Set<Integer> goodsIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundDetailVos,
-                "getGoodsId", Integer.class);
-        ApiResponse<List<Goods>> goodsResponse = goodsServiceFacade.queryGoodsByIds(Lists.newArrayList(goodsIds));
-        return CollectionCommonUtil.toMapByList(goodsResponse.getBody(), "getId", Integer.class);
-    }
-
-    /**
      * 查看退款工单
      * @param workOrderCode
      * @return
@@ -258,16 +236,19 @@ public class WorkOrderController {
     public ResultData queryRefundDetail(@PathVariable String workOrderCode){
         ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo workOrderRefundVo = refundVoResponse.getBody();
+        workOrderManager.dealWorkOrderRefundVo(workOrderRefundVo);
         // 默认没有编辑权限
         workOrderRefundVo.setEditAuth(Boolean.FALSE);
         // 获取当前用户id
         Integer userId = UserSessionHandler.getId();
         Integer creatorId = workOrderRefundVo.getCreatorId();
+        Map<String, Object> map = new HashMap<>();
         // 工单处于未审批，而且当前用户是申请人时，有编辑权限
         if (WorkOrderConstant.RefundStatus.NO_APPROVE == workOrderRefundVo.getStatus() && Objects.equals(userId, creatorId)){
             workOrderRefundVo.setEditAuth(Boolean.TRUE);
+            // 退款原因
+            map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
         }
-        Map<String, Object> map = new HashMap<>();
         map.put("detail", workOrderRefundVo);
         // 判断是不是需要返回物流公司信息
         boolean hasExpress = workOrderManager.hasExpress(workOrderRefundVo);

@@ -1,6 +1,7 @@
 package com.aixuexi.vampire.manager;
 
 import com.gaosi.api.common.to.ApiResponse;
+import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davinciNew.service.UserService;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.davincicode.model.bo.UserBo;
@@ -12,9 +13,12 @@ import com.gaosi.api.revolver.vo.WorkOrderRefundDetailVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundVo;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
-import com.gaosi.api.vulcan.model.Goods;
+import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsType;
+import com.gaosi.api.vulcan.model.MallItemPic;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
+import com.gaosi.api.vulcan.vo.MallItemVo;
+import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Service;
 
@@ -37,9 +41,11 @@ public class WorkOrderManager {
     private UserService newUserService;
     @Resource
     private WorkFlowApplyService workFlowApplyService;
+    @Resource
+    private MallItemServiceFacade mallItemServiceFacade;
 
     /**
-     * 处理退货工单
+     * 处理退货工单列表
      * @param workOrderRefundVos
      */
     public void dealWorkOrderRefundVos(List<WorkOrderRefundVo> workOrderRefundVos) {
@@ -60,6 +66,46 @@ public class WorkOrderManager {
             String insName = institutionsMap.get(workOrderRefundVo.getInstitutionId()).getName();
             for(WorkOrderRefundDetailVo workOrderRefundDetailVo :workOrderRefundVo.getWorkOrderRefundDetailVos()){
                 workOrderRefundDetailVo.setInsName(insName);
+            }
+        }
+    }
+
+    /**
+     * 处理单个退货工单--查看详情使用
+     * @param workOrderRefundVo
+     */
+    public void dealWorkOrderRefundVo(WorkOrderRefundVo workOrderRefundVo){
+        List<WorkOrderRefundDetailVo> workOrderRefundDetailVos = workOrderRefundVo.getWorkOrderRefundDetailVos();
+        WorkOrderRefundDetailVo workOrderRefundDetailVo = workOrderRefundDetailVos.get(0);
+        // 机构信息
+        Integer institutionId = workOrderRefundVo.getInstitutionId();
+        Institution institution = institutionService.getInsInfoById(institutionId);
+        workOrderRefundDetailVo.setInsName(institution.getName());
+        dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
+    }
+
+    /**
+     * 处理退货工单详情（补充商品相关的信息）
+     * @param workOrderRefundDetailVo
+     */
+    public void dealWorkOrderRefundDetailVo(WorkOrderRefundDetailVo workOrderRefundDetailVo){
+        Integer mallItemId = workOrderRefundDetailVo.getMallItemId();
+        Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+        ApiResponse<MallItemVo> mallItemVoResponse = mallItemServiceFacade.findMallItemVoById(mallItemId);
+        MallItemVo mallItemVo = mallItemVoResponse.getBody();
+        // 商品名称
+        workOrderRefundDetailVo.setName(mallItemVo.getName());
+        // 商品图片
+        List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
+        if(CollectionUtils.isNotEmpty(mallItemPics)) {
+            workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
+        }
+        // 商品规格名称,编码
+        List<MallSkuVo> mallSkuVos = mallItemVo.getMallSkuVos();
+        for (MallSkuVo mallSkuVo : mallSkuVos) {
+            if(mallSkuVo.getId().equals(mallSkuId)){
+                workOrderRefundDetailVo.setSkuName(mallSkuVo.getName());
+                workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
             }
         }
     }
