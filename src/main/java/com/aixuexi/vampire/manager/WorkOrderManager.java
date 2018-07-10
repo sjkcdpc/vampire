@@ -4,11 +4,13 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davinciNew.service.UserService;
 import com.gaosi.api.davincicode.common.service.UserSessionHandler;
+import com.gaosi.api.davincicode.model.UserType;
 import com.gaosi.api.davincicode.model.bo.UserBo;
 import com.gaosi.api.dragonball.model.bo.ApprovalAuthorityBo;
 import com.gaosi.api.dragonball.service.WorkFlowApplyService;
 import com.gaosi.api.revolver.constant.WorkOrderConstant;
 import com.gaosi.api.revolver.util.WorkOrderUtil;
+import com.gaosi.api.revolver.vo.WorkOrderDealRecordVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundDetailVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundVo;
 import com.gaosi.api.turing.model.po.Institution;
@@ -26,6 +28,7 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author liuxinyun
@@ -54,7 +57,8 @@ public class WorkOrderManager {
         // 批量查询机构信息
         Map<Integer,Institution> institutionsMap = queryInstitutions(workOrderRefundVos);
         // 批量查询用户信息
-        Map<Integer, UserBo> userBoMap = queryUserInfo(workOrderRefundVos);
+        Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundVos, "getCreatorId", Integer.class);
+        Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
         // 设置申请人名称,机构名称
         for(WorkOrderRefundVo workOrderRefundVo:workOrderRefundVos){
             workOrderRefundVo.setCreator(userBoMap.get(workOrderRefundVo.getCreatorId()).getName());
@@ -81,7 +85,31 @@ public class WorkOrderManager {
         Integer institutionId = workOrderRefundVo.getInstitutionId();
         Institution institution = institutionService.getInsInfoById(institutionId);
         workOrderRefundDetailVo.setInsName(institution.getName());
+        // 补充商品相关的信息
         dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
+        // 补充协商历史信息
+        List<WorkOrderDealRecordVo> workOrderDealRecordVos = workOrderRefundVo.getWorkOrderDealRecordVos();
+        dealWorkOrderDealRecordVo(workOrderDealRecordVos);
+    }
+
+    /**
+     * 补充协商历史信息
+     * @param workOrderDealRecordVos
+     */
+    private void dealWorkOrderDealRecordVo(List<WorkOrderDealRecordVo> workOrderDealRecordVos) {
+        // 批量查询用户信息
+        Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderDealRecordVos, "getUserId", Integer.class);
+        Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
+        for (WorkOrderDealRecordVo workOrderDealRecordVo : workOrderDealRecordVos) {
+            UserBo user = userBoMap.get(workOrderDealRecordVo.getUserId());
+            if (UserType.MANAGE.getValue().equals(user.getUserType())){
+                workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
+                workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
+            }else {
+                workOrderDealRecordVo.setUserName(user.getName());
+                workOrderDealRecordVo.setUserPic(user.getPortraitPath());
+            }
+        }
     }
 
     /**
@@ -138,13 +166,11 @@ public class WorkOrderManager {
 
     /**
      * 批量查询用户信息
-     * @param workOrderRefundVos
+     * @param userIds
      * @return
      */
-    private Map<Integer, UserBo> queryUserInfo(List<WorkOrderRefundVo> workOrderRefundVos){
-        List<Integer> operatorIds = Lists.newArrayList(CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundVos,
-                "getCreatorId", Integer.class));
-        ApiResponse<List<UserBo>> operatorResponse = newUserService.findByIdsWithoutRolename(operatorIds);
+    private Map<Integer, UserBo> queryUserInfo(Set<Integer> userIds){
+        ApiResponse<List<UserBo>> operatorResponse = newUserService.findByIdsWithoutRolename(Lists.newArrayList(userIds));
         List<UserBo> userBoList = operatorResponse.getBody();
         return CollectionCommonUtil.toMapByList(userBoList, "getId", Integer.class);
     }
