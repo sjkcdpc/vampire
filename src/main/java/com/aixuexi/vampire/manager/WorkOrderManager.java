@@ -57,8 +57,9 @@ public class WorkOrderManager {
                 appoveAuth = authorityMap.get(workOrderRefundVo.getApproveId()).getFlag();
             }
             workOrderRefundVo.setButtonType(WorkOrderUtil.queryButtonType(appoveAuth,workOrderRefundVo.getStatus(),workOrderRefundVo.getType()));
+            String insName = institutionsMap.get(workOrderRefundVo.getInstitutionId()).getName();
             for(WorkOrderRefundDetailVo workOrderRefundDetailVo :workOrderRefundVo.getWorkOrderRefundDetailVos()){
-                workOrderRefundDetailVo.setInsName(institutionsMap.get(workOrderRefundDetailVo.getInstitutionId()).getName());
+                workOrderRefundDetailVo.setInsName(insName);
             }
         }
     }
