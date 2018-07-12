@@ -107,7 +107,7 @@ public class WorkOrderController {
         workOrderManager.dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
         Map<String, Object> map = new HashMap<>();
         // 工单详情
-        map.put("detail", workOrderRefundDetailVo);
+        map.put("workOrderRefundDetailVo", workOrderRefundDetailVo);
         // 售后类型
         map.put("afterSalesTypes",WorkOrderConstant.AfterSalesType.getAll());
         // 退款原因
