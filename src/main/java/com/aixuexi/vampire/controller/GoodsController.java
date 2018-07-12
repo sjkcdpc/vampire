@@ -15,6 +15,7 @@ import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
+import com.gaosi.api.vulcan.model.Goods;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
@@ -165,7 +166,19 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData queryGoodsDetail(@RequestParam Integer mallItemId){
+    public ResultData queryGoodsDetail(Integer mallItemId, Integer goodsId) {
+        if (mallItemId == null && goodsId == null) {
+            return ResultData.failed("参数错误");
+        }
+        // 兼容DIY教材生成时从消息通知处跳转教材详情
+        if (mallItemId == null) {
+            ApiResponse<Goods> goodsResponse = goodsServiceFacade.queryGoodsById(goodsId);
+            Goods goods = goodsResponse.getBody();
+            if (goods == null) {
+                return ResultData.failed("商品不存在");
+            }
+            mallItemId = goods.getMallItemId();
+        }
         Integer insId = UserHandleUtil.getInsId();
         ApiResponse<GoodsVo> response = goodsServiceFacade.queryGoodsDetail(mallItemId, insId);
         GoodsVo goodsVo = response.getBody();
