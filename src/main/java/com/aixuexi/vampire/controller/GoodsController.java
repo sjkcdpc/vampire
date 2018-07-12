@@ -166,7 +166,7 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData queryGoodsDetail(Integer mallItemId, Integer goodsId) {
+    public ResultData queryGoodsDetail(@RequestParam(required = false) Integer mallItemId,@RequestParam(required = false) Integer goodsId) {
         if (mallItemId == null && goodsId == null) {
             return ResultData.failed("参数错误");
         }
