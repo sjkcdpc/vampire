@@ -22,10 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
@@ -82,8 +79,8 @@ public class OrderController {
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
     public ResultData freight(@RequestParam Integer provinceId,@RequestParam Integer areaId, Integer[] goodsTypeIds) {
-        if (provinceId == null) {
-            return ResultData.failed("收货人地址有误! ");
+        if (provinceId == null || areaId == null) {
+            return ResultData.failed("参数不能为空 ");
         }
         ResultData resultData = new ResultData();
 
@@ -149,6 +146,21 @@ public class OrderController {
         Map<String, Object> map = new HashMap<>(1);
         map.put("orderId", orderId);
         return ResultData.successed(map);
+    }
+
+    /**
+     * 取消订单
+     * @param orderId
+     * @return
+     */
+    @RequestMapping(value = "/cancel", method = RequestMethod.POST)
+    public ResultData cancelGoodsOrder(@RequestParam String orderId) {
+        logger.info("User [{}] cancel the order [{}]", UserHandleUtil.getUserId(), orderId);
+        if (StringUtils.isBlank(orderId)) {
+            return ResultData.failed("参数不能为空");
+        }
+        orderServiceFacade.cancelOrder(orderId);
+        return ResultData.successed(orderId);
     }
 
     /*
