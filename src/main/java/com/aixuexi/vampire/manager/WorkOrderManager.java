@@ -60,9 +60,6 @@ public class WorkOrderManager {
         workOrderRefundDetailVo.setInsName(institution.getName());
         // 补充商品相关的信息
         dealWorkOrderRefundDetailVo(workOrderRefundDetailVos);
-        // 补充协商历史信息
-        List<WorkOrderDealRecordVo> workOrderDealRecordVos = workOrderRefundVo.getWorkOrderDealRecordVos();
-        dealWorkOrderDealRecordVo(workOrderDealRecordVos);
     }
 
     /**
@@ -152,24 +149,4 @@ public class WorkOrderManager {
             }
         }
     }
-
-    /**
-     * 判断该用户是否有补充物流信息的权限
-     * @param workOrderRefundVo
-     * @return
-     */
-    public boolean hasExpress(WorkOrderRefundVo workOrderRefundVo){
-        if (workOrderRefundVo.getType() == WorkOrderConstant.DetailType.ONLY_REFUND){
-            return false;
-        }
-        boolean flag = false;
-        if (workOrderRefundVo.getStatus() == WorkOrderConstant.RefundStatus.ONE_SUCCESS){
-            Map<Integer, ApprovalAuthorityBo> authorityMap = workFlowCheckAuthority(Collections.singletonList(workOrderRefundVo));
-            if (authorityMap.containsKey(workOrderRefundVo.getApproveId())){
-                flag = authorityMap.get(workOrderRefundVo.getApproveId()).getFlag();
-            }
-        }
-        return flag;
-    }
-
 }

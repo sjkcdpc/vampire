@@ -236,27 +236,20 @@ public class WorkOrderController {
      * @param workOrderCode
      * @return
      */
-    @RequestMapping(value = "/refund/{workOrderCode}", method = RequestMethod.GET)
-    public ResultData queryRefundDetail(@PathVariable String workOrderCode){
+    @RequestMapping(value = "/refund/detail", method = RequestMethod.GET)
+    public ResultData queryRefundDetail(@RequestParam String workOrderCode){
         ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo workOrderRefundVo = refundVoResponse.getBody();
         workOrderManager.dealWorkOrderRefundVo(workOrderRefundVo);
-        // 默认没有编辑权限
-        workOrderRefundVo.setEditAuth(Boolean.FALSE);
-        // 获取当前用户id
-        Integer userId = UserSessionHandler.getId();
-        Integer creatorId = workOrderRefundVo.getCreatorId();
         Map<String, Object> map = new HashMap<>();
-        // 工单处于未审批，而且当前用户是申请人时，有编辑权限
-        if (WorkOrderConstant.RefundStatus.NO_APPROVE == workOrderRefundVo.getStatus() && Objects.equals(userId, creatorId)){
-            workOrderRefundVo.setEditAuth(Boolean.TRUE);
-            // 退款原因
-            map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
+        map.put("workOrderRefundVo", workOrderRefundVo);
+        Integer status = workOrderRefundVo.getStatus();
+        // 未审批，修改工单
+        if (status == WorkOrderConstant.RefundStatus.NO_APPROVE) {
+            map.put("refundReasons", WorkOrderConstant.RefundReason.getAll());
         }
-        map.put("detail", workOrderRefundVo);
-        // 判断是不是需要返回物流公司信息
-        boolean hasExpress = workOrderManager.hasExpress(workOrderRefundVo);
-        if (hasExpress){
+        // 审批通过，补充物流信息
+        if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS){
             ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
             List<Express> expressList = expressResponse.getBody();
             Express ext  = new Express();
