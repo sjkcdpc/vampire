@@ -89,7 +89,11 @@ public class WorkOrderController {
             return ResultData.successed(page);
         }
         List<WorkOrderRefundVo> workOrderRefundVos = page.getList();
-        workOrderManager.dealWorkOrderRefundVos(workOrderRefundVos);
+        List<WorkOrderRefundDetailVo> workOrderRefundDetailVos = new ArrayList<>();
+        for (WorkOrderRefundVo workOrderRefundVo : workOrderRefundVos) {
+            workOrderRefundDetailVos.addAll(workOrderRefundVo.getWorkOrderRefundDetailVos());
+        }
+        workOrderManager.dealWorkOrderRefundDetailVo(workOrderRefundDetailVos);
         return ResultData.successed(page);
     }
 
@@ -104,7 +108,7 @@ public class WorkOrderController {
         }
         ApiResponse<WorkOrderRefundDetailVo> afterSalesResponse = workOrderRefundFacade.applyAfterSales(oldOrderId, mallSkuId);
         WorkOrderRefundDetailVo workOrderRefundDetailVo = afterSalesResponse.getBody();
-        workOrderManager.dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
+        workOrderManager.dealWorkOrderRefundDetailVo(Lists.newArrayList(workOrderRefundDetailVo));
         Map<String, Object> map = new HashMap<>();
         // 工单详情
         map.put("workOrderRefundDetailVo", workOrderRefundDetailVo);

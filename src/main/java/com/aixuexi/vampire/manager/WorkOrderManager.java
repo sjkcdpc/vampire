@@ -48,33 +48,6 @@ public class WorkOrderManager {
     private MallItemServiceFacade mallItemServiceFacade;
 
     /**
-     * 处理退货工单列表
-     * @param workOrderRefundVos
-     */
-    public void dealWorkOrderRefundVos(List<WorkOrderRefundVo> workOrderRefundVos) {
-        // 批量查询用户的审批权限
-        Map<Integer, ApprovalAuthorityBo> authorityMap = workFlowCheckAuthority(workOrderRefundVos);
-        // 批量查询机构信息
-        Map<Integer,Institution> institutionsMap = queryInstitutions(workOrderRefundVos);
-        // 批量查询用户信息
-        Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundVos, "getCreatorId", Integer.class);
-        Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
-        // 设置申请人名称,机构名称
-        for(WorkOrderRefundVo workOrderRefundVo:workOrderRefundVos){
-            workOrderRefundVo.setCreator(userBoMap.get(workOrderRefundVo.getCreatorId()).getName());
-            Boolean appoveAuth = Boolean.FALSE;
-            if (authorityMap.containsKey(workOrderRefundVo.getApproveId())){
-                appoveAuth = authorityMap.get(workOrderRefundVo.getApproveId()).getFlag();
-            }
-            workOrderRefundVo.setButtonType(WorkOrderUtil.queryButtonType(appoveAuth,workOrderRefundVo.getStatus(),workOrderRefundVo.getType()));
-            String insName = institutionsMap.get(workOrderRefundVo.getInstitutionId()).getName();
-            for(WorkOrderRefundDetailVo workOrderRefundDetailVo :workOrderRefundVo.getWorkOrderRefundDetailVos()){
-                workOrderRefundDetailVo.setInsName(insName);
-            }
-        }
-    }
-
-    /**
      * 处理单个退货工单--查看详情使用
      * @param workOrderRefundVo
      */
@@ -86,7 +59,7 @@ public class WorkOrderManager {
         Institution institution = institutionService.getInsInfoById(institutionId);
         workOrderRefundDetailVo.setInsName(institution.getName());
         // 补充商品相关的信息
-        dealWorkOrderRefundDetailVo(workOrderRefundDetailVo);
+        dealWorkOrderRefundDetailVo(workOrderRefundDetailVos);
         // 补充协商历史信息
         List<WorkOrderDealRecordVo> workOrderDealRecordVos = workOrderRefundVo.getWorkOrderDealRecordVos();
         dealWorkOrderDealRecordVo(workOrderDealRecordVos);
@@ -114,26 +87,29 @@ public class WorkOrderManager {
 
     /**
      * 处理退货工单详情（补充商品相关的信息）
-     * @param workOrderRefundDetailVo
+     * @param workOrderRefundDetailVos
      */
-    public void dealWorkOrderRefundDetailVo(WorkOrderRefundDetailVo workOrderRefundDetailVo){
-        Integer mallItemId = workOrderRefundDetailVo.getMallItemId();
-        Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
-        ApiResponse<MallItemVo> mallItemVoResponse = mallItemServiceFacade.findMallItemVoById(mallItemId);
-        MallItemVo mallItemVo = mallItemVoResponse.getBody();
-        // 商品名称
-        workOrderRefundDetailVo.setName(mallItemVo.getName());
-        // 商品图片
-        List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
-        if(CollectionUtils.isNotEmpty(mallItemPics)) {
-            workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
-        }
-        // 商品规格名称,编码
-        List<MallSkuVo> mallSkuVos = mallItemVo.getMallSkuVos();
-        for (MallSkuVo mallSkuVo : mallSkuVos) {
-            if(mallSkuVo.getId().equals(mallSkuId)){
-                workOrderRefundDetailVo.setSkuName(mallSkuVo.getName());
-                workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
+    public void dealWorkOrderRefundDetailVo(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
+        List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(workOrderRefundDetailVos, "getMallItemId", Integer.class);
+        ApiResponse<List<MallItemVo>> mallItemVoResponse = mallItemServiceFacade.findMallItemVoByIds(mallItemIds);
+        List<MallItemVo> mallItemVos = mallItemVoResponse.getBody();
+        Map<Integer, MallItemVo> mallItemVoMap = CollectionCommonUtil.toMapByList(mallItemVos, "getId", Integer.class);
+        for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundDetailVos) {
+            Integer mallItemId = workOrderRefundDetailVo.getMallItemId();
+            MallItemVo mallItemVo = mallItemVoMap.get(mallItemId);
+            // 商品图片
+            List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
+            if(CollectionUtils.isNotEmpty(mallItemPics)) {
+                workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
+            }
+            // 商品规格名称,编码
+            List<MallSkuVo> mallSkuVos = mallItemVo.getMallSkuVos();
+            Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+            for (MallSkuVo mallSkuVo : mallSkuVos) {
+                if(mallSkuVo.getId().equals(mallSkuId)){
+                    workOrderRefundDetailVo.setSkuName(mallSkuVo.getName());
+                    workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
+                }
             }
         }
     }
@@ -150,18 +126,6 @@ public class WorkOrderManager {
                 approveIds, UserSessionHandler.getId());
         List<ApprovalAuthorityBo> authoritys = authorityResponse.getBody();
         return CollectionCommonUtil.toMapByList(authoritys, "getWrId", Integer.class);
-    }
-
-    /**
-     * 批量查询机构信息
-     * @param workOrderRefundVos
-     * @return
-     */
-    private Map<Integer,Institution> queryInstitutions(List<WorkOrderRefundVo> workOrderRefundVos){
-        List<Integer> institutionIds = Lists.newArrayList(CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundVos,
-                "getInstitutionId", Integer.class));
-        List<Institution> institutions = institutionService.getByIds(institutionIds);
-        return CollectionCommonUtil.toMapByList(institutions, "getId",Integer.class);
     }
 
     /**
