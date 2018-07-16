@@ -177,7 +177,9 @@ public class WorkOrderController {
         workOrderManager.dealWorkOrderRefundVo(workOrderRefundVo,goodsTypeMap);
         // 创建退款工单
         ApiResponse<String> apiResponse = workOrderRefundFacade.create(workOrderRefundVo);
-        return ResultData.successed(apiResponse.getBody());
+        String workOrderCode = apiResponse.getBody();
+        // 返回工单详情
+        return queryRefundDetail(workOrderCode);
     }
 
     /**
