@@ -279,16 +279,19 @@ public class WorkOrderController {
      * @param workOrderRefundVo
      * @return
      */
-    @RequestMapping(value = "/refund", method = RequestMethod.PUT)
+    @RequestMapping(value = "/refund/update", method = RequestMethod.POST)
     public ResultData updateRefund(@RequestBody WorkOrderRefundVo workOrderRefundVo){
         Integer userId = UserSessionHandler.getId();
         logger.info("update refund - userId:{}, workOrderRefund:{}", userId, workOrderRefundVo);
-        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderRefundVo.getWorkOrderCode());
+        // 工单号
+        String workOrderCode = workOrderRefundVo.getWorkOrderCode();
+        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo result = refundVoResponse.getBody();
-        // 工单处于未审批，而且当前用户是申请人时，有编辑权限
-        if (WorkOrderConstant.RefundStatus.NO_APPROVE == result.getStatus() && Objects.equals(userId, result.getCreatorId())){
+        // 工单处于未审批
+        if (WorkOrderConstant.RefundStatus.NO_APPROVE == result.getStatus()){
             workOrderRefundFacade.update(workOrderRefundVo);
-            return ResultData.successed(workOrderRefundVo.getWorkOrderCode());
+            // 查询工单详情
+            return ResultData.successed(queryRefundDetail(workOrderCode));
         }
         return ResultData.failed("工单状态已变更，不可修改");
 
