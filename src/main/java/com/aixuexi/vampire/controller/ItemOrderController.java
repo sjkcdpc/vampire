@@ -542,8 +542,13 @@ public class ItemOrderController {
         switch (MallItemConstant.Category.get(categoryId)) {
             case RCZX:
                 List<TalentOperatorRecords> talentOperatorRecords = talentOperatorRecordsService.queryOperatorRecordsByBusinessId(orderId, ORDER_TRACK_TYPE);
-                List<LogisticsTrackDetail> logisticsDatas = baseMapper.mapAsList(talentOperatorRecords,LogisticsTrackDetail.class);
-                orderFollowVo.setLogdata(logisticsDatas);
+                List<LogisticsTrackDetail> logisticsTrackDetails = baseMapper.mapAsList(talentOperatorRecords,LogisticsTrackDetail.class);
+                // 保持跟教材教辅一致的数据结构
+                List<LogisticsTrackVo> multiLogdata = Lists.newArrayList();
+                LogisticsTrackVo logisticsTrackVo = new LogisticsTrackVo();
+                logisticsTrackVo.setLogisticsTrackDetails(logisticsTrackDetails);
+                multiLogdata.add(logisticsTrackVo);
+                orderFollowVo.setMultiLogdata(multiLogdata);
                 return ResultData.successed(orderFollowVo);
             case JCZB:
                 ApiResponse<?> apiResponse;
