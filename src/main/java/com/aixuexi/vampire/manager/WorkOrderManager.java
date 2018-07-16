@@ -112,20 +112,6 @@ public class WorkOrderManager {
     }
 
     /**
-     * 批量查询用户的审批权限
-     * @param workOrderRefundVos
-     * @return
-     */
-    private Map<Integer, ApprovalAuthorityBo> workFlowCheckAuthority(List<WorkOrderRefundVo> workOrderRefundVos){
-        List<Integer> approveIds = CollectionCommonUtil.getFieldListByObjectList(workOrderRefundVos,
-                "getApproveId", Integer.class);
-        ApiResponse<List<ApprovalAuthorityBo>> authorityResponse = workFlowApplyService.checkUserAuthority(
-                approveIds, UserSessionHandler.getId());
-        List<ApprovalAuthorityBo> authoritys = authorityResponse.getBody();
-        return CollectionCommonUtil.toMapByList(authoritys, "getWrId", Integer.class);
-    }
-
-    /**
      * 批量查询用户信息
      * @param userIds
      * @return

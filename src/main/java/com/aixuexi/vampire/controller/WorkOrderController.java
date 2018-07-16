@@ -246,7 +246,10 @@ public class WorkOrderController {
         Integer status = workOrderRefundVo.getStatus();
         // 未审批，修改工单
         if (status == WorkOrderConstant.RefundStatus.NO_APPROVE) {
-            map.put("refundReasons", WorkOrderConstant.RefundReason.getAll());
+            // 售后类型
+            map.put("afterSalesTypes",WorkOrderConstant.AfterSalesType.getAll());
+            // 退款原因
+            map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
         }
         // 审批通过，补充物流信息
         if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS){
