@@ -3,13 +3,9 @@ package com.aixuexi.vampire.manager;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.common.util.CollectionUtils;
 import com.gaosi.api.davinciNew.service.UserService;
-import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.davincicode.model.UserType;
 import com.gaosi.api.davincicode.model.bo.UserBo;
-import com.gaosi.api.dragonball.model.bo.ApprovalAuthorityBo;
-import com.gaosi.api.dragonball.service.WorkFlowApplyService;
 import com.gaosi.api.revolver.constant.WorkOrderConstant;
-import com.gaosi.api.revolver.util.WorkOrderUtil;
 import com.gaosi.api.revolver.vo.WorkOrderDealRecordVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundDetailVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundVo;
@@ -25,7 +21,6 @@ import com.google.common.collect.Lists;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,8 +37,6 @@ public class WorkOrderManager {
     private InstitutionService institutionService;
     @Resource
     private UserService newUserService;
-    @Resource
-    private WorkFlowApplyService workFlowApplyService;
     @Resource
     private MallItemServiceFacade mallItemServiceFacade;
 
@@ -66,11 +59,17 @@ public class WorkOrderManager {
      * 补充协商历史信息
      * @param workOrderDealRecordVos
      */
-    private void dealWorkOrderDealRecordVo(List<WorkOrderDealRecordVo> workOrderDealRecordVos) {
+    public void dealRefundDealRecords(List<WorkOrderDealRecordVo> workOrderDealRecordVos) {
         // 批量查询用户信息
         Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderDealRecordVos, "getUserId", Integer.class);
         Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
         for (WorkOrderDealRecordVo workOrderDealRecordVo : workOrderDealRecordVos) {
+            if (workOrderDealRecordVo.getUserId() == -1){
+                // -1表示第三方操作人员，譬如仓库质检，显示爱学习
+                workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
+                workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
+                continue;
+            }
             UserBo user = userBoMap.get(workOrderDealRecordVo.getUserId());
             if (UserType.MANAGE.getValue().equals(user.getUserType())){
                 workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);

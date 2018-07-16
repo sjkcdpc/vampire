@@ -24,16 +24,10 @@ import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsExtConstant;
 import com.gaosi.api.vulcan.facade.GoodsExtServiceFacade;
-import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
-import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
-import com.gaosi.api.vulcan.model.Goods;
 import com.gaosi.api.vulcan.model.GoodsExt;
 import com.gaosi.api.vulcan.model.GoodsType;
-import com.gaosi.api.vulcan.model.MallItemPic;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.MallItemVo;
-import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Interval;
@@ -263,6 +257,19 @@ public class WorkOrderController {
             map.put("express", expressList);
         }
         return ResultData.successed(map);
+    }
+
+    /**
+     * 查看退款工单协商历史记录
+     * @param workOrderCode
+     * @return
+     */
+    @RequestMapping(value = "/refund/detail/record", method = RequestMethod.GET)
+    public ResultData queryRefundDetail(@RequestParam String workOrderCode, Integer dealRecordId, Integer pageSize){
+        ApiResponse<List<WorkOrderDealRecordVo>> apiResponse = workOrderRefundFacade.queryRecordPage(workOrderCode, dealRecordId, pageSize);
+        List<WorkOrderDealRecordVo> workOrderDealRecordVos = apiResponse.getBody();
+        workOrderManager.dealRefundDealRecords(workOrderDealRecordVos);
+        return ResultData.successed(workOrderDealRecordVos);
     }
 
     /**
