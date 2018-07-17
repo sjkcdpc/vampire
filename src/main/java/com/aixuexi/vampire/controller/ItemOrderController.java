@@ -429,6 +429,7 @@ public class ItemOrderController {
         // 订单的商品信息
         ReqTalentCenterConditionVo reqTalentCenterConditionVo = new ReqTalentCenterConditionVo();
         reqTalentCenterConditionVo.setMallItemId(itemOrderDetailVo.getItemId());
+        reqTalentCenterConditionVo.setInstitutionId(insId);
         ApiResponse<MallItemTalentVo> mallItemTalentResponse = mallItemExtServiceFacade.queryMallItem4Talent(reqTalentCenterConditionVo);
         MallItemTalentVo mallItemTalentVo = mallItemTalentResponse.getBody();
         // 人才类型
