@@ -118,7 +118,7 @@ public class WorkOrderController {
      * @param workOrderRefundVo
      * @return
      */
-    @RequestMapping(value = "/refund", method = RequestMethod.POST)
+    @RequestMapping(value = "/refund/add", method = RequestMethod.POST)
     public ResultData addRefund(@RequestBody WorkOrderRefundVo workOrderRefundVo){
         List<WorkOrderRefundDetailVo> workOrderRefundDetailVos = workOrderRefundVo.getWorkOrderRefundDetailVos();
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundDetailVos) {
@@ -399,5 +399,16 @@ public class WorkOrderController {
         Map<String, Object> map = new HashMap<>();
         map.put("result", workOrderRefundVo);
         return ResultData.successed(map);
+    }
+
+    /**
+     * 工单类型统计
+     * @return
+     */
+    @RequestMapping(value = "/typeStatistics", method = RequestMethod.GET)
+    public ResultData queryTypeStatistics(){
+        ApiResponse<List<WorkOrderTypeStatisticsVo>> apiResponse = workOrderRefundFacade.queryTypeStatistics();
+        List<WorkOrderTypeStatisticsVo> typeStatisticsVos = apiResponse.getBody();
+        return ResultData.successed(typeStatisticsVos);
     }
 }
