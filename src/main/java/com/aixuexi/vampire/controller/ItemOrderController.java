@@ -553,16 +553,8 @@ public class ItemOrderController {
                 }
                 return ResultData.successed(orderFollowVo);
             case JCZB:
-                ApiResponse<?> apiResponse;
-                if (orderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
-                    apiResponse = subOrderServiceFacade.getSubGoodsOrderById(orderId);
-                } else {
-                    apiResponse = orderServiceFacade.getGoodsOrderWithDetailById(orderId);
-                }
-                orderFollowVo = baseMapper.map(apiResponse.getBody(), OrderFollowVo.class);
-                ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
-                Map<String, Express> expressNameMap = CollectionCommonUtil.toMapByList(expressResponse.getBody(), "getCode", String.class);
-                orderFollowVo.setExpressName(expressNameMap.get(orderFollowVo.getExpressCode()).getName());
+                ApiResponse<OrderFollowVo> apiResponse = orderServiceFacade.getLogisticsData(orderId);
+                orderFollowVo = apiResponse.getBody();
                 return ResultData.successed(orderFollowVo);
             default:
                 return ResultData.failed("参数类型错误");
