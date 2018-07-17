@@ -178,8 +178,7 @@ public class WorkOrderController {
         // 创建退款工单
         ApiResponse<String> apiResponse = workOrderRefundFacade.create(workOrderRefundVo);
         String workOrderCode = apiResponse.getBody();
-        // 返回工单详情
-        return queryRefundDetail(workOrderCode);
+        return ResultData.successed(workOrderCode);
     }
 
     /**
@@ -251,11 +250,6 @@ public class WorkOrderController {
         if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS){
             ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
             List<Express> expressList = expressResponse.getBody();
-            Express ext  = new Express();
-            ext.setId(0);
-            ext.setCode("qita");
-            ext.setName("其他");
-            expressList.add(ext);
             map.put("express", expressList);
         }
         return ResultData.successed(map);
@@ -267,7 +261,7 @@ public class WorkOrderController {
      * @return
      */
     @RequestMapping(value = "/refund/detail/record", method = RequestMethod.GET)
-    public ResultData queryRefundDetail(@RequestParam String workOrderCode, Integer dealRecordId, Integer pageSize){
+    public ResultData queryRefundRecord(@RequestParam String workOrderCode, Integer dealRecordId, Integer pageSize){
         ApiResponse<List<WorkOrderDealRecordVo>> apiResponse = workOrderRefundFacade.queryRecordPage(workOrderCode, dealRecordId, pageSize);
         List<WorkOrderDealRecordVo> workOrderDealRecordVos = apiResponse.getBody();
         workOrderManager.dealRefundDealRecords(workOrderDealRecordVos);
@@ -290,8 +284,7 @@ public class WorkOrderController {
         // 工单处于未审批
         if (WorkOrderConstant.RefundStatus.NO_APPROVE == result.getStatus()){
             workOrderRefundFacade.update(workOrderRefundVo);
-            // 查询工单详情
-            return ResultData.successed(queryRefundDetail(workOrderCode));
+            return ResultData.successed(workOrderCode);
         }
         return ResultData.failed("工单状态已变更，不可修改");
 
@@ -299,29 +292,36 @@ public class WorkOrderController {
 
     /**
      * 补充物流信息
-     * @param workOrderRefund
+     * @param workOrderRefundVo
      * @return
      */
-    @RequestMapping(value = "/refund/express", method = RequestMethod.PUT)
-    public ResultData addExpress(@RequestBody WorkOrderRefund workOrderRefund){
-        logger.info("addExpress - userId:{},workOrderRefund:{}",UserSessionHandler.getId(), workOrderRefund);
-        if (StringUtils.isBlank(workOrderRefund.getWaybillNum().trim())){
+    @RequestMapping(value = "/refund/express", method = RequestMethod.POST)
+    public ResultData addExpress(@RequestBody WorkOrderRefundVo workOrderRefundVo){
+        Integer userId = UserHandleUtil.getUserId();
+        logger.info("addExpress - userId:{},workOrderRefund:{}", userId, workOrderRefundVo);
+        if (StringUtils.isBlank(workOrderRefundVo.getWaybillNum().trim())){
             return ResultData.failed("运单号错误");
         }
-        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderRefund.getWorkOrderCode());
-        WorkOrderRefundVo workOrderRefundVo = refundVoResponse.getBody();
+        // 售后工单号
+        String workOrderCode = workOrderRefundVo.getWorkOrderCode();
+        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
+        WorkOrderRefundVo preWorkOrderRefundVo = refundVoResponse.getBody();
         // 判断该工单是否需要补充物流信息（类型：退货退款，状态：一级审批通过）
-        boolean needExpress = workOrderRefundVo.getType().equals(WorkOrderConstant.DetailType.RETURN_GOODS_REFUND) &&
-                workOrderRefundVo.getStatus().equals(WorkOrderConstant.RefundStatus.ONE_SUCCESS);
+        boolean needExpress = preWorkOrderRefundVo.getType().equals(WorkOrderConstant.DetailType.RETURN_GOODS_REFUND) &&
+                preWorkOrderRefundVo.getStatus().equals(WorkOrderConstant.RefundStatus.ONE_SUCCESS);
         if (!needExpress){
             return ResultData.failed("工单信息已变更，详情请查看售后管理。");
         }
+        // 审批流ID
+        Integer approveId = preWorkOrderRefundVo.getApproveId();
         // 审批通过
-        workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT,workOrderRefund.getApproveId(),null);
+        workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT,approveId,null);
         // 设置状态退货中
-        workOrderRefund.setStatus(WorkOrderConstant.RefundStatus.RETURN_GOODS);
-        workOrderRefundFacade.createRefundEntryOrderAndUpdate(workOrderRefund);
-        return ResultData.successed(workOrderRefund.getWorkOrderCode());
+        workOrderRefundVo.setStatus(WorkOrderConstant.RefundStatus.RETURN_GOODS);
+        // 操作人ID
+        workOrderRefundVo.setOperatorId(userId);
+        workOrderRefundFacade.createRefundEntryOrderAndUpdate(workOrderRefundVo);
+        return ResultData.successed(workOrderCode);
     }
 
     /**
@@ -345,38 +345,6 @@ public class WorkOrderController {
         return ResultData.successed(workOrderRefundVo.getWorkOrderCode());
     }
 
-    /**
-     * 退款工单审批
-     * @return
-     */
-    @RequestMapping(value = "/refund/approve", method = RequestMethod.PUT)
-    public ResultData approve(@RequestBody WorkOrderRefundVo workOrderRefundVo){
-        logger.info("approve - userId:{}, workOrderRefundVo:{}", UserSessionHandler.getId(), workOrderRefundVo);
-        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderRefundVo.getWorkOrderCode());
-        WorkOrderRefundVo result = refundVoResponse.getBody();
-        if (!result.getStatus().equals(WorkOrderConstant.RefundStatus.NO_APPROVE)){
-            // 非待审批状态直接返回
-            return ResultData.failed("工单状态已变更，请刷新");
-        }
-        Integer operationType ;
-        switch (workOrderRefundVo.getStatus()){
-            case WorkOrderConstant.RefundStatus.ONE_SUCCESS:
-                // 一级审批同意
-                operationType = WorkOrderConstant.ApproveOperType.ADOPT;
-                break;
-            case WorkOrderConstant.RefundStatus.ONE_FAIL:
-                // 一级审批拒绝
-                operationType = WorkOrderConstant.ApproveOperType.REJECT;
-                break;
-            default:
-                return ResultData.failed("审批状态有误");
-        }
-        //同意或者拒绝审批
-        workFlowAdoptOrReject(operationType,workOrderRefundVo.getApproveId(),workOrderRefundVo.getType());
-        //更新工单状态
-        workOrderRefundFacade.update(workOrderRefundVo);
-        return ResultData.successed(workOrderRefundVo.getWorkOrderCode());
-    }
 
     /**
      * 同意或者拒绝审批
