@@ -155,11 +155,12 @@ public class OrderController {
      */
     @RequestMapping(value = "/cancel", method = RequestMethod.POST)
     public ResultData cancelGoodsOrder(@RequestParam String orderId) {
-        logger.info("User [{}] cancel the order [{}]", UserHandleUtil.getUserId(), orderId);
+        Integer userId = UserHandleUtil.getUserId();
+        logger.info("User [{}] cancel the order [{}]", userId, orderId);
         if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数不能为空");
         }
-        orderServiceFacade.cancelOrder(orderId);
+        orderServiceFacade.cancelOrder(orderId,userId);
         return ResultData.successed(orderId);
     }
 
