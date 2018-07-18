@@ -6,6 +6,7 @@ import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.dto.CancelOrderDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressType;
@@ -162,6 +163,21 @@ public class OrderController {
         }
         orderServiceFacade.cancelOrder(orderId,userId);
         return ResultData.successed(orderId);
+    }
+
+    /**
+     * 取消订单
+     * @param orderId
+     * @return
+     */
+    @RequestMapping(value = "/cancelQuery", method = RequestMethod.POST)
+    public ResultData cancelGoodsOrderQuery(@RequestParam String orderId) {
+        if (StringUtils.isBlank(orderId)) {
+            return ResultData.failed("参数不能为空");
+        }
+        ApiResponse<CancelOrderDto> apiResponse = orderServiceFacade.queryOrder4Cancel(orderId);
+        CancelOrderDto cancelOrderDto = apiResponse.getBody();
+        return ResultData.successed(cancelOrderDto);
     }
 
     /*
