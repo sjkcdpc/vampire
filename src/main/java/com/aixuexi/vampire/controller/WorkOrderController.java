@@ -19,7 +19,6 @@ import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.facade.WorkOrderRefundFacade;
 import com.gaosi.api.revolver.model.Express;
-import com.gaosi.api.revolver.model.WorkOrderRefund;
 import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsExtConstant;
@@ -306,10 +305,9 @@ public class WorkOrderController {
         String workOrderCode = workOrderRefundVo.getWorkOrderCode();
         ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo preWorkOrderRefundVo = refundVoResponse.getBody();
-        // 判断该工单是否需要补充物流信息（类型：退货退款，状态：一级审批通过）
-        boolean needExpress = preWorkOrderRefundVo.getType().equals(WorkOrderConstant.DetailType.RETURN_GOODS_REFUND) &&
-                preWorkOrderRefundVo.getStatus().equals(WorkOrderConstant.RefundStatus.ONE_SUCCESS);
-        if (!needExpress){
+        Integer status = preWorkOrderRefundVo.getStatus();
+        // 判断该工单状态（等待买家退货 或者 等待卖家收货 ）
+        if (status != WorkOrderConstant.RefundStatus.ONE_SUCCESS && status != WorkOrderConstant.RefundStatus.RETURN_GOODS) {
             return ResultData.failed("工单信息已变更，详情请查看售后管理。");
         }
         // 审批流ID
