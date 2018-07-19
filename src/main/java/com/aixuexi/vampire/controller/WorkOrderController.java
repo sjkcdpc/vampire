@@ -320,6 +320,10 @@ public class WorkOrderController {
         workOrderRefundVo.setStatus(WorkOrderConstant.RefundStatus.RETURN_GOODS);
         // 操作人ID
         workOrderRefundVo.setOperatorId(userId);
+        // 其他快递，编码为空
+        if(StringUtils.isBlank(workOrderRefundVo.getExpressCode())){
+            workOrderRefundVo.setExpressCode("qita");
+        }
         workOrderRefundFacade.createRefundEntryOrderAndUpdate(workOrderRefundVo);
         return ResultData.successed(workOrderCode);
     }
