@@ -60,23 +60,25 @@ public class WorkOrderManager {
      * @param workOrderDealRecordVos
      */
     public void dealRefundDealRecords(List<WorkOrderDealRecordVo> workOrderDealRecordVos) {
-        // 批量查询用户信息
-        Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderDealRecordVos, "getUserId", Integer.class);
-        Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
-        for (WorkOrderDealRecordVo workOrderDealRecordVo : workOrderDealRecordVos) {
-            if (workOrderDealRecordVo.getUserId() == -1){
-                // -1表示第三方操作人员，譬如仓库质检，显示爱学习
-                workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
-                workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
-                continue;
-            }
-            UserBo user = userBoMap.get(workOrderDealRecordVo.getUserId());
-            if (UserType.MANAGE.getValue().equals(user.getUserType())){
-                workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
-                workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
-            }else {
-                workOrderDealRecordVo.setUserName(user.getName());
-                workOrderDealRecordVo.setUserPic(user.getPortraitPath());
+        if(CollectionUtils.isNotEmpty(workOrderDealRecordVos)) {
+            // 批量查询用户信息
+            Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderDealRecordVos, "getUserId", Integer.class);
+            Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
+            for (WorkOrderDealRecordVo workOrderDealRecordVo : workOrderDealRecordVos) {
+                if (workOrderDealRecordVo.getUserId() == -1) {
+                    // -1表示第三方操作人员，譬如仓库质检，显示爱学习
+                    workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
+                    workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
+                    continue;
+                }
+                UserBo user = userBoMap.get(workOrderDealRecordVo.getUserId());
+                if (UserType.MANAGE.getValue().equals(user.getUserType())) {
+                    workOrderDealRecordVo.setUserName(WorkOrderConstant.DEAL_RECORD_MANAGER_NAME);
+                    workOrderDealRecordVo.setUserPic(WorkOrderConstant.DEAL_RECORD_MANAGER_PIC);
+                } else {
+                    workOrderDealRecordVo.setUserName(user.getName());
+                    workOrderDealRecordVo.setUserPic(user.getPortraitPath());
+                }
             }
         }
     }
