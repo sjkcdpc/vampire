@@ -643,7 +643,7 @@ public class OrderManager {
             }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
-                orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue(), 2));
+                orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
                 ConfirmGoodsVo goodsVo = goodsVoMap.get(orderDetailVo.getGoodTypeId());
                 List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
                 orderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());
@@ -663,8 +663,8 @@ public class OrderManager {
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
-            subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue(), 2));
-            consumeAmount = AmountUtil.add(consumeAmount, subOrderDetailVo.getTotal(), 2);
+            subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
+            consumeAmount = AmountUtil.add(consumeAmount, subOrderDetailVo.getTotal());
             ConfirmGoodsVo goodsVo = goodsVoMap.get(subOrderDetailVo.getGoodTypeId());
             List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
             subOrderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());

@@ -324,27 +324,6 @@ public class WorkOrderController {
         return ResultData.successed(workOrderCode);
     }
 
-    /**
-     * 退款工单关闭
-     * @return
-     */
-    @RequestMapping(value = "/refund/close", method = RequestMethod.PUT)
-    public ResultData closeRefund(@RequestBody WorkOrderRefundVo workOrderRefundVo){
-        logger.info("closeRefund - userId:{}, workOrderRefundVo:{}", UserSessionHandler.getId(), workOrderRefundVo);
-        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderRefundVo.getWorkOrderCode());
-        WorkOrderRefundVo result = refundVoResponse.getBody();
-        if (!result.getStatus().equals(WorkOrderConstant.RefundStatus.RETURN_GOODS_COMPLETED)){
-            // 非退货完成状态直接返回
-            return ResultData.failed("工单状态已变更，请刷新");
-        }
-        // 结束审批流
-        workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT,workOrderRefundVo.getApproveId(),null);
-        // 修改状态为已关闭
-        workOrderRefundVo.setStatus(WorkOrderConstant.RefundStatus.CLOSED);
-        workOrderRefundFacade.update(workOrderRefundVo);
-        return ResultData.successed(workOrderRefundVo.getWorkOrderCode());
-    }
-
 
     /**
      * 同意或者拒绝审批
@@ -385,20 +364,6 @@ public class WorkOrderController {
         public void setRefundType(Integer refundType) {
             this.refundType = refundType;
         }
-    }
-
-    /**
-     * 查看退款质检结果
-     * @param workOrderCode
-     * @return
-     */
-    @RequestMapping(value = "/refund/money/{workOrderCode}", method = RequestMethod.GET)
-    public ResultData queryRefundMoney(@PathVariable String workOrderCode){
-        ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
-        WorkOrderRefundVo workOrderRefundVo = refundVoResponse.getBody();
-        Map<String, Object> map = new HashMap<>();
-        map.put("result", workOrderRefundVo);
-        return ResultData.successed(map);
     }
 
     /**
