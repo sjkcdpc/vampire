@@ -246,7 +246,7 @@ public class WorkOrderController {
             map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
         }
         // 审批通过，补充物流信息
-        if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS){
+        if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS || status == WorkOrderConstant.RefundStatus.RETURN_GOODS) {
             ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
             List<Express> expressList = expressResponse.getBody();
             map.put("express", expressList);
@@ -310,10 +310,12 @@ public class WorkOrderController {
         if (status != WorkOrderConstant.RefundStatus.ONE_SUCCESS && status != WorkOrderConstant.RefundStatus.RETURN_GOODS) {
             return ResultData.failed("工单信息已变更，详情请查看售后管理。");
         }
-        // 审批流ID
-        Integer approveId = preWorkOrderRefundVo.getApproveId();
-        // 审批通过
-        workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT,approveId,null);
+        if(status == WorkOrderConstant.RefundStatus.ONE_SUCCESS) {
+            // 审批流ID
+            Integer approveId = preWorkOrderRefundVo.getApproveId();
+            // 审批通过
+            workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT, approveId, null);
+        }
         // 设置状态退货中
         workOrderRefundVo.setStatus(WorkOrderConstant.RefundStatus.RETURN_GOODS);
         // 操作人ID
