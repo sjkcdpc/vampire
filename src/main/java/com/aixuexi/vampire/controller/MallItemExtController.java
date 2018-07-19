@@ -275,7 +275,7 @@ public class MallItemExtController {
         ConfirmTalentVo confirmTalentVo = apiResponse.getBody();
         // 查询账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        Double balance = AmountUtil.divide(Double.valueOf(rr.getUsableRemain()),10000D);
+        Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmTalentVo.setBalance(balance);
         // 查询工单模板
         com.aixuexi.thor.response.ApiResponse<List<TemplateFieldVo>> templateResponse = templateServiceFacade.queryTemplateFields(RCZX_TEMPLATE_CODE);

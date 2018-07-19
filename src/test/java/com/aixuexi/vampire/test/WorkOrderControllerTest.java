@@ -47,7 +47,7 @@ public class WorkOrderControllerTest  extends BaseTest {
     @Test
     public void addRefund() throws Exception{
         WorkOrderRefundVo workOrderRefundVo = new WorkOrderRefundVo();
-        workOrderRefundVo.setOldOrderId("1602181215592142");
+        workOrderRefundVo.setOldOrderId("1602241258082616");
         workOrderRefundVo.setReasonId(1);
         workOrderRefundVo.setType(2);
         workOrderRefundVo.setDescription("阿道夫暗室逢灯撒反对sad分");
@@ -58,9 +58,9 @@ public class WorkOrderControllerTest  extends BaseTest {
         workOrderRefundVo.setWorkOrderPics(workOrderPics);
         List<WorkOrderRefundDetailVo> workOrderRefundDetailVos = new ArrayList<>();
         WorkOrderRefundDetailVo workOrderRefundDetailVo = new WorkOrderRefundDetailVo();
-        workOrderRefundDetailVo.setMallItemId(9);
-        workOrderRefundDetailVo.setMallSkuId(524);
-        workOrderRefundDetailVo.setTotalNum(2);
+        workOrderRefundDetailVo.setMallItemId(19);
+        workOrderRefundDetailVo.setMallSkuId(462);
+        workOrderRefundDetailVo.setTotalNum(1);
         workOrderRefundDetailVos.add(workOrderRefundDetailVo);
         workOrderRefundVo.setWorkOrderRefundDetailVos(workOrderRefundDetailVos);
         String temp = JSONObject.toJSONString(workOrderRefundVo);
@@ -96,6 +96,21 @@ public class WorkOrderControllerTest  extends BaseTest {
                 post("/workOrder/refund/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(temp)
+        );
+    }
+
+    @Test
+    public void queryRefundRecord() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/workOrder/refund/detail/record")
+                .param("workOrderCode","318071618583271065865")
+        );
+    }
+
+    @Test
+    public void queryTypeStatistics() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.
+                get("/workOrder/typeStatistics")
         );
     }
 }
