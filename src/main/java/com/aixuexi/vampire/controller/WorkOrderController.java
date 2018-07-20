@@ -11,6 +11,7 @@ import com.gaosi.api.davincicode.common.service.UserSessionHandler;
 import com.gaosi.api.dragonball.constants.ApprovalConstant;
 import com.gaosi.api.dragonball.model.co.WorkFlowApplyCondition;
 import com.gaosi.api.dragonball.service.WorkFlowApplyService;
+import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.constant.WorkOrderConstant;
 import com.gaosi.api.revolver.dto.QueryWorkOrderRefundDto;
@@ -250,6 +251,11 @@ public class WorkOrderController {
             ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
             List<Express> expressList = expressResponse.getBody();
             map.put("express", expressList);
+            if(workOrderRefundVo.getExpressCode().equals(ExpressConstant.OTHER_EXPRESS_CODE)){
+                Express express = new Express();
+                express.setCode(workOrderRefundVo.getExpressCode());
+                express.setName(workOrderRefundVo.getExpressName());
+            }
         }
         return ResultData.successed(map);
     }
@@ -322,7 +328,7 @@ public class WorkOrderController {
         workOrderRefundVo.setOperatorId(userId);
         // 其他快递，编码为空
         if(StringUtils.isBlank(workOrderRefundVo.getExpressCode())){
-            workOrderRefundVo.setExpressCode("qita");
+            workOrderRefundVo.setExpressCode(ExpressConstant.OTHER_EXPRESS_CODE);
         }
         workOrderRefundFacade.createRefundEntryOrderAndUpdate(workOrderRefundVo);
         return ResultData.successed(workOrderCode);
