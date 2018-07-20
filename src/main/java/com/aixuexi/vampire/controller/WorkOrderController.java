@@ -289,6 +289,7 @@ public class WorkOrderController {
         WorkOrderRefundVo result = refundVoResponse.getBody();
         // 工单处于未审批
         if (WorkOrderConstant.RefundStatus.NO_APPROVE == result.getStatus()){
+            workOrderRefundVo.setOperatorId(userId);
             workOrderRefundFacade.update(workOrderRefundVo);
             return ResultData.successed(workOrderCode);
         }
