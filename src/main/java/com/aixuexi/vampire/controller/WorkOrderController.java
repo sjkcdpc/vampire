@@ -255,6 +255,7 @@ public class WorkOrderController {
                 Express express = new Express();
                 express.setCode(workOrderRefundVo.getExpressCode());
                 express.setName(workOrderRefundVo.getExpressName());
+                expressList.add(express);
             }
         }
         return ResultData.successed(map);
