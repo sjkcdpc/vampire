@@ -12,6 +12,8 @@ import com.gaosi.api.vulcan.facade.ConsigneeServiceFacade;
 import com.gaosi.api.vulcan.model.Consignee;
 import com.gaosi.api.vulcan.vo.ConsigneeVo;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -25,6 +27,8 @@ import java.util.regex.Pattern;
 @RestController
 @RequestMapping(value = "/consignee")
 public class ConsigneeController {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private ConsigneeServiceFacade consigneeServiceFacade;
@@ -49,6 +53,7 @@ public class ConsigneeController {
         if (Pattern.matches(ADDRESS_REGEX, consignee.getAddress())){
             return ResultData.failed("收货地址中含有特殊字符");
         }
+        logger.info("{} save consignee : {}", UserHandleUtil.getUserId(), consignee);
         ResultData resultData = new ResultData();
         consignee.setInstitutionId(UserHandleUtil.getInsId());
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.insert(consignee);
@@ -68,6 +73,7 @@ public class ConsigneeController {
         if (Pattern.matches(ADDRESS_REGEX, consignee.getAddress())){
             return ResultData.failed("收货地址中含有特殊字符");
         }
+        logger.info("{} update consignee : {}", UserHandleUtil.getUserId(), consignee);
         ResultData resultData = new ResultData();
         ApiResponse<Consignee> consigneeResponse = consigneeServiceFacade.update(consignee);
         Consignee newConsignee = consigneeResponse.getBody();
@@ -83,6 +89,7 @@ public class ConsigneeController {
      */
     @RequestMapping(value = "/delete")
     public ResultData delete(@RequestParam Integer id) {
+        logger.info("{} delete consignee id : {}", UserHandleUtil.getUserId(), id);
         ApiResponse<Integer> apiResponse = consigneeServiceFacade.delete(UserHandleUtil.getInsId(), id);
         Integer effectRows = apiResponse.getBody();
         return ResultData.successed(effectRows);
