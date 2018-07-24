@@ -391,4 +391,13 @@ public class WorkOrderController {
         List<WorkOrderTypeStatisticsVo> typeStatisticsVos = apiResponse.getBody();
         return ResultData.successed(typeStatisticsVos);
     }
+
+    /**
+     * 获取工单状态列表
+     * @return
+     */
+    @RequestMapping(value = "/getStatusList", method = RequestMethod.GET)
+    public ResultData getStatusList(){
+        return ResultData.successed(WorkOrderConstant.RefundStatus.getAll());
+    }
 }
