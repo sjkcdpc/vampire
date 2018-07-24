@@ -38,6 +38,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.*;
 
+import static com.gaosi.api.revolver.constant.WorkOrderConstant.RefundStatus.*;
+
 /**
  * Created by ruanyanjie on 2018/7/6.
  */
@@ -240,14 +242,14 @@ public class WorkOrderController {
         map.put("workOrderRefundVo", workOrderRefundVo);
         Integer status = workOrderRefundVo.getStatus();
         // 未审批，修改工单
-        if (status == WorkOrderConstant.RefundStatus.NO_APPROVE) {
+        if (NO_APPROVE.getValue().equals(status)) {
             // 售后类型
             map.put("afterSalesTypes",WorkOrderConstant.AfterSalesType.getAll());
             // 退款原因
             map.put("refundReasons",WorkOrderConstant.RefundReason.getAll());
         }
         // 审批通过，补充物流信息
-        if (status == WorkOrderConstant.RefundStatus.ONE_SUCCESS || status == WorkOrderConstant.RefundStatus.RETURN_GOODS) {
+        if (ONE_SUCCESS.getValue().equals(status) || RETURN_GOODS.getValue().equals(status)) {
             ApiResponse<List<Express>> expressResponse = expressServiceFacade.queryAllExpress();
             List<Express> expressList = expressResponse.getBody();
             map.put("express", expressList);
@@ -288,7 +290,7 @@ public class WorkOrderController {
         ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo result = refundVoResponse.getBody();
         // 工单处于未审批
-        if (WorkOrderConstant.RefundStatus.NO_APPROVE == result.getStatus()){
+        if (NO_APPROVE.getValue().equals(result.getStatus())){
             workOrderRefundFacade.update(workOrderRefundVo);
             return ResultData.successed(workOrderCode);
         }
@@ -313,18 +315,19 @@ public class WorkOrderController {
         ApiResponse<WorkOrderRefundVo> refundVoResponse = workOrderRefundFacade.queryRefundVo(workOrderCode);
         WorkOrderRefundVo preWorkOrderRefundVo = refundVoResponse.getBody();
         Integer status = preWorkOrderRefundVo.getStatus();
-        // 判断该工单状态（等待买家退货 或者 等待卖家收货 ）
-        if (status != WorkOrderConstant.RefundStatus.ONE_SUCCESS && status != WorkOrderConstant.RefundStatus.RETURN_GOODS) {
+        // 根据工单状态判断是否可以补充物流信息（等待买家退货 或者 等待卖家收货）
+        boolean canAddExpress = ONE_SUCCESS.getValue().equals(status) || RETURN_GOODS.getValue().equals(status);
+        if (!canAddExpress) {
             return ResultData.failed("工单信息已变更，详情请查看售后管理。");
         }
-        if(status == WorkOrderConstant.RefundStatus.ONE_SUCCESS) {
+        if(ONE_SUCCESS.getValue().equals(status)) {
             // 审批流ID
             Integer approveId = preWorkOrderRefundVo.getApproveId();
             // 审批通过
             workFlowAdoptOrReject(WorkOrderConstant.ApproveOperType.ADOPT, approveId, null);
         }
         // 设置状态退货中
-        workOrderRefundVo.setStatus(WorkOrderConstant.RefundStatus.RETURN_GOODS);
+        workOrderRefundVo.setStatus(RETURN_GOODS.getValue());
         // 操作人ID
         workOrderRefundVo.setOperatorId(userId);
         // 其他快递，编码为空
