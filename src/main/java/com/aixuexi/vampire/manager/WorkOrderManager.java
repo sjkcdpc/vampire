@@ -18,6 +18,7 @@ import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.MallItemVo;
 import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -95,6 +96,10 @@ public class WorkOrderManager {
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundDetailVos) {
             Integer mallItemId = workOrderRefundDetailVo.getMallItemId();
             MallItemVo mallItemVo = mallItemVoMap.get(mallItemId);
+            // 申请售后时商品名称由商品表提供，其他情况显示工单详情中的商品名称
+            if(StringUtils.isBlank(workOrderRefundDetailVo.getName())){
+                workOrderRefundDetailVo.setName(mallItemVo.getName());
+            }
             // 商品图片
             List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
             if(CollectionUtils.isNotEmpty(mallItemPics)) {
