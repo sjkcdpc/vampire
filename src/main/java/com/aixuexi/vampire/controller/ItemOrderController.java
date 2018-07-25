@@ -110,12 +110,6 @@ public class ItemOrderController {
     private WorkOrderServiceFacade workOrderServiceFacade;
 
     @Resource
-    private SubOrderServiceFacade subOrderServiceFacade;
-
-    @Resource
-    private ExpressServiceFacade expressServiceFacade;
-
-    @Resource
     private TalentOperatorRecordsService talentOperatorRecordsService;
 
     @Resource
@@ -136,6 +130,7 @@ public class ItemOrderController {
         if (queryOrderDto == null) {
             return ResultData.failed("查询参数不能为空");
         }
+        queryOrderDto.setQueryEntrance(OrderConstant.QueryEntrance.INSTITUTION);
         queryOrderDto.setInstitutionId(UserHandleUtil.getInsId());
         queryOrderDto.setUserId(UserHandleUtil.getUserId());
         if (queryOrderDto.getEndTime() != null) {
