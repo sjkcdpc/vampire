@@ -387,7 +387,7 @@ public class WorkOrderController {
      */
     @RequestMapping(value = "/typeStatistics", method = RequestMethod.GET)
     public ResultData queryTypeStatistics(){
-        ApiResponse<List<WorkOrderTypeStatisticsVo>> apiResponse = workOrderRefundFacade.queryTypeStatistics();
+        ApiResponse<List<WorkOrderTypeStatisticsVo>> apiResponse = workOrderRefundFacade.queryTypeStatistics(UserHandleUtil.getInsId());
         List<WorkOrderTypeStatisticsVo> typeStatisticsVos = apiResponse.getBody();
         return ResultData.successed(typeStatisticsVos);
     }
