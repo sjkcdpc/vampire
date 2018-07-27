@@ -65,7 +65,7 @@ public class ArrivalNoticeController {
 
     private void checkParams4Insert(ArrivalNotice arrivalNotice) {
         Assert.notNull(arrivalNotice, "参数不能为空");
-        Assert.notNull(arrivalNotice.getGoodsTypeId(), "skuId不能为空");
+        Assert.notNull(arrivalNotice.getMallSkuId(), "skuId不能为空");
         Assert.notNull(arrivalNotice.getNoticePhone(), "缺货电话不能为空");
         Assert.isTrue(ValidationUtils.isMatch(arrivalNotice.getNoticePhone(), Regex.MOBILE_REGEX), "手机号格式不正确");
         Assert.isTrue(null == arrivalNotice.getNum() || arrivalNotice.getNum() >= 0, "期望的数量必须大于0");
