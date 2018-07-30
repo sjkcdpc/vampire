@@ -13,7 +13,10 @@ import com.gaosi.api.basicdata.model.bo.SchemeBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.revolver.facade.InvServiceFacade;
+import com.gaosi.api.revolver.facade.OrderServiceFacade;
+import com.gaosi.api.revolver.model.GoodsInventory;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
+import com.gaosi.api.vulcan.constant.GoodsExtConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.model.Goods;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -52,6 +56,8 @@ public class GoodsController {
 
     @Resource
     private ItemOrderManager itemOrderManager;
+    @Resource
+    private OrderServiceFacade orderServiceFacade;
 
     @Resource
     private BasicDataManager basicDataManager;
@@ -282,16 +288,42 @@ public class GoodsController {
         }
         if (CollectionUtils.isNotEmpty(barCodeList)) {
             ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<>(barCodeList));
+            ApiResponse<Map<String, GoodsInventory>> totalInventoryResponse = orderServiceFacade.queryTotalInventory(new ArrayList<>(barCodeList));
             Map<String, Integer> invMap = apiResponse.getBody();
+            Map<String, GoodsInventory> totalInvMap = totalInventoryResponse.getBody();
             for (GoodsVo goodsVo : goodsVoList) {
                 if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
                     List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
                     for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
+                        //sku对应的数量
                         typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
+
+                        //库存数量少于预警库存时，报警
+                        GoodsInventory goodsInventory = totalInvMap.get(typeCommonVo.getBarCode());
+                        if (goodsVo.getCustomized() == GoodsExtConstant.Customized.COMMON.getValue()
+                                && goodsInventory.getGoodsNum() <= typeCommonVo.getInventory()) {
+                            typeCommonVo.setArrivalMsg(getArrivalMsg(typeCommonVo.getArrivalTime()));
+                        } else {
+                            typeCommonVo.setArrivalMsg("");
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * 根据时间获取缺货通知信息
+     *
+     * @param arrivalTime 到货时间
+     * @return 到货通知信息
+     */
+    private String getArrivalMsg(Integer arrivalTime) {
+        Date date = new Date();
+        SimpleDateFormat formater = new SimpleDateFormat("yyyy年MM月dd日");
+        String result = "预计" + formater.format(new Date(date.getTime() + arrivalTime * 24 * 60 * 60 * 1000L)) + "到货";
+        String target = new SimpleDateFormat("yyyy年").format(date);
+        return result.replace(target, "");
     }
 
     /**
