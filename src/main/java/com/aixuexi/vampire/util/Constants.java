@@ -1,11 +1,9 @@
 package com.aixuexi.vampire.util;
 
 import com.gaosi.api.workorder.constant.FieldType;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by gaoxinzhong on 2017/6/2.
@@ -13,15 +11,9 @@ import java.util.Map;
 public final class Constants {
 
     /**
-     * 学期映射
+     * 学期映射 春 1000  暑 0100  秋 0010  寒 0001
      */
-    public static Map<Integer, Integer> PERIOD_MAP = new HashMap<>();
-    static {
-        PERIOD_MAP.put(1, 8);//春 1000
-        PERIOD_MAP.put(2, 4);//暑 0100
-        PERIOD_MAP.put(3, 2);//秋 0010
-        PERIOD_MAP.put(4, 1);//寒 0001
-    }
+    public static final ImmutableMap <Integer, Integer> PERIOD_MAP = ImmutableMap.of(1, 8,2, 4,3, 2,4, 1);
 
     /**
      * 人才中心模板编码
@@ -31,6 +23,5 @@ public final class Constants {
     /**
      * 动态工单中特殊字段类型
      */
-    public static List<String> SPECIAL_FIELD_TYPE = Lists.newArrayList(FieldType.CHECKBOX.getValue(),
-            FieldType.RADIO.getValue(),FieldType.SELECT.getValue());
+    public static final ImmutableList<String> SPECIAL_FIELD_TYPE = ImmutableList.of(FieldType.CHECKBOX.getValue(),FieldType.RADIO.getValue(),FieldType.SELECT.getValue());
 }

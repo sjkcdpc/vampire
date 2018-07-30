@@ -542,7 +542,6 @@ public class OrderManager {
      */
     public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos){
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
-            Set<Integer> goodsIds = Sets.newHashSet();
             // 查询快递时效的条件
             List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
             // 订单中物流方式下的目的地ID
