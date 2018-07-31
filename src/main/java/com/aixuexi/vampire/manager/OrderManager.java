@@ -532,7 +532,7 @@ public class OrderManager {
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
             Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
             Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
-            Assert.isTrue(confirmGoodsVo.getWeight() > 0, goodsFullName + "重量有误");
+            Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
         }
     }
 
