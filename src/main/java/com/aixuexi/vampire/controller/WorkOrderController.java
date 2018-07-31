@@ -312,7 +312,9 @@ public class WorkOrderController {
         if (StringUtils.isBlank(workOrderRefundVo.getWaybillNum().trim())){
             return ResultData.failed("运单号错误");
         }
-        if (PatternUtil.isMobile(workOrderRefundVo.getConsignorPhone()) || PatternUtil.isTelephone(workOrderRefundVo.getConsignorPhone())){
+        // 判断是手机或者是固话
+        boolean isPhone = PatternUtil.isMobile(workOrderRefundVo.getConsignorPhone()) || PatternUtil.isTelephone(workOrderRefundVo.getConsignorPhone());
+        if (!isPhone){
             return ResultData.failed("联系方式有误");
         }
         // 售后工单号
