@@ -21,6 +21,7 @@ import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
 import com.gaosi.api.revolver.facade.WorkOrderRefundFacade;
 import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.util.JsonUtil;
+import com.gaosi.api.revolver.util.PatternUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.constant.GoodsExtConstant;
 import com.gaosi.api.vulcan.facade.GoodsExtServiceFacade;
@@ -310,6 +311,9 @@ public class WorkOrderController {
         logger.info("addExpress - userId:{},workOrderRefund:{}", userId, workOrderRefundVo);
         if (StringUtils.isBlank(workOrderRefundVo.getWaybillNum().trim())){
             return ResultData.failed("运单号错误");
+        }
+        if (PatternUtil.isMobile(workOrderRefundVo.getConsignorPhone()) || PatternUtil.isTelephone(workOrderRefundVo.getConsignorPhone())){
+            return ResultData.failed("联系方式有误");
         }
         // 售后工单号
         String workOrderCode = workOrderRefundVo.getWorkOrderCode();
