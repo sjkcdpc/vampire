@@ -300,8 +300,10 @@ public class GoodsController {
 
                         //库存数量少于预警库存时，报警
                         GoodsInventory goodsInventory = totalInvMap.get(typeCommonVo.getBarCode());
+                        Integer inventoryNum = goodsInventory.getGoodsNum();
+                        typeCommonVo.setInventoryNum(inventoryNum);
                         if (goodsVo.getCustomized() == GoodsExtConstant.Customized.COMMON.getValue()
-                                && goodsInventory.getGoodsNum() <= typeCommonVo.getInventory()) {
+                                && inventoryNum <= typeCommonVo.getInventory()) {
                             typeCommonVo.setArrivalMsg(getArrivalMsg(typeCommonVo.getArrivalTime()));
                         } else {
                             typeCommonVo.setArrivalMsg("");
