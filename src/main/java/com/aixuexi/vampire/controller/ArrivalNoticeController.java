@@ -4,7 +4,6 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.response.RpcResultData;
 import com.aixuexi.thor.validate.constant.Regex;
 import com.aixuexi.thor.validate.util.ValidationUtils;
-import com.aixuexi.vampire.manager.CacheManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.turing.model.po.Institution;
@@ -15,8 +14,6 @@ import com.gaosi.api.vulcan.constant.ArrivalNoticeStatus;
 import com.gaosi.api.vulcan.facade.ArrivalNoticeServiceFacade;
 import com.gaosi.api.vulcan.model.ArrivalNotice;
 import com.gaosi.api.vulcan.vo.ArrivalNoticeVo;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +37,7 @@ public class ArrivalNoticeController {
 
     /**
      * 插入一条到货通知
+     *
      * @param arrivalNotice 到货通知
      * @return 到货通知ID
      */
@@ -47,8 +45,8 @@ public class ArrivalNoticeController {
     public ResultData insert(@RequestBody ArrivalNotice arrivalNotice) {
         ResultData resultData = new ResultData();
         checkParams4Insert(arrivalNotice);
-        Integer userId =UserHandleUtil.getUserId();
-        Integer insId =UserHandleUtil.getInsId();
+        Integer userId = UserHandleUtil.getUserId();
+        Integer insId = UserHandleUtil.getInsId();
         logger.info("User: [{}] insert arrivalNotice: [{}] ", userId, arrivalNotice);
         handleArrivalNotice4Insert(arrivalNotice, userId, insId);
 
@@ -56,10 +54,10 @@ public class ArrivalNoticeController {
         ArrivalNoticeQueryCriteria arrivalNoticeQueryCriteria = new ArrivalNoticeQueryCriteria();
         arrivalNoticeQueryCriteria.setStatus(ArrivalNoticeStatus.NOT_NOTICE.getValue());
         arrivalNoticeQueryCriteria.setMallSkuId(arrivalNotice.getMallSkuId());
-        arrivalNoticeQueryCriteria.setNoticePhone(arrivalNotice.getNoticePhone());
+        arrivalNoticeQueryCriteria.setRegisterUserId(userId);
         ApiResponse<List<ArrivalNoticeVo>> listApiResponse = arrivalNoticeServiceFacade.queryByCondition(arrivalNoticeQueryCriteria);
         List<ArrivalNoticeVo> arrivalNoticeVos = listApiResponse.getBody();
-        if(CollectionUtils.isNotEmpty(arrivalNoticeVos)){
+        if (CollectionUtils.isNotEmpty(arrivalNoticeVos)) {
             return ResultData.failed("到货通知已经存在");
         }
 
