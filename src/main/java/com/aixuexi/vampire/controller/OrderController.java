@@ -161,7 +161,7 @@ public class OrderController {
         if (StringUtils.isBlank(orderId)) {
             return ResultData.failed("参数不能为空");
         }
-        orderServiceFacade.cancelOrder(orderId,userId);
+        orderServiceFacade.cancelOrder(orderId, userId, true);
         return ResultData.successed(orderId);
     }
 
