@@ -58,7 +58,7 @@ public class ArrivalNoticeController {
         ApiResponse<List<ArrivalNoticeVo>> listApiResponse = arrivalNoticeServiceFacade.queryByCondition(arrivalNoticeQueryCriteria);
         List<ArrivalNoticeVo> arrivalNoticeVos = listApiResponse.getBody();
         if (CollectionUtils.isNotEmpty(arrivalNoticeVos)) {
-            return ResultData.failed("到货通知已经存在");
+            return ResultData.failed("您已经登记过该商品的到货通知");
         }
 
         ApiResponse<Integer> apiResponse = arrivalNoticeServiceFacade.insert(arrivalNotice);
