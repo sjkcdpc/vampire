@@ -225,7 +225,7 @@ public class WorkOrderController {
     private Map<Integer, GoodsType> queryGoodsTypes(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
         Set<Integer> mallSkuIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundDetailVos,
                 "getMallSkuId", Integer.class);
-        ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.queryByMallSkuIds(Lists.newArrayList(mallSkuIds));
+        ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.queryByMallSkuIds(Lists.newArrayList(mallSkuIds), null);
         return CollectionCommonUtil.toMapByList(goodsTypeResponse.getBody(), "getMallSkuId", Integer.class);
     }
 
