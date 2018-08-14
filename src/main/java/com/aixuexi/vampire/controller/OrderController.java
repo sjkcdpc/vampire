@@ -150,6 +150,20 @@ public class OrderController {
     }
 
     /**
+     * 取消教材订单前查询
+     * @param orderId 订单号
+     */
+    @RequestMapping(value = "/cancelQuery", method = RequestMethod.GET)
+    public ResultData cancelGoodsOrderQuery(@RequestParam String orderId) {
+        if (StringUtils.isBlank(orderId)) {
+            return ResultData.failed("参数不能为空");
+        }
+        ApiResponse<CancelOrderDto> apiResponse = orderServiceFacade.queryOrder4Cancel(orderId);
+        CancelOrderDto cancelOrderDto = apiResponse.getBody();
+        return ResultData.successed(cancelOrderDto);
+    }
+
+    /**
      * 取消订单
      * @param orderId
      * @return
