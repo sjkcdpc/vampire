@@ -84,11 +84,9 @@ public class OrderController {
             return ResultData.failed("参数不能为空 ");
         }
         ResultData resultData = new ResultData();
-
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
         List<Integer> goodsTypeIdList = (goodsTypeIds == null) ? null : Lists.newArrayList(goodsTypeIds);
-
         FreightVo freightVo = orderManager.reloadFreight(userId, insId, provinceId,areaId, goodsTypeIdList);
         resultData.setBody(freightVo);
         return resultData;
@@ -110,14 +108,10 @@ public class OrderController {
         logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
                 UserHandleUtil.getUserId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
         checkParams4Submit(goodsTypeIds,express);
-
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
         List<Integer> goodsTypeIdList = Lists.newArrayList(goodsTypeIds);
-
-        OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId,
-                receivePhone, express, goodsTypeIdList, token);
-
+        OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIdList, token);
         //发送消息
         try {
             Map<String, Object> map = new HashMap<>();
@@ -128,7 +122,6 @@ public class OrderController {
         } catch (Exception e) {
             logger.error("创建订单后,发送消息失败", e);
         }
-
         return ResultData.successed(orderSuccessVo);
     }
 
