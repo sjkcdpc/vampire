@@ -51,4 +51,16 @@
             <aop:around method="around" pointcut="execution(* com.aixuexi.vampire.controller..*.*(..))"/>
         </aop:aspect>
     </aop:config>
+
+    <!-- 接口限流拦截器 -->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <!-- 拦截所有的请求-->
+            <mvc:mapping path="/**" />
+            <!-- 不拦截请求 -->
+            <!--<mvc:exclude-mapping path="" />-->
+            <!-- 拦截类 -->
+            <bean name="baseInterceptor" class="com.aixuexi.vampire.interceptor.CurrentLimitingInterceptor" />
+        </mvc:interceptor>
+    </mvc:interceptors>
 </beans>
