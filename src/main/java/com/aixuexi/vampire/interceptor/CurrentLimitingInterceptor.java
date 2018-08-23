@@ -9,11 +9,11 @@ import com.gaosi.api.revolver.keys.RevolverKey;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -26,38 +26,41 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Autowired
+    @Resource
     private MyJedisService myJedisService;
+
+    /**
+     * Redis键分隔符
+     */
+    private static final String SPLIT = ".";
 
     /**
      * 7秒周期的key
      */
     private static final String KEY_CURRENTLIMIT_SMALL = new CacheKeyManager(MicroServiceKey.REVOLVER).of(RevolverKey.CURRENTLIMIT).of("SMALL").getKey();
-    private static final String KEY_CURRENTLIMIT_SMALL_FLAG = new CacheKeyManager(MicroServiceKey.REVOLVER).of(RevolverKey.CURRENTLIMIT).of("SMALL").of("FLAG").getKey();
     /**
      * 11秒周期的key
      */
     private static final String KEY_CURRENTLIMIT_BIG = new CacheKeyManager(MicroServiceKey.REVOLVER).of(RevolverKey.CURRENTLIMIT).of("BIG").getKey();
-    private static final String KEY_CURRENTLIMIT_BIG_FLAG = new CacheKeyManager(MicroServiceKey.REVOLVER).of(RevolverKey.CURRENTLIMIT).of("BIG").of("FLAG").getKey();
     /**
      * 3分钟周期的key
      */
     private static final String KEY_CURRENTLIMIT_TOTAL = new CacheKeyManager(MicroServiceKey.REVOLVER).of(RevolverKey.CURRENTLIMIT).of("TOTAL").getKey();
 
     @Value("${smallLimit}")
-    private Integer smallLimit;
+    private Long smallLimit;
 
     @Value("${smallCycle}")
     private Integer smallCycle;
 
     @Value("${bigLimit}")
-    private Integer bigLimit;
+    private Long bigLimit;
 
     @Value("${bigCycle}")
     private Integer bigCycle;
 
     @Value("${totalLimit}")
-    private Integer totalLimit;
+    private Long totalLimit;
 
     @Value("${totalCycle}")
     private Integer totalCycle;
@@ -80,16 +83,12 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
         // 请求userId
         Integer userId = UserHandleUtil.getUserId();
 
-        String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, '.');
-        String totalKey = KEY_CURRENTLIMIT_TOTAL + "." + suffix;
-        String smallKey = KEY_CURRENTLIMIT_SMALL + "." + suffix;
-        String smallFlagKey = KEY_CURRENTLIMIT_SMALL_FLAG + "." + suffix;
-        String bigKey = KEY_CURRENTLIMIT_BIG + "." + suffix;
-        String bigFlagKey = KEY_CURRENTLIMIT_BIG_FLAG + "." + suffix;
+        String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, SPLIT);
+        String totalKey = KEY_CURRENTLIMIT_TOTAL + SPLIT + suffix;
+        String smallKey = KEY_CURRENTLIMIT_SMALL + SPLIT + suffix;
+        String bigKey = KEY_CURRENTLIMIT_BIG + SPLIT + suffix;
 
-        initKey(suffix);
-
-        Long totalTimes = 0l;
+        long totalTimes = 0L;
         String totalTimesStr = myJedisService.get(totalKey);
         if(StringUtils.isNotBlank(totalTimesStr)){
             totalTimes = Long.parseLong(totalTimesStr);
@@ -101,14 +100,18 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        Long smallTimes = myJedisService.incrBy(smallKey, 1);
-        Long bigTimes = myJedisService.incrBy(bigKey, 1);
-        if(smallTimes > smallLimit){
-            totalTimes = incrTimes(totalTimes, smallKey, smallFlagKey, totalKey, smallCycle);
+        initKey(totalKey, smallKey, bigKey);
+
+        Long smallTimes = myJedisService.incr(smallKey);
+        Long bigTimes = myJedisService.incr(bigKey);
+        if(smallTimes == smallLimit){
+            // 刚刚到达阈值的时候累加
+            totalTimes = incrTimes(totalTimes, smallKey, totalKey, smallCycle);
         }
 
-        if(bigTimes > bigLimit){
-            totalTimes = incrTimes(totalTimes, bigKey, bigFlagKey, totalKey, bigCycle);
+        if(bigTimes == bigLimit){
+            // 刚刚到达阈值的时候累加
+            totalTimes = incrTimes(totalTimes, bigKey, totalKey, bigCycle);
         }
 
         if(totalTimes > totalLimit){
@@ -132,63 +135,43 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
      * 处理周期的次数
      * @param totalTimes
      * @param key
-     * @param flagKey
      * @param totalKey
      * @param cycle
      * @return
      */
-    private long incrTimes(long totalTimes, String key, String flagKey, String totalKey, Integer cycle){
-        // 判断key是否变为-1，变为-1，重新设置过期时间(测试过程中发现redis有这个现象)
+    private long incrTimes(long totalTimes, String key, String totalKey, Integer cycle){
+        // 判断key是否变为-1,-2,0，变为-1，重新设置过期时间(测试过程中发现redis有这个现象)
         Long ttl = myJedisService.ttl(key);
-        Long FlagTtl = myJedisService.ttl(flagKey);
 
-        if(ttl == -1 || FlagTtl == -1){
+        if(ttl <= 0){
             myJedisService.setex(key, "0", cycle);
-            myJedisService.setex(flagKey, "0", cycle);
             return totalTimes;
         }
 
-        // 保证每个周期内只累加一次
-        String bigFlag = myJedisService.get(flagKey);
-        if("0".equals(bigFlag)){
-            totalTimes = myJedisService.incr(totalKey);
-
-            myJedisService.set(flagKey, "1");
-        }
+        totalTimes = myJedisService.incr(totalKey);
         return totalTimes;
     }
 
     /**
      * 初始化key
-     * @param suffix
+     * @param totalKey
+     * @param smallKey
+     * @param bigKey
      */
-    private void initKey(String suffix){
-        String totalKey = KEY_CURRENTLIMIT_TOTAL + "." + suffix;
-        String smallKey = KEY_CURRENTLIMIT_SMALL + "." + suffix;
-        String smallFlagKey = KEY_CURRENTLIMIT_SMALL_FLAG + "." + suffix;
-        String bigKey = KEY_CURRENTLIMIT_BIG + "." + suffix;
-        String bigFlagKey = KEY_CURRENTLIMIT_BIG_FLAG + "." + suffix;
+    private void initKey(String totalKey, String smallKey, String bigKey){
 
         // 初始化过期时间
         if(!myJedisService.exists(totalKey)){
-            commonInit(totalKey, null, totalCycle);
+            myJedisService.setex(totalKey, "0", totalCycle);
         }
 
         if(!myJedisService.exists(smallKey)){
-            commonInit(smallKey, smallFlagKey, smallCycle);
+            myJedisService.setex(smallKey, "0", smallCycle);
         }
 
         if(!myJedisService.exists(bigKey)){
-            commonInit(bigKey, bigFlagKey, bigCycle);
+            myJedisService.setex(bigKey, "0", bigCycle);
         }
-    }
-
-    private void commonInit(String key, String flagKey, Integer cycle){
-        if(StringUtils.isNotBlank(flagKey)){
-            // 伴生key，用于标记该周期内是否已累加
-            myJedisService.setex(flagKey,"0", cycle);
-        }
-        myJedisService.setex(key, "0", cycle);
     }
 
     /**
