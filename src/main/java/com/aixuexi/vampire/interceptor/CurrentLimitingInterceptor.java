@@ -80,7 +80,7 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
         // 请求ip
         String remoteAddr = IpUtil.getIpAdrress(request);
         // 请求userId
-        Integer userId = UserHandleUtil.getUserId();
+        Integer userId = 1;//UserHandleUtil.getUserId();
         logger.info("CurrentLimitingInterceptor requestURI:{}, userId:{}, remoteAddr:{}, remoteAddrLong:{}" , requestURI, userId, remoteAddr, IpUtil.ipToLong(remoteAddr));
 
         String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, SPLIT);
