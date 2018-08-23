@@ -75,13 +75,13 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        logger.debug("CurrentLimitingInterceptor prehandle.");
         // 请求接口
         String requestURI = request.getRequestURI();
         // 请求ip
         String remoteAddr = IpUtil.getIpAdrress(request);
         // 请求userId
         Integer userId = UserHandleUtil.getUserId();
+        logger.info("CurrentLimitingInterceptor requestURI:{}, userId:{}, remoteAddr:{}, remoteAddrLong:{}" , requestURI, userId, remoteAddr, IpUtil.ipToLong(remoteAddr));
 
         String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, SPLIT);
         String totalKey = KEY_CURRENTLIMIT_TOTAL + SPLIT + suffix;
