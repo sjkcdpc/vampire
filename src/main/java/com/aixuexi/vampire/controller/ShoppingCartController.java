@@ -39,7 +39,6 @@ public class ShoppingCartController {
     @RequestMapping(value = "/list",method = RequestMethod.GET)
     public ResultData list() {
         ResultData resultData = new ResultData();
-
         Integer userId = UserHandleUtil.getUserId();
         ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
@@ -57,7 +56,6 @@ public class ShoppingCartController {
         shoppingCartVo.setPayAmount(payAmount);
         shoppingCartVo.setShoppingCartListList(shoppingCartListVos);
         resultData.setBody(shoppingCartVo);
-
         return resultData;
     }
 
@@ -79,7 +77,6 @@ public class ShoppingCartController {
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
         shoppingCartList.setNum(num);
-
         shoppingCartServiceFacade.addShoppingCart(shoppingCartList);
         return ResultData.successed();
     }

@@ -27,14 +27,17 @@
         </property>
     </bean>
 
+    <!-- 登录过滤 -->
     <bean id="accessAuthorityFilter" class="com.gaosi.api.davincicode.common.filter.AccessAuthorityFilter">
         <property name="ignoreUrlRegex"
-                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|"/>
+                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$"/>
         <property name="cookieDomain" value="${cookie_domain}"/>
     </bean>
 
-    <!-- 验证权限 -->
-    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter"/>
+    <!-- 角色过滤 -->
+    <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter">
+        <property name="ignoreUrlRegex" value=".*nologin$"/>
+    </bean>
 
     <!-- 使用disconf必须添加以下配置 -->
     <bean id="disconfMgrBean" class="com.baidu.disconf.client.DisconfMgrBean"

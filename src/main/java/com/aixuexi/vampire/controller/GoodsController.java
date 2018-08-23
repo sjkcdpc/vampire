@@ -20,6 +20,7 @@ import com.gaosi.api.vulcan.constant.GoodsExtConstant;
 import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.model.Goods;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
+import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
@@ -197,29 +198,26 @@ public class GoodsController {
 
     /**
      * 拼接关联商品类型的名称
-     * @param relation
+     * @param relationGoodsVo
      * @param relationGoodsTypes
      */
-    private void combineRelationName(RelationGoodsVo relation, List<?> relationGoodsTypes){
-        List<GoodsTypeCommonVo> detailVos = baseMapper.mapAsList(relationGoodsTypes, GoodsTypeCommonVo.class);
+    private void combineRelationName(RelationGoodsVo relationGoodsVo, List<GoodsType> relationGoodsTypes){
         // 将"+"形式的字符串拼接替换为stringbuilder
-        String preRelationName = relation.getRelationName();
-
+        String preRelationName = relationGoodsVo.getRelationName();
         StringBuilder relationNameBuilder = new StringBuilder();
         relationNameBuilder.append(preRelationName);
         relationNameBuilder.append("(");
-
         int i = 0;
-        for (GoodsTypeCommonVo detailVo: detailVos) {
-            String detailName = detailVo.getName();
+        for (GoodsType goodsType: relationGoodsTypes) {
+            String skuName = goodsType.getName();
             if (i != 0) {
                 relationNameBuilder.append(",");
             }
-            relationNameBuilder.append(detailName);
+            relationNameBuilder.append(skuName);
             i++;
         }
         relationNameBuilder.append(")");
-        relation.setRelationName(relationNameBuilder.toString());
+        relationGoodsVo.setRelationName(relationNameBuilder.toString());
     }
 
     /**
@@ -256,19 +254,18 @@ public class GoodsController {
         //获取关联商品名称
         for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            for (RelationGoodsVo relation : relationGoods) {
-                List<?> relationGoodsTypes = relation.getRelationGoodsType();
-                if (bookVersionMap.containsKey(relation.getBookVersion())) {
-                    BookVersionBo bookVersion = bookVersionMap.get(relation.getBookVersion());
-                    relation.setRelationName(bookVersion.getName());
+            for (RelationGoodsVo relationGoodsVo : relationGoods) {
+                List<GoodsType> relationGoodsTypes = relationGoodsVo.getRelationGoodsType();
+                if (bookVersionMap.containsKey(relationGoodsVo.getBookVersion())) {
+                    BookVersionBo bookVersion = bookVersionMap.get(relationGoodsVo.getBookVersion());
+                    relationGoodsVo.setRelationName(bookVersion.getName());
                 }
-                if (examAreaMap.containsKey(relation.getExamAreaId())) {
-                    ExamAreaBo examArea = examAreaMap.get(relation.getExamAreaId());
-                    relation.setRelationName(examArea.getName());
+                if (examAreaMap.containsKey(relationGoodsVo.getExamAreaId())) {
+                    ExamAreaBo examArea = examAreaMap.get(relationGoodsVo.getExamAreaId());
+                    relationGoodsVo.setRelationName(examArea.getName());
                 }
-                if (StringUtils.isNotBlank(relation.getRelationName()) &&
-                        CollectionUtils.isNotEmpty(relationGoodsTypes)) {
-                    combineRelationName(relation, relationGoodsTypes);
+                if (StringUtils.isNotBlank(relationGoodsVo.getRelationName()) && CollectionUtils.isNotEmpty(relationGoodsTypes)) {
+                    combineRelationName(relationGoodsVo, relationGoodsTypes);
                 }
             }
         }
@@ -281,32 +278,34 @@ public class GoodsController {
     private void loadGoodsInventory(List<GoodsVo> goodsVoList) {
         Set<String> barCodeList = new HashSet<>();
         for (GoodsVo goodsVo : goodsVoList) {
-            if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(typeCommonVos, "getBarCode", String.class));
+            List<GoodsTypeVo> goodsTypeVos = goodsVo.getGoodsGrades();
+            if (CollectionUtils.isNotEmpty(goodsTypeVos)) {
+                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsTypeVos, "getBarCode", String.class));
             }
         }
         if (CollectionUtils.isNotEmpty(barCodeList)) {
+            // 查询单个仓库的最大库存量
             ApiResponse<Map<String, Integer>> apiResponse = invServiceFacade.queryMaxInventory(new ArrayList<>(barCodeList));
-            ApiResponse<Map<String, GoodsInventory>> totalInventoryResponse = orderServiceFacade.queryTotalInventory(new ArrayList<>(barCodeList));
             Map<String, Integer> invMap = apiResponse.getBody();
+            // 查询所有仓库的总计库存量
+            ApiResponse<Map<String, GoodsInventory>> totalInventoryResponse = orderServiceFacade.queryTotalInventory(new ArrayList<>(barCodeList));
             Map<String, GoodsInventory> totalInvMap = totalInventoryResponse.getBody();
             for (GoodsVo goodsVo : goodsVoList) {
-                if (CollectionUtils.isNotEmpty(goodsVo.getGoodsGrades())) {
-                    List<GoodsTypeCommonVo> typeCommonVos = (List<GoodsTypeCommonVo>) goodsVo.getGoodsGrades();
-                    for (GoodsTypeCommonVo typeCommonVo : typeCommonVos) {
-                        //sku对应的数量
-                        typeCommonVo.setGoodsNum(invMap.get(typeCommonVo.getBarCode()));
-
+                List<GoodsTypeVo> goodsTypeVos = goodsVo.getGoodsGrades();
+                if (CollectionUtils.isNotEmpty(goodsTypeVos)) {
+                    for (GoodsTypeVo goodsTypeVo : goodsTypeVos) {
+                        String barCode = goodsTypeVo.getBarCode();
+                        //sku对应的单个仓库的最大库存量
+                        goodsTypeVo.setGoodsNum(invMap.get(barCode));
                         //库存数量少于预警库存时，报警
-                        GoodsInventory goodsInventory = totalInvMap.get(typeCommonVo.getBarCode());
+                        GoodsInventory goodsInventory = totalInvMap.get(barCode);
                         Integer inventoryNum = goodsInventory.getGoodsNum();
-                        typeCommonVo.setInventoryNum(inventoryNum);
+                        goodsTypeVo.setInventoryNum(inventoryNum);
                         if (goodsVo.getCustomized() == GoodsExtConstant.Customized.COMMON.getValue()
-                                && inventoryNum <= typeCommonVo.getInventory()) {
-                            typeCommonVo.setArrivalMsg(getArrivalMsg(typeCommonVo.getArrivalTime()));
+                                && inventoryNum <= goodsTypeVo.getInventory()) {
+                            goodsTypeVo.setArrivalMsg(getArrivalMsg(goodsTypeVo.getArrivalTime()));
                         } else {
-                            typeCommonVo.setArrivalMsg("");
+                            goodsTypeVo.setArrivalMsg("");
                         }
                     }
                 }

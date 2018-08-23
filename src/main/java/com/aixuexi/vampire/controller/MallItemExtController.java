@@ -57,9 +57,6 @@ public class MallItemExtController {
     private MallItemExtServiceFacade mallItemExtServiceFacade;
 
     @Resource
-    private ItemOrderServiceFacade itemOrderServiceFacade;
-
-    @Resource
     private FinancialAccountManager financialAccountManager;
 
     @Resource
@@ -125,7 +122,6 @@ public class MallItemExtController {
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmMallItemNailVo.setBalance(balance);
-
         resultData.setBody(confirmMallItemNailVo);
         return resultData;
     }
@@ -164,7 +160,6 @@ public class MallItemExtController {
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
         Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
         confirmCustomServiceVo.setBalance(balance);
-
         resultData.setBody(confirmCustomServiceVo);
         return resultData;
     }
