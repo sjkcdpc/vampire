@@ -71,53 +71,55 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
      * @param response
      * @param handler
      * @return
-     * @throws Exception
      */
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 请求接口
-        String requestURI = request.getRequestURI();
-        // 请求ip
-        String remoteAddr = IpUtil.getIpAdrress(request);
-        // 请求userId
-        Integer userId  = 1;//UserHandleUtil.getUserId();
-        logger.info("CurrentLimitingInterceptor requestURI:{}, userId:{}, remoteAddr:{}, remoteAddrLong:{}" , requestURI, userId, remoteAddr, IpUtil.ipToLong(remoteAddr));
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        try {
+            // 请求接口
+            String requestURI = request.getRequestURI();
+            // 请求ip
+            String remoteAddr = IpUtil.getIpAdrress(request);
+            // 请求userId
+            Integer userId  = UserHandleUtil.getUserId();
 
-        String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, SPLIT);
-        String totalKey = KEY_CURRENTLIMIT_TOTAL + SPLIT + suffix;
-        String smallKey = KEY_CURRENTLIMIT_SMALL + SPLIT + suffix;
-        String bigKey = KEY_CURRENTLIMIT_BIG + SPLIT + suffix;
+            String suffix = StringUtils.join(new Object[]{userId, IpUtil.ipToLong(remoteAddr), requestURI}, SPLIT);
+            String totalKey = KEY_CURRENTLIMIT_TOTAL + SPLIT + suffix;
+            String smallKey = KEY_CURRENTLIMIT_SMALL + SPLIT + suffix;
+            String bigKey = KEY_CURRENTLIMIT_BIG + SPLIT + suffix;
 
-        long totalTimes = 0L;
-        String totalTimesStr = myJedisService.get(totalKey);
-        if(StringUtils.isNotBlank(totalTimesStr)){
-            totalTimes = Long.parseLong(totalTimesStr);
-        }
+            long totalTimes = 0L;
+            String totalTimesStr = myJedisService.get(totalKey);
+            if(StringUtils.isNotBlank(totalTimesStr)){
+                totalTimes = Long.parseLong(totalTimesStr);
+            }
 
-        if(totalTimes > totalLimit){
-            // 如果超过阈值，就返回错误提醒
-            handleResponse(response);
-            return false;
-        }
+            if(totalTimes > totalLimit){
+                // 如果超过阈值，就返回错误提醒
+                handleResponse(response);
+                return false;
+            }
 
-        initKey(totalKey, smallKey, bigKey);
+            initKey(totalKey, smallKey, bigKey);
 
-        Long smallTimes = myJedisService.incr(smallKey);
-        Long bigTimes = myJedisService.incr(bigKey);
-        if(smallTimes == smallLimit){
-            // 刚刚到达阈值的时候累加
-            totalTimes = incrTimes(totalTimes, smallKey, totalKey, smallCycle);
-        }
+            Long smallTimes = myJedisService.incr(smallKey);
+            Long bigTimes = myJedisService.incr(bigKey);
+            if(smallTimes == smallLimit){
+                // 刚刚到达阈值的时候累加
+                totalTimes = incrTimes(totalTimes, smallKey, totalKey, smallCycle);
+            }
 
-        if(bigTimes == bigLimit){
-            // 刚刚到达阈值的时候累加
-            totalTimes = incrTimes(totalTimes, bigKey, totalKey, bigCycle);
-        }
+            if(bigTimes == bigLimit){
+                // 刚刚到达阈值的时候累加
+                totalTimes = incrTimes(totalTimes, bigKey, totalKey, bigCycle);
+            }
 
-        if(totalTimes > totalLimit){
-            // 如果超过阈值，就返回错误提醒
-            handleResponse(response);
-            return false;
+            if(totalTimes > totalLimit){
+                // 如果超过阈值，就返回错误提醒
+                handleResponse(response);
+                return false;
+            }
+        } catch (Exception e){
+            logger.error("CurrentLimitingInterceptor execute failed: {}", e);
         }
 
         return true;
