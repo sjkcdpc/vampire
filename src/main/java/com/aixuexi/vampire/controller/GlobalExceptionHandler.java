@@ -1,11 +1,10 @@
 package com.aixuexi.vampire.controller;
 
 import com.aixuexi.thor.response.ResultData;
-
 import com.aixuexi.vampire.util.UserHandleUtil;
-import com.alibaba.dubbo.common.utils.IOUtils;
-import com.alibaba.fastjson.JSON;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -72,12 +70,15 @@ public class GlobalExceptionHandler {
      */
     private String getRequestParameter(HttpServletRequest request) {
         StringBuilder requestParameter = new StringBuilder();
-        try {
-            requestParameter.append(JSON.toJSONString(request.getParameterMap()));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream()));
-            requestParameter.append(IOUtils.read(reader));
+        if (StringUtils.isNotBlank(request.getQueryString())) {
+            requestParameter.append(request.getQueryString());
+        }
+        try (BufferedReader reader = request.getReader()) {
+            if (reader != null) {
+                requestParameter.append(IOUtils.toString(reader));
+            }
         } catch (Exception e) {
-            logger.error("getRequestParameter failed url :{} ", request.getRequestURI(), e);
+            logger.error("getRequestBody failed url :{} ", request.getRequestURI(), e);
         }
         return requestParameter.toString();
     }
