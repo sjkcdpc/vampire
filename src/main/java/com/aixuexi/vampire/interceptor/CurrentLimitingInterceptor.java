@@ -103,12 +103,12 @@ public class CurrentLimitingInterceptor implements HandlerInterceptor {
 
             Long smallTimes = myJedisService.incr(smallKey);
             Long bigTimes = myJedisService.incr(bigKey);
-            if(smallTimes == smallLimit){
+            if(smallLimit.equals(smallTimes)){
                 // 刚刚到达阈值的时候累加
                 totalTimes = incrTimes(totalTimes, smallKey, totalKey, smallCycle);
             }
 
-            if(bigTimes == bigLimit){
+            if(bigLimit.equals(bigTimes)){
                 // 刚刚到达阈值的时候累加
                 totalTimes = incrTimes(totalTimes, bigKey, totalKey, bigCycle);
             }
