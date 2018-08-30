@@ -26,8 +26,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public ResultData handleBusinessException(HttpServletRequest request, BusinessException e) {
-        logger.warn("handleBusinessException : requestUrl : {} , requestParams : {} , userId : {}, insId : {} ",
-                request.getRequestURI(), getRequestParameter(request), UserHandleUtil.getUserId(), UserHandleUtil.getInsId(), e);
+        logger.warn("handleBusinessException : requestUrl : {} , requestParams : {} , userId : {}, insId : {} , exceptionMsg:{}",
+                request.getRequestURI(), getRequestParameter(request), UserHandleUtil.getUserId(), UserHandleUtil.getInsId(), e.getMessage());
         return ResultData.failed(e.getMessage());
     }
 
