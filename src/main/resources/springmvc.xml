@@ -58,7 +58,7 @@
             <!-- 拦截所有的请求-->
             <mvc:mapping path="/**" />
             <!-- 不拦截请求 -->
-            <mvc:exclude-mapping path="/monitor/get/nologin" />
+            <mvc:exclude-mapping path="/statusCheck" />
             <!-- 拦截类 -->
             <bean name="baseInterceptor" class="com.aixuexi.vampire.interceptor.CurrentLimitingInterceptor" />
         </mvc:interceptor>

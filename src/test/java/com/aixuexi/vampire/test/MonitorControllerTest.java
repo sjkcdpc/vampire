@@ -11,7 +11,7 @@ public class MonitorControllerTest extends BaseTest {
     @Test
     public void getNoLogin() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.
-                get("/monitor/get/nologin")
+                get("/statusCheck")
         );
     }
 
