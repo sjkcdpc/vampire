@@ -30,13 +30,13 @@
     <!-- 登录过滤 -->
     <bean id="accessAuthorityFilter" class="com.gaosi.api.davincicode.common.filter.AccessAuthorityFilter">
         <property name="ignoreUrlRegex"
-                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$"/>
+                  value=".*login$|.*.ico$|.*.html*$|.*.js$|.*.css$|.*.jpg$|.*.png$|.*.gif$|.*.pdf$|.*/statusCheck$"/>
         <property name="cookieDomain" value="${cookie_domain}"/>
     </bean>
 
     <!-- 角色过滤 -->
     <bean id="accessVerifyFilter" class="com.aixuexi.vampire.util.AccessVerifyFilter">
-        <property name="ignoreUrlRegex" value=".*nologin$"/>
+        <property name="ignoreUrlRegex" value=".*/statusCheck$"/>
     </bean>
 
     <!-- 使用disconf必须添加以下配置 -->
@@ -56,7 +56,6 @@
         <property name="locations">
             <list>
                 <value>config.properties</value>
-                <value>mq.properties</value>
             </list>
         </property>
     </bean>
