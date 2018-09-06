@@ -26,7 +26,9 @@
     </bean>
 
     <!-- 订单中心相关接口 -->
-    <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.revolver.facade.OrderServiceFacade" id="orderServiceFacade" >
+        <dubbo:method name="cancelOrder" retries="0" timeout="15000"/>
+    </dubbo:reference>
     <dubbo:reference interface="com.gaosi.api.revolver.facade.ItemOrderServiceFacade" id="itemOrderServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.InvServiceFacade" id="invServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.revolver.facade.SubOrderServiceFacade" id="subOrderServiceFacade" />
