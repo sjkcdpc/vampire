@@ -133,7 +133,7 @@ public class OrderManager {
                 "getNum",Integer.class);
 
         // 4. 根据goodsTypeIds查询商品其他信息
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,true);
         List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
         confirmOrderVo.setGoodsItem(goodsVos);
@@ -213,7 +213,7 @@ public class OrderManager {
         Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
                 "getNum",Integer.class);
         // 查询商品明细
-        ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
+        ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,false);
         List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
         validateGoods(confirmGoodsVos);
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos, goodsNum);
@@ -411,7 +411,7 @@ public class OrderManager {
             List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, categoryId, goodsTypeIds);
             Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
                     "getNum",Integer.class);
-            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum);
+            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,false);
             List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
 
             GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
@@ -553,7 +553,7 @@ public class OrderManager {
                 }
             }
             // 根据goodsTypeId查询商品列表
-            ApiResponse<List<ConfirmGoodsVo>> goodsVoResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIdMap);
+            ApiResponse<List<ConfirmGoodsVo>> goodsVoResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIdMap,true);
             List<ConfirmGoodsVo> goodsVos = goodsVoResponse.getBody();
             Map<Integer, ConfirmGoodsVo> goodsVoMap = CollectionCommonUtil.toMapByList(goodsVos, "getGoodsTypeId", Integer.class);
             // 查询区ID对应的省ID
