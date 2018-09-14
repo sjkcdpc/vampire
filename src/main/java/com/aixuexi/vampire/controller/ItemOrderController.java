@@ -265,7 +265,8 @@ public class ItemOrderController {
     @RequestMapping(value = "/talentCenter/submit", method = RequestMethod.POST)
     public ResultData talentCenterSubmit(@RequestBody TalentOrderVo talentOrderVo) {
         logger.info("userId=[{}] talentCenterSubmit, talentOrderVo=[{}]", UserHandleUtil.getUserId(), talentOrderVo);
-        Assert.isTrue(talentOrderVo != null && talentOrderVo.getNum() != null, "参数错误");
+        Assert.notNull(talentOrderVo,"参数为空");
+        Assert.notNull(talentOrderVo.getNum(),"商品数量为空");
         Assert.isTrue(talentOrderVo.getNum() >= 1 && talentOrderVo.getNum() <= 9999, "商品数量错误");
         // 工单字段校验
         WorkOrderDto workOrderDto = new WorkOrderDto();
