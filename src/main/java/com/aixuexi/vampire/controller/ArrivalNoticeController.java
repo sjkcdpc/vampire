@@ -47,7 +47,7 @@ public class ArrivalNoticeController {
         checkParams4Insert(arrivalNotice);
         Integer userId = UserHandleUtil.getUserId();
         Integer insId = UserHandleUtil.getInsId();
-        logger.info("User: [{}] insert arrivalNotice: [{}] ", userId, arrivalNotice);
+        logger.info("User: [{}] ,insId: [{}], insert arrivalNotice: [{}] ", userId, insId, arrivalNotice);
         handleArrivalNotice4Insert(arrivalNotice, userId, insId);
 
         //去重
@@ -70,9 +70,11 @@ public class ArrivalNoticeController {
         arrivalNotice.setRegisterUserId(userId);
         arrivalNotice.setInstitutionId(insId);
         RpcResultData<Institution> institution = institutionService.getInstitution(insId);
-        Assert.isTrue(null != institution && RpcResultData.STATUS_NORMAL == institution.getStatus(), "查询机构出错，机构ID：" + insId);
+        Assert.notNull(institution, "查询机构为空");
+        Assert.isTrue(RpcResultData.STATUS_NORMAL == institution.getStatus(), "查询机构状态有误");
         Institution institutionData = institution.getData();
-        Assert.isTrue(null != institutionData && null != institutionData.getManageId(), "机构查询数据有误，机构ID：" + insId);
+        Assert.notNull(institutionData, "查询机构数据为空");
+        Assert.notNull(institutionData.getManageId(), "查询机构客户经理为空" );
         arrivalNotice.setManagerId(institutionData.getManageId());
         arrivalNotice.setStatus(ArrivalNoticeStatus.NOT_NOTICE.getValue());
     }
