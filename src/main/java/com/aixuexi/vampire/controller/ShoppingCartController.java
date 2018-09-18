@@ -9,8 +9,6 @@ import com.gaosi.api.vulcan.model.ShoppingCartList;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping(value = "/shoppingCart")
 public class ShoppingCartController {
-    private final Logger logger = LoggerFactory.getLogger(ShoppingCartController.class);
+
     @Resource
     private ShoppingCartServiceFacade shoppingCartServiceFacade;
 
@@ -68,11 +66,10 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/add",method = RequestMethod.POST)
     public ResultData add(@RequestParam Integer goodsTypeId, @RequestParam Integer num) {
-        if(num>9999 || num<1) {
+        if (num > 9999 || num < 1) {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
-        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
         shoppingCartList.setUserId(UserHandleUtil.getUserId());
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
@@ -91,15 +88,11 @@ public class ShoppingCartController {
     public ResultData del(@RequestParam Integer goodsTypeId) {
         ShoppingCartList shoppingCartList = new ShoppingCartList();
         shoppingCartList.setUserId(UserHandleUtil.getUserId());
-        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
         Integer categoryId = MallItemConstant.Category.JCZB.getId();
         shoppingCartList.setCategoryId(categoryId);
         shoppingCartList.setGoodsTypeId(goodsTypeId);
-        ApiResponse<?> apiResponse = shoppingCartServiceFacade.delShoppingCart(shoppingCartList);
-        if (apiResponse.isSuccess()){
-            return ResultData.successed();
-        }
-        return ResultData.failed(apiResponse.getMessage());
+        shoppingCartServiceFacade.delShoppingCart(shoppingCartList);
+        return ResultData.successed();
     }
 
     /**
@@ -115,7 +108,6 @@ public class ShoppingCartController {
             return ResultData.failed("每笔订单中单品数量不超过9999!");
         }
         ShoppingCartList shoppingCartList = new ShoppingCartList();
-        // TODO 现在默认教材，将来扩展需要存其他类型的时候此处需要改，类别需要前端传过来。
         shoppingCartList.setUserId(UserHandleUtil.getUserId());
         shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
         shoppingCartList.setGoodsTypeId(goodsTypeId);
