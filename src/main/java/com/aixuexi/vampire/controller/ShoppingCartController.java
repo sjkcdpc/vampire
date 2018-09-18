@@ -36,25 +36,22 @@ public class ShoppingCartController {
      */
     @RequestMapping(value = "/list",method = RequestMethod.GET)
     public ResultData list() {
-        ResultData resultData = new ResultData();
         Integer userId = UserHandleUtil.getUserId();
-        ApiResponse<List<ShoppingCartListVo>> listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-        if (CollectionUtils.isEmpty(shoppingCartListVos)) {
-            return resultData;
-        }
         ShoppingCartVo shoppingCartVo = new ShoppingCartVo();
         int goodsPieces = 0;
         double payAmount = 0;
-        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-            goodsPieces += shoppingCartListVo.getNum();
-            payAmount += shoppingCartListVo.getTotal();
+        ApiResponse<List<ShoppingCartListVo>> apiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        List<ShoppingCartListVo> shoppingCartListVos = apiResponse.getBody();
+        if(CollectionUtils.isNotEmpty(shoppingCartListVos)) {
+            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+                goodsPieces += shoppingCartListVo.getNum();
+                payAmount += shoppingCartListVo.getTotal();
+            }
         }
         shoppingCartVo.setGoodsPieces(goodsPieces);
         shoppingCartVo.setPayAmount(payAmount);
         shoppingCartVo.setShoppingCartListList(shoppingCartListVos);
-        resultData.setBody(shoppingCartVo);
-        return resultData;
+        return ResultData.successed(shoppingCartVo);
     }
 
     /**
@@ -117,6 +114,30 @@ public class ShoppingCartController {
         map.put("goodsTypeId", goodsTypeId);
         map.put("price", apiResponse.getBody());
         return ResultData.successed(map);
+    }
+
+    /**
+     * 活动结束前三天，购物车还有活动商品未支付，提示活动即将结束
+     *
+     * @return
+     */
+    @RequestMapping(value = "/activityEndTips",method = RequestMethod.GET)
+    public ResultData activityEndTips() {
+        Integer userId = UserHandleUtil.getUserId();
+        ApiResponse<List<ShoppingCartListVo>> apiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
+        List<ShoppingCartListVo> shoppingCartListVos = apiResponse.getBody();
+        Boolean dispalyTips = false;
+        if (CollectionUtils.isNotEmpty(shoppingCartListVos)) {
+            // 活动结束前三天(ms)
+            Long timeSpan = 3 * 24 * 60 * 60 * 1000L;
+            for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+                if(shoppingCartListVo.getPreSale() && shoppingCartListVo.getRemainAcitivityTime() < timeSpan){
+                    dispalyTips = true;
+                    break;
+                }
+            }
+        }
+        return ResultData.successed(dispalyTips);
     }
 
 }
