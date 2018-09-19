@@ -9,6 +9,8 @@ import com.gaosi.api.vulcan.model.ShoppingCartList;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import org.apache.commons.collections.CollectionUtils;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -126,18 +128,18 @@ public class ShoppingCartController {
         Integer userId = UserHandleUtil.getUserId();
         ApiResponse<List<ShoppingCartListVo>> apiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         List<ShoppingCartListVo> shoppingCartListVos = apiResponse.getBody();
-        Boolean dispalyTips = false;
+        Map<String,Object> result = new HashMap<>();
+        result.put("preSale",false);
         if (CollectionUtils.isNotEmpty(shoppingCartListVos)) {
-            // 活动结束前三天(ms)
-            Long timeSpan = 3 * 24 * 60 * 60 * 1000L;
             for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-                if(shoppingCartListVo.getPreSale() && shoppingCartListVo.getRemainAcitivityTime() < timeSpan){
-                    dispalyTips = true;
+                if(shoppingCartListVo.getPreSale()){
+                    result.put("preSale",shoppingCartListVo.getPreSale());
+                    result.put("remainAcitivityDays",shoppingCartListVo.getRemainAcitivityDays());
                     break;
                 }
             }
         }
-        return ResultData.successed(dispalyTips);
+        return ResultData.successed(result);
     }
 
 }
