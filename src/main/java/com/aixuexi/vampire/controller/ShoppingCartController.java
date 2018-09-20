@@ -129,12 +129,13 @@ public class ShoppingCartController {
         ApiResponse<List<ShoppingCartListVo>> apiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
         List<ShoppingCartListVo> shoppingCartListVos = apiResponse.getBody();
         Map<String,Object> result = new HashMap<>();
-        result.put("preSale",false);
+        result.put("deadline",false);
         if (CollectionUtils.isNotEmpty(shoppingCartListVos)) {
             for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
-                if(shoppingCartListVo.getPreSale()){
-                    result.put("preSale",shoppingCartListVo.getPreSale());
-                    result.put("remainAcitivityDays",shoppingCartListVo.getRemainAcitivityDays());
+                // 购物车中含有预售商品，并且剩余活动时间小于等于3天
+                if (shoppingCartListVo.getPreSale() && shoppingCartListVo.getRemainAcitivityDays() <= 3) {
+                    result.put("deadline", true);
+                    result.put("remainAcitivityDays", shoppingCartListVo.getRemainAcitivityDays());
                     break;
                 }
             }
