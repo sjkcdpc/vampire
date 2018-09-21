@@ -479,13 +479,24 @@ public class OrderManager {
      */
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
         Assert.notEmpty(confirmGoodsVos, "商品不存在");
+        // 是否包含预售商品
+        Boolean containsPreSale = false;
+        // 是否包含普通商品
+        Boolean containsCustom = false;
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             // 商品全称（商品+型号名称）
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
             Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
             Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
             Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
+            if (confirmGoodsVo.getPreSale()) {
+                containsPreSale = true;
+            }
+            if (!confirmGoodsVo.getPreSale()) {
+                containsCustom = true;
+            }
         }
+        Assert.isTrue(containsPreSale.equals(containsCustom), "预售产品不能和普通产品同时下单结算，请分开下单结算");
     }
 
     /**
