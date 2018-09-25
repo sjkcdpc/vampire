@@ -21,10 +21,11 @@ import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
-import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
+import com.gaosi.api.vulcan.dto.GoodsTypeDto;
+import com.gaosi.api.vulcan.dto.QueryGoodsTypeDto;
 import com.gaosi.api.vulcan.facade.*;
 import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
@@ -73,9 +74,6 @@ public class OrderManager {
     private OrderServiceFacade orderServiceFacade;
 
     @Resource
-    private InstitutionService institutionService;
-
-    @Resource
     private ExpressUtil expressUtil;
 
     @Resource
@@ -101,6 +99,9 @@ public class OrderManager {
 
     @Resource
     private MallItemExtServiceFacade mallItemExtServiceFacade;
+
+    @Resource
+    private GoodsTypeServiceFacade goodsTypeServiceFacade;
 
 
     /**
@@ -509,8 +510,8 @@ public class OrderManager {
             List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
             // 订单中物流方式下的目的地ID
             Set<Integer> areaIds = Sets.newHashSet();
-            // 商品goodTypeId,num集合
-            Map<Integer,Integer> goodsTypeIdMap = new HashMap<>();
+            // 商品goodTypeId集合
+            List<Integer> goodsTypeIds = new ArrayList<>();
             // 准备工作,防止多次调用微服务
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
                 QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
@@ -524,26 +525,30 @@ public class OrderManager {
                     areaIds.add(areaId);
                 }
                 List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
-                for (OrderDetailVo orderDetailVo : orderDetailVos) {
-                    Integer goodTypeId = orderDetailVo.getGoodTypeId();
-                    if (!goodsTypeIdMap.containsKey(goodTypeId)) {
-                        goodsTypeIdMap.put(goodTypeId, 0);
-                    }
-                }
+                goodsTypeIds.addAll(CollectionCommonUtil.getFieldListByObjectList(orderDetailVos, "getGoodTypeId", Integer.class));
             }
+
             // 根据goodsTypeId查询商品列表
-            ApiResponse<List<ConfirmGoodsVo>> goodsVoResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIdMap,true);
-            List<ConfirmGoodsVo> goodsVos = goodsVoResponse.getBody();
-            Map<Integer, ConfirmGoodsVo> goodsVoMap = CollectionCommonUtil.toMapByList(goodsVos, "getGoodsTypeId", Integer.class);
+            QueryGoodsTypeDto queryGoodsTypeDto = new QueryGoodsTypeDto();
+            queryGoodsTypeDto.setIds(goodsTypeIds);
+            queryGoodsTypeDto.setNeedPic(true);
+            ApiResponse<List<GoodsTypeDto>> goodsVoResponse = goodsTypeServiceFacade.queryDtoByCondition(queryGoodsTypeDto);
+            List<GoodsTypeDto> goodsTypeDtos = goodsVoResponse.getBody();
+            Map<Integer, GoodsTypeDto> goodsTypeDtoMap = CollectionCommonUtil.toMapByList(goodsTypeDtos, "getId", Integer.class);
             // 查询区ID对应的省ID
-            Map<Integer, AddressDTO> provinceIdMap = new HashMap<>();
             if(CollectionUtils.isNotEmpty(areaIds)) {
-                provinceIdMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
+                Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
                 // 把顺丰和普快递的目的地ID重置为省ID
                 for (QueryExpressPriceDto queryExpressPriceDto : queryExpressPriceDtoList) {
-                    if (provinceIdMap.containsKey(queryExpressPriceDto.getDestAreaId())&&
-                            !queryExpressPriceDto.getExpressId().equals(ExpressConstant.Express.WULIU.getId())) {
-                        queryExpressPriceDto.setDestAreaId(provinceIdMap.get(queryExpressPriceDto.getDestAreaId()).getProvinceId());
+                    Integer destAreaId = queryExpressPriceDto.getDestAreaId();
+                    if (addressDTOMap.containsKey(destAreaId) && !queryExpressPriceDto.getExpressId().equals(ExpressConstant.Express.WULIU.getId())) {
+                        queryExpressPriceDto.setDestAreaId(addressDTOMap.get(destAreaId).getProvinceId());
+                    }
+                }
+                for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+                    Integer areaId = goodsOrderVo.getAreaId();
+                    if(addressDTOMap.containsKey(areaId)){
+                        goodsOrderVo.setAddress(addressDTOMap.get(areaId));
                     }
                 }
             }
@@ -555,7 +560,7 @@ public class OrderManager {
                 expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
             }
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                dealGoodsOrderVo(goodsOrderVo, expressPriceMap,provinceIdMap,goodsVoMap);
+                dealGoodsOrderVo(goodsOrderVo, expressPriceMap,goodsTypeDtoMap);
             }
         }
     }
@@ -564,17 +569,14 @@ public class OrderManager {
      * 补充订单中的小计，图片，时效
      * @param goodsOrderVo
      * @param expressPriceMap
-     * @param provinceIdMap
-     * @param goodsVoMap
+     * @param goodsTypeDtoMap
      */
-    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<String,ExpressPrice> expressPriceMap, Map<Integer,AddressDTO> provinceIdMap,
-                                  Map<Integer, ConfirmGoodsVo> goodsVoMap){
+    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<String,ExpressPrice> expressPriceMap, Map<Integer, GoodsTypeDto> goodsTypeDtoMap){
         String expressType = goodsOrderVo.getExpressType();
         Integer districtId ;
         // 非物流方式的订单，需要查询目的地的省ID
-        if(!expressType.equals(ExpressConstant.Express.WULIU.getId().toString())&&
-                provinceIdMap.containsKey(goodsOrderVo.getAreaId())){
-            districtId = provinceIdMap.get(goodsOrderVo.getAreaId()).getProvinceId();
+        if(!expressType.equals(ExpressConstant.Express.WULIU.getId().toString())){
+            districtId = goodsOrderVo.getAddress().getProvinceId();
         }else{
             districtId = goodsOrderVo.getAreaId();
         }
@@ -582,7 +584,7 @@ public class OrderManager {
         // 时效
         String aging = StringUtils.EMPTY;
         // 获取时效时效信息
-        String unionKey = goodsOrderVo.getExpressType()+districtId;
+        String unionKey = goodsOrderVo.getExpressType() + districtId;
         if(expressPriceMap.containsKey(unionKey)){
             aging = MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging());
         }
@@ -596,7 +598,7 @@ public class OrderManager {
                 if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
                     subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
                 }
-                dealSubGoodsOrderVo(subGoodsOrderVo, goodsVoMap);
+                dealSubGoodsOrderVo(subGoodsOrderVo, goodsTypeDtoMap);
             }
         }else {
             //非DIY订单补充仓库提示
@@ -606,11 +608,11 @@ public class OrderManager {
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
-                ConfirmGoodsVo goodsVo = goodsVoMap.get(orderDetailVo.getGoodTypeId());
-                List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
-                orderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());
-                orderDetailVo.setMallSkuName(goodsVo.getGoodsTypeName());
-                orderDetailVo.setCustomized(goodsVo.getCustomized());
+                GoodsTypeDto goodsTypeDto = goodsTypeDtoMap.get(orderDetailVo.getGoodTypeId());
+                List<GoodsPic> goodsPics = goodsTypeDto.getGoodsPics();
+                orderDetailVo.setPicUrl(goodsPics.get(0).getPicUrl());
+                orderDetailVo.setMallSkuName(goodsTypeDto.getName());
+                orderDetailVo.setCustomized(goodsTypeDto.getCustomized());
             }
         }
     }
@@ -618,20 +620,20 @@ public class OrderManager {
     /**
      * 处理子订单
      * @param subGoodsOrderVo
-     * @param goodsVoMap
+     * @param goodsTypeDtoMap
      */
-    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, ConfirmGoodsVo> goodsVoMap){
+    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, GoodsTypeDto> goodsTypeDtoMap){
         List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
             subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
             consumeAmount = AmountUtil.add(consumeAmount, subOrderDetailVo.getTotal());
-            ConfirmGoodsVo goodsVo = goodsVoMap.get(subOrderDetailVo.getGoodTypeId());
-            List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
-            subOrderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());
-            subOrderDetailVo.setMallSkuName(goodsVo.getGoodsTypeName());
-            subOrderDetailVo.setCustomized(goodsVo.getCustomized());
+            GoodsTypeDto goodsTypeDto = goodsTypeDtoMap.get(subOrderDetailVo.getGoodTypeId());
+            List<GoodsPic> goodsPics = goodsTypeDto.getGoodsPics();
+            subOrderDetailVo.setPicUrl(goodsPics.get(0).getPicUrl());
+            subOrderDetailVo.setMallSkuName(goodsTypeDto.getName());
+            subOrderDetailVo.setCustomized(goodsTypeDto.getCustomized());
         }
         subGoodsOrderVo.setConsumeAmount(consumeAmount);
     }
