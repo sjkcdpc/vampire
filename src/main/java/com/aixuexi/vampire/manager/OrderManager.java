@@ -497,7 +497,7 @@ public class OrderManager {
                 containsCustom = true;
             }
         }
-        Assert.isTrue(containsPreSale.equals(containsCustom), "预售产品不能和普通产品同时下单结算，请分开下单结算");
+        Assert.isTrue(!containsPreSale.equals(containsCustom), "预售产品不能和普通产品同时下单结算，请分开下单结算");
     }
 
     /**
