@@ -504,65 +504,69 @@ public class OrderManager {
      * 处理多个订单使用
      * @param goodsOrderVos
      */
-    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos){
+    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos) {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
-            // 查询快递时效的条件
-            List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
-            // 订单中物流方式下的目的地ID
-            Set<Integer> areaIds = Sets.newHashSet();
-            // 商品goodTypeId集合
-            List<Integer> goodsTypeIds = new ArrayList<>();
-            // 准备工作,防止多次调用微服务
+            // 查询商品信息
+            Map<Integer, GoodsTypeDto> goodsTypeDtoMap = queryGoodsTypeDtoMap(goodsOrderVos);
+            // 查询快递时效
+            Map<String, ExpressPrice> expressPriceMap = queryExpressPriceMap(goodsOrderVos);
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
-                String expressType = goodsOrderVo.getExpressType();
-                Integer areaId = goodsOrderVo.getAreaId();
-                queryExpressPriceDto.setExpressId(Integer.parseInt(expressType));
-                queryExpressPriceDto.setDestAreaId(areaId);
-                queryExpressPriceDtoList.add(queryExpressPriceDto);
-                // 获取订单中非物流的目的地ID
-                if (!expressType.equals(ExpressConstant.Express.WULIU.getId().toString()) && areaId != null) {
-                    areaIds.add(areaId);
-                }
-                List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
-                goodsTypeIds.addAll(CollectionCommonUtil.getFieldListByObjectList(orderDetailVos, "getGoodTypeId", Integer.class));
-            }
-
-            // 根据goodsTypeId查询商品列表
-            QueryGoodsTypeDto queryGoodsTypeDto = new QueryGoodsTypeDto();
-            queryGoodsTypeDto.setIds(goodsTypeIds);
-            queryGoodsTypeDto.setNeedPic(true);
-            ApiResponse<List<GoodsTypeDto>> goodsVoResponse = goodsTypeServiceFacade.queryDtoByCondition(queryGoodsTypeDto);
-            List<GoodsTypeDto> goodsTypeDtos = goodsVoResponse.getBody();
-            Map<Integer, GoodsTypeDto> goodsTypeDtoMap = CollectionCommonUtil.toMapByList(goodsTypeDtos, "getId", Integer.class);
-            // 查询区ID对应的省ID
-            if(CollectionUtils.isNotEmpty(areaIds)) {
-                Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
-                // 把顺丰和普快递的目的地ID重置为省ID
-                for (QueryExpressPriceDto queryExpressPriceDto : queryExpressPriceDtoList) {
-                    Integer destAreaId = queryExpressPriceDto.getDestAreaId();
-                    if (addressDTOMap.containsKey(destAreaId) && !queryExpressPriceDto.getExpressId().equals(ExpressConstant.Express.WULIU.getId())) {
-                        queryExpressPriceDto.setDestAreaId(addressDTOMap.get(destAreaId).getProvinceId());
-                    }
-                }
-                for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                    Integer areaId = goodsOrderVo.getAreaId();
-                    if(addressDTOMap.containsKey(areaId)){
-                        goodsOrderVo.setAddress(addressDTOMap.get(areaId));
-                    }
-                }
-            }
-            // 获取快递时效
-            ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
-            Map<String,ExpressPrice> expressPriceMap = new HashMap<>();
-            if(CollectionUtils.isNotEmpty(apiResponse.getBody())){
-                List<ExpressPrice> expressPriceList = apiResponse.getBody();
-                expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
-            }
-            for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                dealGoodsOrderVo(goodsOrderVo, expressPriceMap,goodsTypeDtoMap);
+                dealGoodsOrderVo(goodsOrderVo, expressPriceMap, goodsTypeDtoMap);
             }
         }
+    }
+
+    /**
+     * 查询快递时效
+     *
+     * @param goodsOrderVos
+     */
+    private Map<String, ExpressPrice> queryExpressPriceMap(List<GoodsOrderVo> goodsOrderVos) {
+        // 区ID集合
+        List<Integer> areaIds = CollectionCommonUtil.getFieldListByObjectList(goodsOrderVos, "getAreaId", Integer.class);
+        Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(areaIds);
+        // 查询快递时效的条件
+        List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
+        for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+            AddressDTO addressDTO = addressDTOMap.get(goodsOrderVo.getAreaId());
+            goodsOrderVo.setAddress(addressDTO);
+            int expressId = Integer.parseInt(goodsOrderVo.getExpressType());
+            QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
+            queryExpressPriceDto.setExpressId(expressId);
+            if (expressId == ExpressConstant.Express.WULIU.getId()) {
+                // 把物流的目的地ID设为区ID
+                queryExpressPriceDto.setDestAreaId(addressDTO.getDistrictId());
+            } else {
+                // 把顺丰和普通快递的目的地ID设为省ID
+                queryExpressPriceDto.setDestAreaId(addressDTO.getProvinceId());
+            }
+            queryExpressPriceDtoList.add(queryExpressPriceDto);
+        }
+        // 获取快递时效
+        ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
+        List<ExpressPrice> expressPriceList = apiResponse.getBody();
+        return CollectionCommonUtil.toUnionKeyMapByList(expressPriceList, Lists.newArrayList("getExpressId", "getDestAreaId"));
+    }
+
+    /**
+     * 获取商品信息
+     *
+     * @param goodsOrderVos
+     */
+    private Map<Integer, GoodsTypeDto> queryGoodsTypeDtoMap(List<GoodsOrderVo> goodsOrderVos) {
+        // 商品goodTypeId集合
+        List<Integer> goodsTypeIds = new ArrayList<>();
+        for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+            List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
+            goodsTypeIds.addAll(CollectionCommonUtil.getFieldListByObjectList(orderDetailVos, "getGoodTypeId", Integer.class));
+        }
+        // 根据goodsTypeId查询商品列表
+        QueryGoodsTypeDto queryGoodsTypeDto = new QueryGoodsTypeDto();
+        queryGoodsTypeDto.setIds(goodsTypeIds);
+        queryGoodsTypeDto.setNeedPic(true);
+        ApiResponse<List<GoodsTypeDto>> goodsVoResponse = goodsTypeServiceFacade.queryDtoByCondition(queryGoodsTypeDto);
+        List<GoodsTypeDto> goodsTypeDtos = goodsVoResponse.getBody();
+        return CollectionCommonUtil.toMapByList(goodsTypeDtos, "getId", Integer.class);
     }
 
     /**
@@ -572,21 +576,22 @@ public class OrderManager {
      * @param goodsTypeDtoMap
      */
     private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<String,ExpressPrice> expressPriceMap, Map<Integer, GoodsTypeDto> goodsTypeDtoMap){
-        String expressType = goodsOrderVo.getExpressType();
-        Integer districtId ;
-        // 非物流方式的订单，需要查询目的地的省ID
-        if(!expressType.equals(ExpressConstant.Express.WULIU.getId().toString())){
-            districtId = goodsOrderVo.getAddress().getProvinceId();
-        }else{
-            districtId = goodsOrderVo.getAreaId();
-        }
-
         // 时效
         String aging = StringUtils.EMPTY;
+        String expressType = goodsOrderVo.getExpressType();
+        int expressId = Integer.parseInt(expressType);
+        AddressDTO address = goodsOrderVo.getAddress();
         // 获取时效时效信息
-        String unionKey = goodsOrderVo.getExpressType() + districtId;
-        if(expressPriceMap.containsKey(unionKey)){
-            aging = MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging());
+        String unionKey;
+        if (expressId == ExpressConstant.Express.WULIU.getId()) {
+            // 把物流的目的地ID设为区ID
+            unionKey = expressType + address.getDistrictId();
+        } else {
+            // 把顺丰和普通快递的目的地ID设为省ID
+            unionKey = expressType + address.getProvinceId();
+        }
+        if (expressPriceMap.containsKey(unionKey)) {
+            aging = MessageFormat.format(expressUtil.getExpressTips(), expressPriceMap.get(unionKey).getAging());
         }
         //拆单需要处理子订单
         if (goodsOrderVo.getSplitNum() > 1){
