@@ -31,7 +31,6 @@ import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -481,9 +480,9 @@ public class OrderManager {
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
         Assert.notEmpty(confirmGoodsVos, "商品不存在");
         // 是否包含预售商品
-        Boolean containsPreSale = false;
+        boolean containsPreSale = false;
         // 是否包含普通商品
-        Boolean containsCustom = false;
+        boolean containsCustom = false;
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             // 商品全称（商品+型号名称）
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
@@ -492,12 +491,13 @@ public class OrderManager {
             Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
             if (confirmGoodsVo.getPreSale()) {
                 containsPreSale = true;
-            }
-            if (!confirmGoodsVo.getPreSale()) {
+            }else {
                 containsCustom = true;
             }
         }
-        Assert.isTrue(!containsPreSale.equals(containsCustom), "预售产品不能和普通产品同时下单结算，请分开下单结算");
+        // 同时包含预售和普通
+        boolean containsBoth = containsPreSale && containsCustom;
+        Assert.isTrue(!containsBoth, "预售产品不能和普通产品同时下单结算，请分开下单结算");
     }
 
     /**

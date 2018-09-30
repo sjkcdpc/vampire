@@ -1,6 +1,5 @@
 package com.aixuexi.vampire.controller;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -15,7 +14,6 @@ import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
@@ -27,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
