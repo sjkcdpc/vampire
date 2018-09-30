@@ -9,8 +9,6 @@ import com.gaosi.api.vulcan.model.ShoppingCartList;
 import com.gaosi.api.vulcan.vo.ShoppingCartListVo;
 import com.gaosi.api.vulcan.vo.ShoppingCartVo;
 import org.apache.commons.collections.CollectionUtils;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
