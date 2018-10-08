@@ -77,9 +77,9 @@ public class OrderController {
      * @return
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
-    public ResultData freight(@RequestParam Integer provinceId,@RequestParam Integer areaId, Integer[] goodsTypeIds) {
+    public ResultData freight(Integer provinceId, Integer areaId, Integer[] goodsTypeIds) {
         if (provinceId == null || areaId == null) {
-            return ResultData.failed("参数不能为空 ");
+            return ResultData.failed("参数不能为空");
         }
         ResultData resultData = new ResultData();
         Integer userId = UserHandleUtil.getUserId();

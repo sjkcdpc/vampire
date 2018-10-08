@@ -507,7 +507,10 @@ public class ItemOrderController {
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@RequestParam String orderId, @RequestParam Integer categoryId) {
+    public ResultData detail(@RequestParam String orderId, Integer categoryId) {
+        if (categoryId == null) {
+            categoryId = MallItemConstant.Category.JCZB.getId();
+        }
         switch (MallItemConstant.Category.get(categoryId)){
             case RCZX:
                 ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
@@ -522,7 +525,7 @@ public class ItemOrderController {
                 orderManager.dealGoodsOrderVos(goodsOrderVos);
                 return ResultData.successed(goodsOrderVo);
             default:
-                return ResultData.failed("参数类型错误");
+                return ResultData.failed("订单类型错误");
         }
     }
 
