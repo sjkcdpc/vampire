@@ -45,6 +45,9 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
+
 /**
  * 订单
  * Created by gaoxinzhong on 2017/5/15.
@@ -188,9 +191,7 @@ public class OrderManager {
             shoppingCartLists.add(shoppingCartList);
         }
         shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, submitGoodsOrderVo.getUserId());
-        //如果包含DIY，则返回空提示
-        return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), simpleGoodsOrderVo.isContainDIY() ? "" : goodsOrderVo.getAging(),
-                getTips(simpleGoodsOrderVo.getSplitNum(),simpleGoodsOrderVo.isContainDIY()));
+        return getTips(simpleGoodsOrderVo,goodsOrderVo.getAging());
     }
 
     /**
@@ -258,7 +259,7 @@ public class OrderManager {
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
-        goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
+        goodsOrderVo.setAging(expressFreightVo.getAging());
         return goodsOrderVo;
     }
 
@@ -457,19 +458,34 @@ public class OrderManager {
 
     /**
      * 下单成功后提示
-     * @param splitNum
-     * @param isContainDIY
+     * @param simpleGoodsOrderVo
+     * @param aging
      * @return
      */
-    private String getTips(Integer splitNum, Boolean isContainDIY) {
-        StringBuilder tips = new StringBuilder();
-        if (splitNum > 1) {
-            tips.append(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
+    private OrderSuccessVo getTips(SimpleGoodsOrderVo simpleGoodsOrderVo, String aging) {
+        OrderSuccessVo orderSuccessVo = new OrderSuccessVo();
+        orderSuccessVo.setOrderId(simpleGoodsOrderVo.getOrderId());
+        Integer splitNum = simpleGoodsOrderVo.getSplitNum();
+        if (splitNum != null && splitNum > 1) {
+            orderSuccessVo.setSplitTips(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
         }
-        if (isContainDIY) {
-            tips.append(expressUtil.getDiyTips());
+        Integer orderType = simpleGoodsOrderVo.getOrderType();
+        String agingTips = StringUtils.EMPTY;
+        if (StringUtils.isNotBlank(aging)) {
+            agingTips = MessageFormat.format(expressUtil.getAging(), aging);
         }
-        return tips.toString();
+        switch (orderType) {
+            case DIY_CUSTOM_ORDER:
+                orderSuccessVo.setSplitTips(expressUtil.getDiyTips());
+                break;
+            case PRESALE_ORDER:
+                orderSuccessVo.setTips(expressUtil.getPreSaleDeliveryTime() + agingTips);
+                break;
+            default:
+                orderSuccessVo.setTips(expressUtil.getDeliveryTime() + agingTips);
+                break;
+        }
+        return orderSuccessVo;
     }
 
     /**
@@ -591,7 +607,7 @@ public class OrderManager {
             unionKey = expressType + address.getProvinceId();
         }
         if (expressPriceMap.containsKey(unionKey)) {
-            aging = MessageFormat.format(expressUtil.getExpressTips(), expressPriceMap.get(unionKey).getAging());
+            aging = expressPriceMap.get(unionKey).getAging();
         }
         //拆单需要处理子订单
         if (goodsOrderVo.getSplitNum() > 1){
@@ -599,16 +615,23 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                //非DIY订单补充仓库提示
+                SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
+                simpleGoodsOrderVo.setOrderId(subGoodsOrderVo.getId());
+                simpleGoodsOrderVo.setOrderType(subGoodsOrderVo.getOrderType());
+                OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
                 if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
+                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + orderSuccessVo.getTips());
                 }
                 dealSubGoodsOrderVo(subGoodsOrderVo, goodsTypeDtoMap);
             }
         }else {
-            //非DIY订单补充仓库提示
+            SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
+            simpleGoodsOrderVo.setOrderId(goodsOrderVo.getId());
+            simpleGoodsOrderVo.setOrderType(goodsOrderVo.getOrderType());
+            simpleGoodsOrderVo.setSplitNum(goodsOrderVo.getSplitNum());
+            OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
             if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
+                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + orderSuccessVo.getTips());
             }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {

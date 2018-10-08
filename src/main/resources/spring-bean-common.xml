@@ -5,13 +5,13 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
     <!-- 快递公司 -->
-    <bean id="expressUtil" scope="singleton" class="com.aixuexi.vampire.util.ExpressUtil">
+    <bean id="expressUtil" class="com.aixuexi.vampire.util.ExpressUtil">
         <property name="syncToWms" value="${syncToWms}"/>
-        <property name="freightUpdateTime" value="${freightUpdateTime}"/>
         <property name="splitTips" value="${splitTips}"/>
         <property name="aging" value="${aging}"/>
-        <property name="expressTips" value="${expressTips}"/>
         <property name="diyTips" value="${diyTips}"/>
+        <property name="deliveryTime" value="${deliveryTime}"/>
+        <property name="preSaleDeliveryTime" value="${preSaleDeliveryTime}"/>
     </bean>
 
 </beans>
