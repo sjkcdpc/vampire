@@ -476,7 +476,7 @@ public class OrderManager {
         }
         switch (orderType) {
             case DIY_CUSTOM_ORDER:
-                orderSuccessVo.setSplitTips(expressUtil.getDiyTips());
+                orderSuccessVo.setTips(expressUtil.getDiyTips());
                 break;
             case PRESALE_ORDER:
                 orderSuccessVo.setTips(expressUtil.getPreSaleDeliveryTime() + agingTips);
@@ -620,7 +620,7 @@ public class OrderManager {
                 simpleGoodsOrderVo.setOrderType(subGoodsOrderVo.getOrderType());
                 OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
                 if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + orderSuccessVo.getTips());
+                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
                 }
                 dealSubGoodsOrderVo(subGoodsOrderVo, goodsTypeDtoMap);
             }
@@ -631,7 +631,7 @@ public class OrderManager {
             simpleGoodsOrderVo.setSplitNum(goodsOrderVo.getSplitNum());
             OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
             if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + orderSuccessVo.getTips());
+                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
             }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
