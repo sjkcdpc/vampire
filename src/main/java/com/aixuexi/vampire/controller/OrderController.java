@@ -72,12 +72,13 @@ public class OrderController {
     /**
      * 计算运费
      * @param provinceId 省id
-     * @param areaId 区id
+     * @param areaId 区id（前端有时不传，查不出原因）
      * @param goodsTypeIds 商品类型id
      * @return
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
-    public ResultData freight(Integer provinceId, Integer areaId, Integer[] goodsTypeIds) {
+    public ResultData freight(@RequestParam Integer provinceId, @RequestParam(required = false) Integer areaId,
+                              Integer[] goodsTypeIds) {
         if (provinceId == null || areaId == null) {
             return ResultData.failed("参数不能为空");
         }

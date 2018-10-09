@@ -503,11 +503,11 @@ public class ItemOrderController {
     /**
      * 订单详情
      * @param orderId
-     * @param categoryId
+     * @param categoryId （前端有时不传，查不出原因）
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@RequestParam String orderId, Integer categoryId) {
+    public ResultData detail(@RequestParam String orderId, @RequestParam(required = false) Integer categoryId) {
         if (categoryId == null) {
             categoryId = MallItemConstant.Category.JCZB.getId();
         }
