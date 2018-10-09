@@ -511,7 +511,9 @@ public class ItemOrderController {
         if (categoryId == null) {
             categoryId = MallItemConstant.Category.JCZB.getId();
         }
-        switch (MallItemConstant.Category.get(categoryId)){
+        MallItemConstant.Category category = MallItemConstant.Category.get(categoryId);
+        Assert.notNull(category,"未知订单类型");
+        switch (category){
             case RCZX:
                 ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
                 ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
