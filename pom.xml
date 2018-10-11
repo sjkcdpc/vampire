@@ -15,7 +15,7 @@
         <spring-version>4.3.4.RELEASE</spring-version>
         <avatar.version>mall_store_two-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor-util.version>branch-mall-1.5.78-RELEASE</thor-util.version>
+        <thor-util.version>1.5.91-RELEASE</thor-util.version>
         <transformers.version>1.0.13.11-RELEASE</transformers.version>
         <transformers-proto.version>1.0.33-RELEASE</transformers-proto.version>
         <orika.version>1.5.1</orika.version>
@@ -68,6 +68,10 @@
                 <exclusion>
                     <groupId>com.gaosi</groupId>
                     <artifactId>common.util</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.aixuexi</groupId>
+                    <artifactId>thor-util</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -255,6 +259,12 @@
             <groupId>com.aixuexi</groupId>
             <artifactId>thor-util</artifactId>
             <version>${thor-util.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-jdbc</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
