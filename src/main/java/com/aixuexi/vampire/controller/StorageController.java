@@ -3,12 +3,15 @@ package com.aixuexi.vampire.controller;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.thor.response.StorageResponse;
 import com.aixuexi.thor.storage.StorageAuthorizationUtil;
+import com.gaosi.api.vulcan.util.PicUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author baopan
@@ -39,6 +42,10 @@ public class StorageController {
         StorageResponse<String> signatureResponse = StorageAuthorizationUtil.getSignature(accessKey, secretKey, expired);
         String signature = signatureResponse.getBody();
 
-        return ResultData.successed(signature);
+        Map<String, String> result = new HashMap<>();
+        result.put("token", signature);
+        result.put("businessKey", PicUtils.MALL_STORAGE);
+
+        return ResultData.successed(result);
     }
 }
