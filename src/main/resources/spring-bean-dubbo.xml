@@ -49,6 +49,7 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsExtServiceFacade"  id="goodsExtServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemServiceFacade"  id="mallItemServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ArrivalNoticeServiceFacade" id="arrivalNoticeServiceFacade" />
+    <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallSkuServiceFacade" id="mallSkuServiceFacade" />
 
     <!--基础数据-->
     <dubbo:reference interface="com.gaosi.api.basicdata.DistrictApi" id="districtApi" />
