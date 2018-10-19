@@ -21,16 +21,16 @@ import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
-import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
+import com.gaosi.api.vulcan.dto.GoodsTypeDto;
+import com.gaosi.api.vulcan.dto.QueryGoodsTypeDto;
 import com.gaosi.api.vulcan.facade.*;
 import com.gaosi.api.vulcan.model.*;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -44,6 +44,9 @@ import javax.annotation.Resource;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
 
 /**
  * 订单
@@ -73,9 +76,6 @@ public class OrderManager {
     private OrderServiceFacade orderServiceFacade;
 
     @Resource
-    private InstitutionService institutionService;
-
-    @Resource
     private ExpressUtil expressUtil;
 
     @Resource
@@ -102,6 +102,9 @@ public class OrderManager {
     @Resource
     private MallItemExtServiceFacade mallItemExtServiceFacade;
 
+    @Resource
+    private GoodsTypeServiceFacade goodsTypeServiceFacade;
+
 
     /**
      * 核对订单信息
@@ -111,9 +114,8 @@ public class OrderManager {
      * @return
      */
     public ConfirmOrderVo confirmOrder(Integer userId, Integer insId) {
-        logger.info("confirmOrder start --> userId : {}, insId : {}", userId, insId);
         ConfirmOrderVo confirmOrderVo = new ConfirmOrderVo();
-        // 1. 收货人地址
+        // 收货人地址
         List<ConsigneeVo> consigneeVos = findConsignee(insId);
         for (ConsigneeVo consigneeVo : consigneeVos) {
             if (consigneeVo.getSystemDefault()) {
@@ -122,101 +124,95 @@ public class OrderManager {
             }
         }
         confirmOrderVo.setConsignees(consigneeVos);
-        // 2. 配送方式
+        // 配送方式
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
         List<ExpressType> expressTypes = expressTypeResponse.getBody();
         List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
         confirmOrderVo.setExpressTypes(confirmExpressVos);
-        // 3. 用户购物车中商品清单
-        List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, null, null);
-        Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
-                "getNum",Integer.class);
-
-        // 4. 根据goodsTypeIds查询商品其他信息
-        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,true);
-        List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
-        confirmOrderVo.setGoodsItem(goodsVos);
+        // 根据userId查询订单确认中的商品信息
+        ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryConfirmGoodsVo(userId,null);
+        List<ConfirmGoodsVo> confirmGoodsVos = apiResponse.getBody();
+        Assert.notEmpty(confirmGoodsVos,"购物车中商品已结算或为空");
+        dealConfirmGoodsVos(confirmGoodsVos,confirmOrderVo);
+        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos);
         confirmOrderVo.setGoodsPieces(goodsFreightSubtotalBo.getGoodsPieces());
         confirmOrderVo.setGoodsAmount(goodsFreightSubtotalBo.getGoodsAmount());
         confirmOrderVo.setGoodsWeight(goodsFreightSubtotalBo.getWeight());
-        // 5. 账户余额
+        // 账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
         Long remain = rr.getUsableRemain();
         confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
-        // 6. 获取token
+        // 获取token
         confirmOrderVo.setToken(financialAccountService.getTokenForFinancial());
-        logger.info("confirmOrder end --> confirmOrderVo : {}", confirmOrderVo);
         return confirmOrderVo;
     }
 
     /**
+     * 筛选出普通商品列表和预售商品列表
+     * @param confirmGoodsVos
+     * @param confirmOrderVo
+     */
+    private void dealConfirmGoodsVos(List<ConfirmGoodsVo> confirmGoodsVos, ConfirmOrderVo confirmOrderVo) {
+        List<ConfirmGoodsVo> goodsItem = new ArrayList<>();
+        List<ConfirmGoodsVo> preSaleGoodsItem = new ArrayList<>();
+        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+            if(confirmGoodsVo.getPreSale()){
+                preSaleGoodsItem.add(confirmGoodsVo);
+            }else{
+                goodsItem.add(confirmGoodsVo);
+            }
+        }
+        confirmOrderVo.setGoodsItem(goodsItem);
+        confirmOrderVo.setPreSaleGoodsItem(preSaleGoodsItem);
+    }
+
+    /**
      * 提交订单
-     *
-     * @param userId       用户ID
-     * @param insId        机构ID
-     * @param consigneeId  收货人ID
-     * @param receivePhone 收货通知手机号
-     * @param express      快递
-     * @param goodsTypeIds 商品类型ID
-     * @param token        财务token
+     * @param submitGoodsOrderVo
      * @return
      */
-    public OrderSuccessVo submit(Integer userId, Integer insId, Integer consigneeId, String receivePhone,
-                                 String express, List<Integer> goodsTypeIds, String token) {
-        // 查询购物车
-        List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, MallItemConstant.Category.JCZB.getId(), goodsTypeIds);
+    public OrderSuccessVo submit(SubmitGoodsOrderVo submitGoodsOrderVo) {
         // 创建订单对象
-        GoodsOrderVo goodsOrderVo = createGoodsOrder(shoppingCartListVos, userId, insId, consigneeId, receivePhone, express);
+        GoodsOrderVo goodsOrderVo = createGoodsOrder(submitGoodsOrderVo);
         // 支付金额 = 商品金额 + 邮费
         Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
         // 账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(submitGoodsOrderVo.getInsId());
         financialAccountManager.checkRemainMoney(rr, amount.longValue());
         // 创建订单
-        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, token);
+        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, submitGoodsOrderVo.getToken());
         SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
         // 清空购物车
         List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
-        for (ShoppingCartListVo shoppingCartListVo : shoppingCartListVos) {
+        for (Integer goodsTypeId : submitGoodsOrderVo.getGoodsTypeIds()) {
             ShoppingCartList shoppingCartList = new ShoppingCartList();
             shoppingCartList.setCategoryId(MallItemConstant.Category.JCZB.getId());
-            shoppingCartList.setGoodsTypeId(shoppingCartListVo.getGoodsTypeId());
+            shoppingCartList.setGoodsTypeId(goodsTypeId);
             shoppingCartLists.add(shoppingCartList);
         }
-        shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, userId);
-        //如果包含DIY，则返回空提示
-        return new OrderSuccessVo(simpleGoodsOrderVo.getOrderId(), simpleGoodsOrderVo.isContainDIY() ? "" : goodsOrderVo.getAging(),
-                getTips(simpleGoodsOrderVo.getSplitNum(),simpleGoodsOrderVo.isContainDIY()));
+        shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, submitGoodsOrderVo.getUserId());
+        return getTips(simpleGoodsOrderVo,goodsOrderVo.getAging());
     }
 
     /**
      * 创建订单对象
-     *
-     * @param shoppingCartListVos 购物车中的商品
-     * @param userId            用户ID
-     * @param insId             机构ID
-     * @param consigneeId       收货人ID
-     * @param receivePhone      收货通知手机号
-     * @param express           快递
+     * @param submitGoodsOrderVo
      * @return
      */
-    private GoodsOrderVo createGoodsOrder(List<ShoppingCartListVo> shoppingCartListVos, Integer userId, Integer insId,
-                                          Integer consigneeId, String receivePhone, String express) {
+    private GoodsOrderVo createGoodsOrder(SubmitGoodsOrderVo submitGoodsOrderVo) {
         // 订单
         GoodsOrderVo goodsOrderVo = new GoodsOrderVo();
         // 订单基本信息
         goodsOrderVo.setCategoryId(MallItemConstant.Category.JCZB.getId());
         goodsOrderVo.setRemark(StringUtils.EMPTY);
+        Integer userId = submitGoodsOrderVo.getUserId();
         goodsOrderVo.setUserId(userId);
-        // 商品SKUID和数量的映射，Map<goodTypeId,num>
-        Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
-                "getNum",Integer.class);
         // 查询商品明细
-        ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,false);
+        List<Integer> goodsTypeIds = submitGoodsOrderVo.getGoodsTypeIds();
+        ApiResponse<List<ConfirmGoodsVo>> goodsVosResponse = goodsServiceFacade.queryConfirmGoodsVo(userId, goodsTypeIds);
         List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
         validateGoods(confirmGoodsVos);
-        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos, goodsNum);
+        GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos);
         // 订单详情
         List<OrderDetailVo> orderDetailVos = baseMapper.mapAsList(confirmGoodsVos,OrderDetailVo.class);
         handlePeriod(orderDetailVos);
@@ -224,26 +220,26 @@ public class OrderManager {
         // 商品总金额
         goodsOrderVo.setConsumeAmount(goodsFreightSubtotalBo.getGoodsAmount());
         // 机构信息
-        Institution institution = institutionService.getInsInfoById(insId);
-        goodsOrderVo.setInstitutionId(insId);
+        goodsOrderVo.setInstitutionId(submitGoodsOrderVo.getInsId());
+        Institution institution = submitGoodsOrderVo.getInstitution();
         goodsOrderVo.setInstitutionName(institution.getName());
         goodsOrderVo.setSyncToWms(true);
-        if (InstitutionTypeEnum.TEST.getType() == institution.getInstitutionType() ||
-                InstitutionTypeEnum.TRY.getType() == institution.getInstitutionType() ||
-                !expressUtil.getSyncToWms()) {
-            // 测试机构,试用机构或者关闭同步开关 则不同步到WMS
+        if (InstitutionTypeEnum.TEST.getType() == institution.getInstitutionType() || !expressUtil.getSyncToWms()) {
+            // 测试机构或者关闭同步开关 则不同步到WMS
             goodsOrderVo.setSyncToWms(false);
         }
         // 设置配送方式
+        String express = submitGoodsOrderVo.getExpress();
         goodsOrderVo.setExpressCode(express);
         goodsOrderVo.setExpressType(ExpressConstant.Express.getIdByCode(express).toString());
         // 收货人信息
-        Consignee consignee = consigneeServiceFacade.selectById(consigneeId);
+        Consignee consignee = consigneeServiceFacade.selectById(submitGoodsOrderVo.getConsigneeId());
         Assert.notNull(consignee,"请选择收货地址");
         Integer areaId = consignee.getAreaId();
         goodsOrderVo.setAreaId(areaId);
         goodsOrderVo.setConsigneeName(consignee.getName());
         goodsOrderVo.setConsigneePhone(consignee.getPhone());
+        String receivePhone = submitGoodsOrderVo.getReceivePhone();
         goodsOrderVo.setReceivePhone(StringUtils.isBlank(receivePhone) ? consignee.getPhone() : receivePhone);
         // 地址信息
         Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaId));
@@ -263,7 +259,7 @@ public class OrderManager {
         ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
         goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
         // 订单提交成功时，快递时效提示
-        goodsOrderVo.setAging(MessageFormat.format(expressUtil.getExpressTips(), expressFreightVo.getAging()));
+        goodsOrderVo.setAging(expressFreightVo.getAging());
         return goodsOrderVo;
     }
 
@@ -406,18 +402,14 @@ public class OrderManager {
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            // TODO 目前只查教材的类别
-            int categoryId = MallItemConstant.Category.JCZB.getId();
-            List<ShoppingCartListVo> shoppingCartListVos = getShoppingCartDetails(userId, categoryId, goodsTypeIds);
-            Map<Integer, Integer> goodsNum =CollectionCommonUtil.toMapByList(shoppingCartListVos,"getGoodsTypeId",Integer.class,
-                    "getNum",Integer.class);
-            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryGoodsInfo(goodsNum,false);
-            List<ConfirmGoodsVo> goodsVos = apiResponse.getBody();
-
-            GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(goodsVos, goodsNum);
-            weight = goodsFreightSubtotalBo.getWeight();
-            goodsAmount = goodsFreightSubtotalBo.getGoodsAmount();
-            goodsPieces = goodsFreightSubtotalBo.getGoodsPieces();
+            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryConfirmGoodsVo(userId, goodsTypeIds);
+            List<ConfirmGoodsVo> confirmGoodsVos = apiResponse.getBody();
+            if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
+                GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos);
+                weight = goodsFreightSubtotalBo.getWeight();
+                goodsAmount = goodsFreightSubtotalBo.getGoodsAmount();
+                goodsPieces = goodsFreightSubtotalBo.getGoodsPieces();
+            }
         }
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
         List<ExpressType> expressTypes = expressTypeResponse.getBody();
@@ -439,26 +431,23 @@ public class OrderManager {
     /**
      * 获取计算运费需要的总重量、总费用、总件数
      *
-     * @param goodsVos 商品Vos
-     * @param goodsNum 购物车详情对应的map
+     * @param confirmGoodsVos 商品Vos
      * @return 运费小计bo
      */
-    private GoodsFreightSubtotalBo getGoodsFreightSubtotalBo(List<ConfirmGoodsVo> goodsVos, Map<Integer, Integer> goodsNum) {
+    private GoodsFreightSubtotalBo getGoodsFreightSubtotalBo(List<ConfirmGoodsVo> confirmGoodsVos) {
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = new GoodsFreightSubtotalBo();
         int goodsPieces = 0; // 商品总件数
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
-        for (ConfirmGoodsVo goodsVo : goodsVos) {
-            Integer goodsTypeId = goodsVo.getGoodsTypeId();
-            Integer typeNum = goodsNum.get(goodsTypeId);
-            goodsVo.setNum(typeNum);
+        for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
+            Integer num = confirmGoodsVo.getNum();
             // 数量*单价
-            goodsVo.setTotal(typeNum * goodsVo.getPrice());
-            if (goodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
+            confirmGoodsVo.setTotal(num * confirmGoodsVo.getPrice());
+            if (confirmGoodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
                 // 数量*单重量
-                weight += typeNum * goodsVo.getWeight();
-                goodsAmount += goodsVo.getTotal();
-                goodsPieces += typeNum;
+                weight += num * confirmGoodsVo.getWeight();
+                goodsAmount += confirmGoodsVo.getTotal();
+                goodsPieces += num;
             }
         }
         goodsFreightSubtotalBo.setGoodsAmount(goodsAmount);
@@ -468,40 +457,35 @@ public class OrderManager {
     }
 
     /**
-     * 获取购物车详情列表
-     *
-     * @param userId       用户Id
-     * @param categoryId   类型ID
-     * @param goodsTypeIds 商品skuID列表
-     * @return 购物车详情列表
-     */
-    private List<ShoppingCartListVo> getShoppingCartDetails(Integer userId, Integer categoryId, List<Integer> goodsTypeIds) {
-        ApiResponse<List<ShoppingCartListVo>> listApiResponse = null;
-        if (null != categoryId && CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId, categoryId, goodsTypeIds);
-        } else {//用于确认页面，此时没有goodsTypeIds
-            listApiResponse = shoppingCartServiceFacade.queryShoppingCartDetail(userId);
-        }
-        List<ShoppingCartListVo> shoppingCartListVos = listApiResponse.getBody();
-        Assert.notEmpty(shoppingCartListVos, "购物车中商品已结算或为空");
-        return shoppingCartListVos;
-    }
-
-    /**
      * 下单成功后提示
-     * @param splitNum
-     * @param isContainDIY
+     * @param simpleGoodsOrderVo
+     * @param aging
      * @return
      */
-    private String getTips(Integer splitNum, Boolean isContainDIY) {
-        StringBuilder tips = new StringBuilder();
-        if (splitNum > 1) {
-            tips.append(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
+    private OrderSuccessVo getTips(SimpleGoodsOrderVo simpleGoodsOrderVo, String aging) {
+        OrderSuccessVo orderSuccessVo = new OrderSuccessVo();
+        orderSuccessVo.setOrderId(simpleGoodsOrderVo.getOrderId());
+        Integer splitNum = simpleGoodsOrderVo.getSplitNum();
+        if (splitNum != null && splitNum > 1) {
+            orderSuccessVo.setSplitTips(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
         }
-        if (isContainDIY) {
-            tips.append(expressUtil.getDiyTips());
+        Integer orderType = simpleGoodsOrderVo.getOrderType();
+        String agingTips = StringUtils.EMPTY;
+        if (StringUtils.isNotBlank(aging)) {
+            agingTips = MessageFormat.format(expressUtil.getAging(), aging);
         }
-        return tips.toString();
+        switch (orderType) {
+            case DIY_CUSTOM_ORDER:
+                orderSuccessVo.setTips(expressUtil.getDiyTips());
+                break;
+            case PRESALE_ORDER:
+                orderSuccessVo.setTips(expressUtil.getPreSaleDeliveryTime() + agingTips);
+                break;
+            default:
+                orderSuccessVo.setTips(expressUtil.getDeliveryTime() + agingTips);
+                break;
+        }
+        return orderSuccessVo;
     }
 
     /**
@@ -511,101 +495,119 @@ public class OrderManager {
      */
     private void validateGoods(List<ConfirmGoodsVo> confirmGoodsVos) {
         Assert.notEmpty(confirmGoodsVos, "商品不存在");
+        // 是否包含预售商品
+        boolean containsPreSale = false;
+        // 是否包含普通商品
+        boolean containsCustom = false;
         for (ConfirmGoodsVo confirmGoodsVo : confirmGoodsVos) {
             // 商品全称（商品+型号名称）
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
             Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
             Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
             Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
+            if (confirmGoodsVo.getPreSale()) {
+                containsPreSale = true;
+            }else {
+                containsCustom = true;
+            }
         }
+        // 同时包含预售和普通
+        boolean containsBoth = containsPreSale && containsCustom;
+        Assert.isTrue(!containsBoth, "预售产品不能和普通产品同时下单结算，请分开下单结算");
     }
 
     /**
      * 处理多个订单使用
      * @param goodsOrderVos
      */
-    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos){
+    public void dealGoodsOrderVos(List<GoodsOrderVo> goodsOrderVos) {
         if (CollectionUtils.isNotEmpty(goodsOrderVos)) {
-            // 查询快递时效的条件
-            List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
-            // 订单中物流方式下的目的地ID
-            Set<Integer> areaIds = Sets.newHashSet();
-            // 商品goodTypeId,num集合
-            Map<Integer,Integer> goodsTypeIdMap = new HashMap<>();
-            // 准备工作,防止多次调用微服务
+            // 查询商品信息
+            Map<Integer, GoodsTypeDto> goodsTypeDtoMap = queryGoodsTypeDtoMap(goodsOrderVos);
+            // 查询快递时效
+            Map<String, ExpressPrice> expressPriceMap = queryExpressPriceMap(goodsOrderVos);
             for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
-                String expressType = goodsOrderVo.getExpressType();
-                Integer areaId = goodsOrderVo.getAreaId();
-                queryExpressPriceDto.setExpressId(Integer.parseInt(expressType));
-                queryExpressPriceDto.setDestAreaId(areaId);
-                queryExpressPriceDtoList.add(queryExpressPriceDto);
-                // 获取订单中非物流的目的地ID
-                if (!expressType.equals(ExpressConstant.Express.WULIU.getId().toString()) && areaId != null) {
-                    areaIds.add(areaId);
-                }
-                List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
-                for (OrderDetailVo orderDetailVo : orderDetailVos) {
-                    Integer goodTypeId = orderDetailVo.getGoodTypeId();
-                    if (!goodsTypeIdMap.containsKey(goodTypeId)) {
-                        goodsTypeIdMap.put(goodTypeId, 0);
-                    }
-                }
-            }
-            // 根据goodsTypeId查询商品列表
-            ApiResponse<List<ConfirmGoodsVo>> goodsVoResponse = goodsServiceFacade.queryGoodsInfo(goodsTypeIdMap,true);
-            List<ConfirmGoodsVo> goodsVos = goodsVoResponse.getBody();
-            Map<Integer, ConfirmGoodsVo> goodsVoMap = CollectionCommonUtil.toMapByList(goodsVos, "getGoodsTypeId", Integer.class);
-            // 查询区ID对应的省ID
-            Map<Integer, AddressDTO> provinceIdMap = new HashMap<>();
-            if(CollectionUtils.isNotEmpty(areaIds)) {
-                provinceIdMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
-                // 把顺丰和普快递的目的地ID重置为省ID
-                for (QueryExpressPriceDto queryExpressPriceDto : queryExpressPriceDtoList) {
-                    if (provinceIdMap.containsKey(queryExpressPriceDto.getDestAreaId())&&
-                            !queryExpressPriceDto.getExpressId().equals(ExpressConstant.Express.WULIU.getId())) {
-                        queryExpressPriceDto.setDestAreaId(provinceIdMap.get(queryExpressPriceDto.getDestAreaId()).getProvinceId());
-                    }
-                }
-            }
-            // 获取快递时效
-            ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
-            Map<String,ExpressPrice> expressPriceMap = new HashMap<>();
-            if(CollectionUtils.isNotEmpty(apiResponse.getBody())){
-                List<ExpressPrice> expressPriceList = apiResponse.getBody();
-                expressPriceMap = CollectionCommonUtil.toUnionKeyMapByList(expressPriceList,Lists.newArrayList("getExpressId","getDestAreaId"));
-            }
-            for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
-                dealGoodsOrderVo(goodsOrderVo, expressPriceMap,provinceIdMap,goodsVoMap);
+                dealGoodsOrderVo(goodsOrderVo, expressPriceMap, goodsTypeDtoMap);
             }
         }
+    }
+
+    /**
+     * 查询快递时效
+     *
+     * @param goodsOrderVos
+     */
+    private Map<String, ExpressPrice> queryExpressPriceMap(List<GoodsOrderVo> goodsOrderVos) {
+        // 区ID集合
+        List<Integer> areaIds = CollectionCommonUtil.getFieldListByObjectList(goodsOrderVos, "getAreaId", Integer.class);
+        Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(areaIds);
+        // 查询快递时效的条件
+        List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
+        for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+            AddressDTO addressDTO = addressDTOMap.get(goodsOrderVo.getAreaId());
+            goodsOrderVo.setAddress(addressDTO);
+            int expressId = Integer.parseInt(goodsOrderVo.getExpressType());
+            QueryExpressPriceDto queryExpressPriceDto = new QueryExpressPriceDto();
+            queryExpressPriceDto.setExpressId(expressId);
+            if (expressId == ExpressConstant.Express.WULIU.getId()) {
+                // 把物流的目的地ID设为区ID
+                queryExpressPriceDto.setDestAreaId(addressDTO.getDistrictId());
+            } else {
+                // 把顺丰和普通快递的目的地ID设为省ID
+                queryExpressPriceDto.setDestAreaId(addressDTO.getProvinceId());
+            }
+            queryExpressPriceDtoList.add(queryExpressPriceDto);
+        }
+        // 获取快递时效
+        ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
+        List<ExpressPrice> expressPriceList = apiResponse.getBody();
+        return CollectionCommonUtil.toUnionKeyMapByList(expressPriceList, Lists.newArrayList("getExpressId", "getDestAreaId"));
+    }
+
+    /**
+     * 获取商品信息
+     *
+     * @param goodsOrderVos
+     */
+    private Map<Integer, GoodsTypeDto> queryGoodsTypeDtoMap(List<GoodsOrderVo> goodsOrderVos) {
+        // 商品goodTypeId集合
+        List<Integer> goodsTypeIds = new ArrayList<>();
+        for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
+            List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
+            goodsTypeIds.addAll(CollectionCommonUtil.getFieldListByObjectList(orderDetailVos, "getGoodTypeId", Integer.class));
+        }
+        // 根据goodsTypeId查询商品列表
+        QueryGoodsTypeDto queryGoodsTypeDto = new QueryGoodsTypeDto();
+        queryGoodsTypeDto.setIds(goodsTypeIds);
+        queryGoodsTypeDto.setNeedPic(true);
+        ApiResponse<List<GoodsTypeDto>> goodsVoResponse = goodsTypeServiceFacade.queryDtoByCondition(queryGoodsTypeDto);
+        List<GoodsTypeDto> goodsTypeDtos = goodsVoResponse.getBody();
+        return CollectionCommonUtil.toMapByList(goodsTypeDtos, "getId", Integer.class);
     }
 
     /**
      * 补充订单中的小计，图片，时效
      * @param goodsOrderVo
      * @param expressPriceMap
-     * @param provinceIdMap
-     * @param goodsVoMap
+     * @param goodsTypeDtoMap
      */
-    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<String,ExpressPrice> expressPriceMap, Map<Integer,AddressDTO> provinceIdMap,
-                                  Map<Integer, ConfirmGoodsVo> goodsVoMap){
-        String expressType = goodsOrderVo.getExpressType();
-        Integer districtId ;
-        // 非物流方式的订单，需要查询目的地的省ID
-        if(!expressType.equals(ExpressConstant.Express.WULIU.getId().toString())&&
-                provinceIdMap.containsKey(goodsOrderVo.getAreaId())){
-            districtId = provinceIdMap.get(goodsOrderVo.getAreaId()).getProvinceId();
-        }else{
-            districtId = goodsOrderVo.getAreaId();
-        }
-
+    private void dealGoodsOrderVo(GoodsOrderVo goodsOrderVo, Map<String,ExpressPrice> expressPriceMap, Map<Integer, GoodsTypeDto> goodsTypeDtoMap){
         // 时效
         String aging = StringUtils.EMPTY;
+        String expressType = goodsOrderVo.getExpressType();
+        int expressId = Integer.parseInt(expressType);
+        AddressDTO address = goodsOrderVo.getAddress();
         // 获取时效时效信息
-        String unionKey = goodsOrderVo.getExpressType()+districtId;
-        if(expressPriceMap.containsKey(unionKey)){
-            aging = MessageFormat.format(expressUtil.getExpressTips(),expressPriceMap.get(unionKey).getAging());
+        String unionKey;
+        if (expressId == ExpressConstant.Express.WULIU.getId()) {
+            // 把物流的目的地ID设为区ID
+            unionKey = expressType + address.getDistrictId();
+        } else {
+            // 把顺丰和普通快递的目的地ID设为省ID
+            unionKey = expressType + address.getProvinceId();
+        }
+        if (expressPriceMap.containsKey(unionKey)) {
+            aging = expressPriceMap.get(unionKey).getAging();
         }
         //拆单需要处理子订单
         if (goodsOrderVo.getSplitNum() > 1){
@@ -613,25 +615,32 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                //非DIY订单补充仓库提示
+                SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
+                simpleGoodsOrderVo.setOrderId(subGoodsOrderVo.getId());
+                simpleGoodsOrderVo.setOrderType(subGoodsOrderVo.getOrderType());
+                OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
                 if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + "," + aging);
+                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
                 }
-                dealSubGoodsOrderVo(subGoodsOrderVo, goodsVoMap);
+                dealSubGoodsOrderVo(subGoodsOrderVo, goodsTypeDtoMap);
             }
         }else {
-            //非DIY订单补充仓库提示
+            SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
+            simpleGoodsOrderVo.setOrderId(goodsOrderVo.getId());
+            simpleGoodsOrderVo.setOrderType(goodsOrderVo.getOrderType());
+            simpleGoodsOrderVo.setSplitNum(goodsOrderVo.getSplitNum());
+            OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
             if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + "," + aging);
+                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
             }
             //详情中的一些信息
             for (OrderDetailVo orderDetailVo : goodsOrderVo.getOrderDetailVos()) {
                 orderDetailVo.setTotal(AmountUtil.multiply(orderDetailVo.getPrice(), orderDetailVo.getNum().doubleValue()));
-                ConfirmGoodsVo goodsVo = goodsVoMap.get(orderDetailVo.getGoodTypeId());
-                List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
-                orderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());
-                orderDetailVo.setMallSkuName(goodsVo.getGoodsTypeName());
-                orderDetailVo.setCustomized(goodsVo.getCustomized());
+                GoodsTypeDto goodsTypeDto = goodsTypeDtoMap.get(orderDetailVo.getGoodTypeId());
+                List<GoodsPic> goodsPics = goodsTypeDto.getGoodsPics();
+                orderDetailVo.setPicUrl(goodsPics.get(0).getPicUrl());
+                orderDetailVo.setMallSkuName(goodsTypeDto.getName());
+                orderDetailVo.setCustomized(goodsTypeDto.getCustomized());
             }
         }
     }
@@ -639,20 +648,20 @@ public class OrderManager {
     /**
      * 处理子订单
      * @param subGoodsOrderVo
-     * @param goodsVoMap
+     * @param goodsTypeDtoMap
      */
-    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, ConfirmGoodsVo> goodsVoMap){
+    private void dealSubGoodsOrderVo(SubGoodsOrderVo subGoodsOrderVo, Map<Integer, GoodsTypeDto> goodsTypeDtoMap){
         List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
         Double consumeAmount = 0d ;
         //子订单详情中的一些信息
         for (SubOrderDetailVo subOrderDetailVo : subOrderDetailVos) {
             subOrderDetailVo.setTotal(AmountUtil.multiply(subOrderDetailVo.getPrice(), subOrderDetailVo.getNum().doubleValue()));
             consumeAmount = AmountUtil.add(consumeAmount, subOrderDetailVo.getTotal());
-            ConfirmGoodsVo goodsVo = goodsVoMap.get(subOrderDetailVo.getGoodTypeId());
-            List<GoodsPic> goodsImgUrl = goodsVo.getGoodsImgUrl();
-            subOrderDetailVo.setPicUrl(goodsImgUrl.get(0).getPicUrl());
-            subOrderDetailVo.setMallSkuName(goodsVo.getGoodsTypeName());
-            subOrderDetailVo.setCustomized(goodsVo.getCustomized());
+            GoodsTypeDto goodsTypeDto = goodsTypeDtoMap.get(subOrderDetailVo.getGoodTypeId());
+            List<GoodsPic> goodsPics = goodsTypeDto.getGoodsPics();
+            subOrderDetailVo.setPicUrl(goodsPics.get(0).getPicUrl());
+            subOrderDetailVo.setMallSkuName(goodsTypeDto.getName());
+            subOrderDetailVo.setCustomized(goodsTypeDto.getCustomized());
         }
         subGoodsOrderVo.setConsumeAmount(consumeAmount);
     }

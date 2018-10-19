@@ -1,6 +1,5 @@
 package com.aixuexi.vampire.controller;
 
-import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
@@ -10,11 +9,11 @@ import com.gaosi.api.revolver.dto.CancelOrderDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressType;
+import com.gaosi.api.revolver.vo.SubmitGoodsOrderVo;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.bean.common.BusinessException;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,14 +72,15 @@ public class OrderController {
     /**
      * 计算运费
      * @param provinceId 省id
-     * @param areaId 区id
+     * @param areaId 区id（前端有时不传，查不出原因）
      * @param goodsTypeIds 商品类型id
      * @return
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
-    public ResultData freight(@RequestParam Integer provinceId,@RequestParam Integer areaId, Integer[] goodsTypeIds) {
+    public ResultData freight(@RequestParam Integer provinceId, @RequestParam(required = false) Integer areaId,
+                              Integer[] goodsTypeIds) {
         if (provinceId == null || areaId == null) {
-            return ResultData.failed("参数不能为空 ");
+            return ResultData.failed("参数不能为空");
         }
         ResultData resultData = new ResultData();
         Integer userId = UserHandleUtil.getUserId();
@@ -95,28 +94,20 @@ public class OrderController {
     /**
      * 提交订单
      *
-     * @param consigneeId  收货人ID
-     * @param receivePhone 接收发货通知手机号
-     * @param express      快递
-     * @param goodsTypeIds 商品类型ID
-     * @param token        财务token
      * @return
      */
     @RequestMapping(value = "/submit", method = RequestMethod.POST)
-    public ResultData submit(@RequestParam Integer consigneeId, String receivePhone,
-                             @RequestParam String express, Integer[] goodsTypeIds, @RequestParam String token) {
-        logger.info("userId=[{}] submit order, consigneeId=[{}], receivePhone=[{}], express=[{}], goodsTypeIds=[{}], token=[{}].",
-                UserHandleUtil.getUserId(), consigneeId, receivePhone, express, Arrays.toString(goodsTypeIds), token);
-        checkParams4Submit(goodsTypeIds,express);
-        Integer userId = UserHandleUtil.getUserId();
-        Integer insId = UserHandleUtil.getInsId();
-        List<Integer> goodsTypeIdList = Lists.newArrayList(goodsTypeIds);
-        OrderSuccessVo orderSuccessVo = orderManager.submit(userId, insId, consigneeId, receivePhone, express, goodsTypeIdList, token);
-        //发送消息
+    public ResultData submit(@RequestBody SubmitGoodsOrderVo submitGoodsOrderVo) {
+        logger.info("userId=[{}] submit order, submitGoodsOrderVo=[{}]", UserHandleUtil.getUserId(), submitGoodsOrderVo);
+        submitGoodsOrderVo.setUserId(UserHandleUtil.getUserId());
+        submitGoodsOrderVo.setInsId(UserHandleUtil.getInsId());
+        checkParams4Submit(submitGoodsOrderVo);
+        OrderSuccessVo orderSuccessVo = orderManager.submit(submitGoodsOrderVo);
+        // 发送消息给校长任务
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("insId", insId);
-            map.put("userId", userId);
+            map.put("insId", submitGoodsOrderVo.getInsId());
+            map.put("userId", submitGoodsOrderVo.getUserId());
             map.put("taskCode", "84FA0A9E96C086F232108FA87A711301");
             taskProducerApi.headMasterProducer(map);
         } catch (Exception e) {
@@ -172,25 +163,19 @@ public class OrderController {
         return ResultData.successed(orderId);
     }
 
-    /*
-     * 验证是否试用机构
+    /**
+     * 提交订单校验
+     * @param submitGoodsOrderVo
      */
-    private void validateInsType() {
-        Integer insId = UserHandleUtil.getInsId();
-        Institution institution = institutionService.getInsInfoById(insId);
-        if (InstitutionTypeEnum.TRY.getType() == institution.getInstitutionType()) {
-            throw new BusinessException(ExceptionCode.UNKNOWN, "当前机构试用状态，不能下单。");
-        }
-    }
-
-
-    private void checkParams4Submit(Integer[] goodsTypeIds, String express) {
-        Assert.isTrue(null != goodsTypeIds && goodsTypeIds.length != 0, "所选商品不能为空");
+    private void checkParams4Submit(SubmitGoodsOrderVo submitGoodsOrderVo) {
+        Assert.notEmpty(submitGoodsOrderVo.getGoodsTypeIds(), "所选商品不能为空");
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
         Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(expressTypeResponse.getBody(), "getCode", String.class);
-        Assert.isTrue(expressTypeMap.containsKey(express), "配送方式参数错误");
-        Assert.isTrue(expressTypeMap.get(express).getEnable(), "该配送方式停止承运,暂不接单");
-        validateInsType(); // 试用机构不能下单
+        Assert.isTrue(expressTypeMap.containsKey(submitGoodsOrderVo.getExpress()), "配送方式参数错误");
+        Assert.isTrue(expressTypeMap.get(submitGoodsOrderVo.getExpress()).getEnable(), "该配送方式停止承运,暂不接单");
+        Institution institution = institutionService.getInsInfoById(submitGoodsOrderVo.getInsId());
+        Assert.isTrue(InstitutionTypeEnum.TRY.getType() != institution.getInstitutionType(),"当前机构试用状态，不能下单。");
+        submitGoodsOrderVo.setInstitution(institution);
     }
 }
 

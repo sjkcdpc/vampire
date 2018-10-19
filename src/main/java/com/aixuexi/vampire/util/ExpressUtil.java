@@ -9,11 +9,6 @@ public class ExpressUtil {
      * 是否走发网
      */
     private Boolean syncToWms;
-
-    /**
-     * 新运费更新时间
-     */
-    private String freightUpdateTime;
     /**
      * 拆单提示
      */
@@ -23,13 +18,17 @@ public class ExpressUtil {
      */
     private String aging;
     /**
-     * 快递提示
-     */
-    private String expressTips;
-    /**
      * DIY提示
      */
     private String diyTips;
+    /**
+     * 发货时间
+     */
+    private String deliveryTime;
+    /**
+     * 预售发货时间
+     */
+    private String preSaleDeliveryTime;
 
     public Boolean getSyncToWms() {
         return syncToWms;
@@ -37,14 +36,6 @@ public class ExpressUtil {
 
     public void setSyncToWms(Boolean syncToWms) {
         this.syncToWms = syncToWms;
-    }
-
-    public String getFreightUpdateTime() {
-        return freightUpdateTime;
-    }
-
-    public void setFreightUpdateTime(String freightUpdateTime) {
-        this.freightUpdateTime = freightUpdateTime;
     }
 
     public String getSplitTips() {
@@ -63,19 +54,27 @@ public class ExpressUtil {
         this.aging = aging;
     }
 
-    public String getExpressTips() {
-        return expressTips;
-    }
-
-    public void setExpressTips(String expressTips) {
-        this.expressTips = expressTips;
-    }
-
     public String getDiyTips() {
         return diyTips;
     }
 
     public void setDiyTips(String diyTips) {
         this.diyTips = diyTips;
+    }
+
+    public String getDeliveryTime() {
+        return deliveryTime;
+    }
+
+    public void setDeliveryTime(String deliveryTime) {
+        this.deliveryTime = deliveryTime;
+    }
+
+    public String getPreSaleDeliveryTime() {
+        return preSaleDeliveryTime;
+    }
+
+    public void setPreSaleDeliveryTime(String preSaleDeliveryTime) {
+        this.preSaleDeliveryTime = preSaleDeliveryTime;
     }
 }

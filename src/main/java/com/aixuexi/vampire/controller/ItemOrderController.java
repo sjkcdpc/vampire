@@ -503,12 +503,17 @@ public class ItemOrderController {
     /**
      * 订单详情
      * @param orderId
-     * @param categoryId
+     * @param categoryId （前端有时不传，查不出原因）
      * @return
      */
     @RequestMapping(value = "/detail", method = RequestMethod.GET)
-    public ResultData detail(@RequestParam String orderId, @RequestParam Integer categoryId) {
-        switch (MallItemConstant.Category.get(categoryId)){
+    public ResultData detail(@RequestParam String orderId, @RequestParam(required = false) Integer categoryId) {
+        if (categoryId == null) {
+            categoryId = MallItemConstant.Category.JCZB.getId();
+        }
+        MallItemConstant.Category category = MallItemConstant.Category.get(categoryId);
+        Assert.notNull(category,"未知订单类型");
+        switch (category){
             case RCZX:
                 ApiResponse<ItemOrderVo> itemOrderResponse = itemOrderServiceFacade.getOrderByOrderId(orderId);
                 ItemOrderVo itemOrderVo = itemOrderResponse.getBody();
@@ -522,7 +527,7 @@ public class ItemOrderController {
                 orderManager.dealGoodsOrderVos(goodsOrderVos);
                 return ResultData.successed(goodsOrderVo);
             default:
-                return ResultData.failed("参数类型错误");
+                return ResultData.failed("订单类型错误");
         }
     }
 

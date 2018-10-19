@@ -1,2 +1,2 @@
 catTransaction=com.aixuexi.thor.cat.filter.CatTransaction
-apiResponseCheckFilter=com.aixuexi.vampire.util.ApiResponseCheckFilter
+apiResponseCheckFilter=com.gaosi.api.vulcan.util.ApiResponseCheckFilter
