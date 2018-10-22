@@ -625,6 +625,8 @@ public class OrderManager {
                 List<OrderDetailVoDto> orderDetailVoDtos = baseMapper.mapAsList(subOrderDetailVos, OrderDetailVoDto.class);
                 dealOrderDetailVoDto(orderDetailVoDtos,mallSkuVoMap);
                 baseMapper.map(orderDetailVoDtos,subOrderDetailVos);
+                logger.info("orderDetailVoDtos : {}",orderDetailVoDtos);
+                logger.info("subOrderDetailVos : {}",subOrderDetailVos);
                 // 子订单所有商品价格小计
                 double consumeAmount = subOrderDetailVos.stream().mapToDouble(SubOrderDetailVo::getTotal).sum();
                 subGoodsOrderVo.setConsumeAmount(consumeAmount);
