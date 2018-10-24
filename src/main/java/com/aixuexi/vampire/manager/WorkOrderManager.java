@@ -135,6 +135,7 @@ public class WorkOrderManager {
     public void dealWorkOrderRefundVo(WorkOrderRefundVo workOrderRefundVo, Map<Integer, GoodsType> goodsTypeMap) {
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundVo.getWorkOrderRefundDetailVos()) {
             Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+            workOrderRefundDetailVo.setWeight(0D);
             if (goodsTypeMap != null && goodsTypeMap.containsKey(mallSkuId)) {
                 GoodsType goodsType = goodsTypeMap.get(mallSkuId);
                 workOrderRefundDetailVo.setWeight(goodsType.getWeight());
