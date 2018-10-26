@@ -444,7 +444,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/getTypeStatus", method = RequestMethod.GET)
     public ResultData getTypeStatus() {
         // 获取一级类别
-        List<MallItemConstant.Category> mallCategories = MallCategoryUtil.queryFirstLevel();
+        List<MallItemConstant.Category> mallCategories = MallCategoryUtil.queryAllOrderType();
         List<CategoryVo> categoryVos = baseMapper.mapAsList(mallCategories, CategoryVo.class);
         for (CategoryVo categoryVo : categoryVos) {
             categoryVo.setStatusList(ConstantsUtil.getStatusVosByCategory(MallItemConstant.Category.get(categoryVo.getId())));
