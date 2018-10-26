@@ -8,18 +8,14 @@ import com.aixuexi.vampire.util.UserHandleUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.davincicode.UserService;
 import com.gaosi.api.davincicode.model.User;
 import com.gaosi.api.revolver.bean.common.LogisticsTrackDetail;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.QueryOrderDto;
-import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
-import com.gaosi.api.revolver.facade.SubOrderServiceFacade;
-import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.model.ItemOrder;
 import com.gaosi.api.revolver.util.ConstantsUtil;
 import com.gaosi.api.revolver.vo.*;
@@ -28,12 +24,11 @@ import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
-import com.gaosi.api.vulcan.facade.MallCategoryServiceFacade;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
-import com.gaosi.api.vulcan.model.MallCategory;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
+import com.gaosi.api.vulcan.util.MallCategoryUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
 import com.gaosi.api.workorder.dto.WorkOrderDto;
@@ -42,7 +37,6 @@ import com.gaosi.api.workorder.facade.FieldConfServiceFacade;
 import com.gaosi.api.workorder.facade.WorkOrderServiceFacade;
 import com.gaosi.api.workorder.model.FieldConfValue;
 import com.gaosi.api.workorder.vo.FieldConfVo;
-import com.gaosi.api.xmen.constant.DictConstants;
 import com.gaosi.api.xmen.model.TalentOperatorRecords;
 import com.gaosi.api.xmen.service.TalentDemandService;
 import com.gaosi.api.xmen.service.TalentOperatorRecordsService;
@@ -90,9 +84,6 @@ public class ItemOrderController {
 
     @Resource
     private MallItemExtServiceFacade mallItemExtServiceFacade;
-
-    @Resource
-    private MallCategoryServiceFacade mallCategoryServiceFacade;
 
     @Resource
     private FinancialAccountManager financialAccountManager;
@@ -453,8 +444,7 @@ public class ItemOrderController {
     @RequestMapping(value = "/getTypeStatus", method = RequestMethod.GET)
     public ResultData getTypeStatus() {
         // 获取一级类别
-        ApiResponse<List<MallCategory>> apiResponse = mallCategoryServiceFacade.findMallCategoryByLevel(1);
-        List<MallCategory> mallCategories = apiResponse.getBody();
+        List<MallItemConstant.Category> mallCategories = MallCategoryUtil.queryFirstLevel();
         List<CategoryVo> categoryVos = baseMapper.mapAsList(mallCategories, CategoryVo.class);
         for (CategoryVo categoryVo : categoryVos) {
             categoryVo.setStatusList(ConstantsUtil.getStatusVosByCategory(MallItemConstant.Category.get(categoryVo.getId())));
