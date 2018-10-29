@@ -9,7 +9,7 @@
 
     <dubbo:application name="vampire"/>
     <dubbo:registry address="${zookeeper}" transporter="curator" file="${catalina.home}/dubbo-registry/dubbo-registry.properties" />
-    <dubbo:consumer check="false" filter="catTransaction,apiResponseCheckFilter"/>
+    <dubbo:consumer check="false" filter="apiResponseCheckFilter,catTransaction"/>
 
 
     <!--帐号服务-->
