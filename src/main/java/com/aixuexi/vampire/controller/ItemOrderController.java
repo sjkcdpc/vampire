@@ -133,7 +133,9 @@ public class ItemOrderController {
             //默认加载教材订单列表
             queryOrderDto.setCategoryId(MallItemConstant.Category.JCZB.getId());
         }
-        switch (MallItemConstant.Category.get(queryOrderDto.getCategoryId())){
+        MallItemConstant.Category category = MallItemConstant.Category.get(queryOrderDto.getCategoryId());
+        Assert.notNull(category,"未知订单类型");
+        switch (category){
             case LDPXSC:
             case DZFW:
             case RCZX:
@@ -141,7 +143,7 @@ public class ItemOrderController {
             case JCZB:
                 return queryJCZB(queryOrderDto);
             default:
-                return ResultData.failed("参数类型错误");
+                return ResultData.failed("订单类型错误");
         }
     }
 
@@ -531,7 +533,9 @@ public class ItemOrderController {
     public ResultData getLogisticsData(@RequestParam String orderId,@RequestParam Integer categoryId) {
         OrderFollowVo orderFollowVo = new OrderFollowVo();
         orderFollowVo.setCategoryId(categoryId);
-        switch (MallItemConstant.Category.get(categoryId)) {
+        MallItemConstant.Category category = MallItemConstant.Category.get(categoryId);
+        Assert.notNull(category,"未知订单类型");
+        switch (category) {
             case RCZX:
                 List<TalentOperatorRecords> talentOperatorRecords = talentOperatorRecordsService.queryOperatorRecordsByBusinessId(orderId, ORDER_TRACK_TYPE);
                 List<LogisticsTrackDetail> logisticsTrackDetails = baseMapper.mapAsList(talentOperatorRecords,LogisticsTrackDetail.class);
@@ -549,7 +553,7 @@ public class ItemOrderController {
                 orderFollowVo = apiResponse.getBody();
                 return ResultData.successed(orderFollowVo);
             default:
-                return ResultData.failed("参数类型错误");
+                return ResultData.failed("订单类型错误");
         }
     }
 }
