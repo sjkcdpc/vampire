@@ -625,9 +625,6 @@ public class OrderManager {
                 List<OrderDetailVoDto> orderDetailVoDtos = baseMapper.mapAsList(subOrderDetailVos, OrderDetailVoDto.class);
                 dealOrderDetailVoDto(orderDetailVoDtos,mallSkuVoMap);
                 subGoodsOrderVo.setSubOrderDetailVos(baseMapper.mapAsList(orderDetailVoDtos,SubOrderDetailVo.class));
-                // 子订单所有商品价格小计
-                double consumeAmount = orderDetailVoDtos.stream().mapToDouble(OrderDetailVoDto::getTotal).sum();
-                subGoodsOrderVo.setConsumeAmount(consumeAmount);
             }
         }else {
             SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
@@ -652,16 +649,13 @@ public class OrderManager {
      */
     private void dealOrderDetailVoDto(List<OrderDetailVoDto> orderDetailVoDtos, Map<Integer, MallSkuVo> mallSkuVoMap) {
         for (OrderDetailVoDto orderDetailVoDto : orderDetailVoDtos) {
-            orderDetailVoDto.setTotal(AmountUtil.multiply(orderDetailVoDto.getPrice(), orderDetailVoDto.getNum().doubleValue()));
             MallSkuVo mallSkuVo = mallSkuVoMap.get(orderDetailVoDto.getMallSkuId());
             orderDetailVoDto.setMallSkuName(mallSkuVo.getName());
             Integer categoryId = mallSkuVo.getCategoryId();
             if(categoryId.equals(JCSD.getId())){
-                orderDetailVoDto.setGift(true);
                 List<MallSkuPic> mallSkuPics = mallSkuVo.getMallSkuPics();
                 orderDetailVoDto.setPicUrl(mallSkuPics.get(0).getPicUrl());
             }else{
-                orderDetailVoDto.setGift(false);
                 List<MallItemPic> mallItemPics = mallSkuVo.getMallItemPics();
                 orderDetailVoDto.setPicUrl(mallItemPics.get(0).getPicUrl());
             }
