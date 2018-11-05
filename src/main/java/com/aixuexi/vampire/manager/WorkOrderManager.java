@@ -11,11 +11,13 @@ import com.gaosi.api.revolver.vo.WorkOrderRefundDetailVo;
 import com.gaosi.api.revolver.vo.WorkOrderRefundVo;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
-import com.gaosi.api.vulcan.facade.MallItemServiceFacade;
+import com.gaosi.api.vulcan.constant.MallItemConstant;
+import com.gaosi.api.vulcan.dto.QueryMallSkuVoDto;
+import com.gaosi.api.vulcan.facade.MallSkuServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.model.MallItemPic;
+import com.gaosi.api.vulcan.model.MallSkuPic;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
-import com.gaosi.api.vulcan.vo.MallItemVo;
 import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
@@ -39,7 +41,7 @@ public class WorkOrderManager {
     @Resource
     private UserService newUserService;
     @Resource
-    private MallItemServiceFacade mallItemServiceFacade;
+    private MallSkuServiceFacade mallSkuServiceFacade;
 
     /**
      * 处理单个退货工单--查看详情使用
@@ -89,29 +91,32 @@ public class WorkOrderManager {
      * @param workOrderRefundDetailVos
      */
     public void dealWorkOrderRefundDetailVo(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
-        List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(workOrderRefundDetailVos, "getMallItemId", Integer.class);
-        ApiResponse<List<MallItemVo>> mallItemVoResponse = mallItemServiceFacade.findMallItemVoByIds(mallItemIds);
-        List<MallItemVo> mallItemVos = mallItemVoResponse.getBody();
-        Map<Integer, MallItemVo> mallItemVoMap = CollectionCommonUtil.toMapByList(mallItemVos, "getId", Integer.class);
+        List<Integer> mallSkuIds = CollectionCommonUtil.getFieldListByObjectList(workOrderRefundDetailVos, "getMallSkuId", Integer.class);
+        QueryMallSkuVoDto queryMallSkuVoDto = new QueryMallSkuVoDto();
+        queryMallSkuVoDto.setIds(mallSkuIds);
+        queryMallSkuVoDto.setNeedPic(true);
+        ApiResponse<List<MallSkuVo>> apiResponse = mallSkuServiceFacade.queryMallSkuVoBySkuIds(queryMallSkuVoDto);
+        Map<Integer, MallSkuVo> mallSkuVoMap = CollectionCommonUtil.toMapByList(apiResponse.getBody(), "getId", Integer.class);
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundDetailVos) {
-            Integer mallItemId = workOrderRefundDetailVo.getMallItemId();
-            MallItemVo mallItemVo = mallItemVoMap.get(mallItemId);
+            Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+            MallSkuVo mallSkuVo = mallSkuVoMap.get(mallSkuId);
             // 申请售后时商品名称由商品表提供，其他情况显示工单详情中的商品名称
             if(StringUtils.isBlank(workOrderRefundDetailVo.getName())){
-                workOrderRefundDetailVo.setName(mallItemVo.getName());
+                workOrderRefundDetailVo.setName(mallSkuVo.getMallItemName());
             }
+            workOrderRefundDetailVo.setSkuName(mallSkuVo.getName());
+            workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
+            Integer categoryId = mallSkuVo.getCategoryId();
             // 商品图片
-            List<MallItemPic> mallItemPics = mallItemVo.getMallItemPics();
-            if(CollectionUtils.isNotEmpty(mallItemPics)) {
-                workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
-            }
-            // 商品规格名称,编码
-            List<MallSkuVo> mallSkuVos = mallItemVo.getMallSkuVos();
-            Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
-            for (MallSkuVo mallSkuVo : mallSkuVos) {
-                if(mallSkuVo.getId().equals(mallSkuId)){
-                    workOrderRefundDetailVo.setSkuName(mallSkuVo.getName());
-                    workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
+            if(categoryId.equals(MallItemConstant.Category.JCSD.getId())){
+                List<MallSkuPic> mallSkuPics = mallSkuVo.getMallSkuPics();
+                if(CollectionUtils.isNotEmpty(mallSkuPics)){
+                    workOrderRefundDetailVo.setPicUrl(mallSkuPics.get(0).getPicUrl());
+                }
+            }else{
+                List<MallItemPic> mallItemPics = mallSkuVo.getMallItemPics();
+                if(CollectionUtils.isNotEmpty(mallItemPics)) {
+                    workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
                 }
             }
         }
@@ -135,6 +140,7 @@ public class WorkOrderManager {
     public void dealWorkOrderRefundVo(WorkOrderRefundVo workOrderRefundVo, Map<Integer, GoodsType> goodsTypeMap) {
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundVo.getWorkOrderRefundDetailVos()) {
             Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
+            workOrderRefundDetailVo.setWeight(0D);
             if (goodsTypeMap != null && goodsTypeMap.containsKey(mallSkuId)) {
                 GoodsType goodsType = goodsTypeMap.get(mallSkuId);
                 workOrderRefundDetailVo.setWeight(goodsType.getWeight());
