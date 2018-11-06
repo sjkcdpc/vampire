@@ -38,7 +38,6 @@
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ConsigneeServiceFacade" id="consigneeServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsServiceFacade" id="goodsServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.ShoppingCartServiceFacade" id="shoppingCartServiceFacade" />
-    <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPicServiceFacade" id="goodsPicServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.MallItemExtServiceFacade" id="mallItemExtServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsPeriodServiceFacade" id="goodsPeriodServiceFacade" />
     <dubbo:reference interface="com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade" id="goodsTypeServiceFacade" />
