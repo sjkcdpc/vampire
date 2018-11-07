@@ -13,7 +13,7 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>aidou_one_new-SNAPSHOT</avatar.version>
+        <avatar.version>branch-axxBank-1by1-0.0.1-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor-util.version>1.5.91-RELEASE</thor-util.version>
         <transformers.version>1.0.13.11-RELEASE</transformers.version>

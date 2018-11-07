@@ -120,8 +120,8 @@ public class MallItemExtController {
         ApiResponse<ConfirmMallItemNailVo> apiResponse = mallItemExtServiceFacade.confirmMallItemNail(mallItemId, goodsPieces);
         ConfirmMallItemNailVo confirmMallItemNailVo = apiResponse.getBody();
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
-        confirmMallItemNailVo.setBalance(balance);
+        confirmMallItemNailVo.setAidouUsableRemain(Double.valueOf(rr.getAidouUsableRemain()) / 10000);
+        confirmMallItemNailVo.setRmbUsableRemain(Double.valueOf(rr.getRmbUsableRemain()) / 10000);
         resultData.setBody(confirmMallItemNailVo);
         return resultData;
     }
@@ -158,8 +158,8 @@ public class MallItemExtController {
         ApiResponse<ConfirmCustomServiceVo> apiResponse = mallItemExtServiceFacade.confirmMallItem4DZFW(mallItemId, goodsPieces);
         ConfirmCustomServiceVo confirmCustomServiceVo = apiResponse.getBody();
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
-        confirmCustomServiceVo.setBalance(balance);
+        confirmCustomServiceVo.setAidouUsableRemain(Double.valueOf(rr.getAidouUsableRemain()) / 10000);
+        confirmCustomServiceVo.setRmbUsableRemain(Double.valueOf(rr.getRmbUsableRemain()) / 10000);
         resultData.setBody(confirmCustomServiceVo);
         return resultData;
     }
@@ -270,8 +270,8 @@ public class MallItemExtController {
         ConfirmTalentVo confirmTalentVo = apiResponse.getBody();
         // 查询账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        Double balance = Double.valueOf(rr.getUsableRemain()) / 10000;
-        confirmTalentVo.setBalance(balance);
+        confirmTalentVo.setAidouUsableRemain(Double.valueOf(rr.getAidouUsableRemain()) / 10000);
+        confirmTalentVo.setRmbUsableRemain(Double.valueOf(rr.getRmbUsableRemain()) / 10000);
         // 查询工单模板
         com.aixuexi.thor.response.ApiResponse<List<TemplateFieldVo>> templateResponse = templateServiceFacade.queryTemplateFields(RCZX_TEMPLATE_CODE);
         List<TemplateFieldVo> templateFieldVos = templateResponse.getBody();
