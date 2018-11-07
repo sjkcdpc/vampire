@@ -141,8 +141,8 @@ public class OrderManager {
         confirmOrderVo.setGoodsWeight(goodsFreightSubtotalBo.getWeight());
         // 账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
-        Long remain = rr.getUsableRemain();
-        confirmOrderVo.setBalance(Double.valueOf(remain) / 10000);
+        confirmOrderVo.setAidouUsableRemain(Double.valueOf(rr.getAidouUsableRemain()) / 10000);
+        confirmOrderVo.setRmbUsableRemain(Double.valueOf(rr.getRmbUsableRemain()) / 10000);
         // 获取token
         confirmOrderVo.setToken(financialAccountService.getTokenForFinancial());
         return confirmOrderVo;
@@ -464,8 +464,7 @@ public class OrderManager {
      * @return
      */
     private OrderSuccessVo getTips(SimpleGoodsOrderVo simpleGoodsOrderVo, String aging) {
-        OrderSuccessVo orderSuccessVo = new OrderSuccessVo();
-        orderSuccessVo.setOrderId(simpleGoodsOrderVo.getOrderId());
+        OrderSuccessVo orderSuccessVo = baseMapper.map(simpleGoodsOrderVo,OrderSuccessVo.class);
         Integer splitNum = simpleGoodsOrderVo.getSplitNum();
         if (splitNum != null && splitNum > 1) {
             orderSuccessVo.setSplitTips(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
