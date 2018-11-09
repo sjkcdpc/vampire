@@ -649,6 +649,7 @@ public class OrderManager {
     private void dealOrderDetailVoDto(List<OrderDetailVoDto> orderDetailVoDtos, Map<Integer, MallSkuVo> mallSkuVoMap) {
         for (OrderDetailVoDto orderDetailVoDto : orderDetailVoDtos) {
             MallSkuVo mallSkuVo = mallSkuVoMap.get(orderDetailVoDto.getMallSkuId());
+            Assert.notNull(mallSkuVo,"未知商品信息" + orderDetailVoDto.getMallSkuId());
             orderDetailVoDto.setMallSkuName(mallSkuVo.getName());
             Integer categoryId = mallSkuVo.getCategoryId();
             if(categoryId.equals(JCSD.getId())){
