@@ -23,10 +23,8 @@ import com.gaosi.api.revolver.model.Express;
 import com.gaosi.api.revolver.util.JsonUtil;
 import com.gaosi.api.revolver.util.PatternUtil;
 import com.gaosi.api.revolver.vo.*;
-import com.gaosi.api.vulcan.constant.GoodsExtConstant;
-import com.gaosi.api.vulcan.facade.GoodsExtServiceFacade;
+import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
-import com.gaosi.api.vulcan.model.GoodsExt;
 import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.google.common.collect.Lists;
@@ -64,8 +62,6 @@ public class WorkOrderController {
     @Resource
     private BasicDataManager basicDataManager;
     @Resource
-    private GoodsExtServiceFacade goodsExtServiceFacade;
-    @Resource
     private SubOrderServiceFacade subOrderServiceFacade;
 
     /**
@@ -100,9 +96,6 @@ public class WorkOrderController {
      */
     @RequestMapping(value = "/afterSales", method = RequestMethod.GET)
     public ResultData afterSales(@RequestParam String oldOrderId,@RequestParam Integer mallSkuId){
-        if (isDiy(mallSkuId)){
-            return ResultData.failed("该商品不能申请售后");
-        }
         ApiResponse<WorkOrderRefundDetailVo> afterSalesResponse = workOrderRefundFacade.applyAfterSales(oldOrderId, mallSkuId);
         WorkOrderRefundDetailVo workOrderRefundDetailVo = afterSalesResponse.getBody();
         workOrderManager.dealWorkOrderRefundDetailVo(Lists.newArrayList(workOrderRefundDetailVo));
@@ -128,9 +121,6 @@ public class WorkOrderController {
             if (workOrderRefundDetailVo.getTotalNum() <= 0) {
                 return ResultData.failed("售后数量错误");
             }
-            if (isDiy(workOrderRefundDetailVo.getMallSkuId())){
-                return ResultData.failed("包含不能申请售后商品，请查看");
-            }
         }
         // 原始订单号
         String oldOrderId = workOrderRefundVo.getOldOrderId();
@@ -146,15 +136,20 @@ public class WorkOrderController {
         Integer status;
         // 订单完成时间
         Date updateTime;
+        // 订单类型
+        Integer orderType;
         if (oldOrderId.contains(OrderConstant.SUB_ORDER_ID_FLAG)) {
             ApiResponse<SubGoodsOrderVo> subGoodsOrderResponse = subOrderServiceFacade.getSubGoodsOrderById(oldOrderId);
             SubGoodsOrderVo subGoodsOrderVo = subGoodsOrderResponse.getBody();
             status = subGoodsOrderVo.getStatus();
             updateTime = subGoodsOrderVo.getUpdateTime();
+            orderType = subGoodsOrderVo.getOrderType();
         }else {
             status = goodsOrderVo.getStatus();
             updateTime = goodsOrderVo.getUpdateTime();
+            orderType = goodsOrderVo.getOrderType();
         }
+        Assert.isTrue(orderType != OrderConstant.OrderType.DIY_CUSTOM_ORDER, "包含不能申请售后商品，请查看");
         //审批类型
         workOrderRefundVo.setApproveType(WorkOrderConstant.ApproveType.AUTO_APPROVE);
         if (status.equals(OrderConstant.OrderStatus.COMPLETED.getValue())) {
@@ -204,17 +199,6 @@ public class WorkOrderController {
         workFlowApplyCondition.setModelJson(modelJson.toString());
         ApiResponse<Integer> workFlowResponse = workFlowApplyService.save(workFlowApplyCondition);
         return workFlowResponse.getBody();
-    }
-
-    /**
-     * 判断某个商品是不是DIY
-     * @param mallSkuId
-     * @return
-     */
-    private boolean isDiy(Integer mallSkuId){
-        ApiResponse<GoodsExt> apiResponse = goodsExtServiceFacade.queryByMallSkuId(mallSkuId);
-        GoodsExt goodsExt = apiResponse.getBody();
-        return goodsExt.getCustomized().equals(GoodsExtConstant.Customized.DIY_CUSTOM.getValue());
     }
 
     /**

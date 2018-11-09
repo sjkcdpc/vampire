@@ -29,7 +29,7 @@ public class StorageController {
     /**
      * 15分钟
      */
-    private static long expiredTime = 15 * 60 * 1000;
+    private static long expiredTime = 15 * 60 * 1000L;
 
     /**
      * 存储：获取授权信息
