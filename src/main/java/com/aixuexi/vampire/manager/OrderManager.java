@@ -18,7 +18,6 @@ import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
@@ -181,8 +180,8 @@ public class OrderManager {
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(submitGoodsOrderVo.getInsId());
         financialAccountManager.checkRemainMoney(rr, amount.longValue());
         // 创建订单
-        ApiResponse<SimpleGoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, submitGoodsOrderVo.getToken());
-        SimpleGoodsOrderVo simpleGoodsOrderVo = apiResponse.getBody();
+        ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, submitGoodsOrderVo.getToken());
+        GoodsOrderVo createOrderResult = apiResponse.getBody();
         // 清空购物车
         List<ShoppingCartList> shoppingCartLists = Lists.newArrayList();
         for (Integer goodsTypeId : submitGoodsOrderVo.getGoodsTypeIds()) {
@@ -192,7 +191,7 @@ public class OrderManager {
             shoppingCartLists.add(shoppingCartList);
         }
         shoppingCartServiceFacade.clearShoppingCart(shoppingCartLists, submitGoodsOrderVo.getUserId());
-        return getTips(simpleGoodsOrderVo,goodsOrderVo.getAging());
+        return getTips(createOrderResult);
     }
 
     /**
@@ -459,33 +458,41 @@ public class OrderManager {
 
     /**
      * 下单成功后提示
-     * @param simpleGoodsOrderVo
-     * @param aging
+     * @param goodsOrderVo
      * @return
      */
-    private OrderSuccessVo getTips(SimpleGoodsOrderVo simpleGoodsOrderVo, String aging) {
-        OrderSuccessVo orderSuccessVo = baseMapper.map(simpleGoodsOrderVo,OrderSuccessVo.class);
-        Integer splitNum = simpleGoodsOrderVo.getSplitNum();
+    private OrderSuccessVo getTips(GoodsOrderVo goodsOrderVo) {
+        OrderSuccessVo orderSuccessVo = baseMapper.map(goodsOrderVo,OrderSuccessVo.class);
+        Integer splitNum = goodsOrderVo.getSplitNum();
         if (splitNum != null && splitNum > 1) {
             orderSuccessVo.setSplitTips(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
         }
-        Integer orderType = simpleGoodsOrderVo.getOrderType();
+        Integer orderType = goodsOrderVo.getOrderType();
+        String aging = goodsOrderVo.getAging();
+        String agingTips = getAgingTips(orderType, aging);
+        orderSuccessVo.setTips(agingTips);
+        return orderSuccessVo;
+    }
+
+    /**
+     * 获取时效提示
+     * @param orderType
+     * @param aging
+     * @return
+     */
+    private String getAgingTips(Integer orderType,String aging) {
         String agingTips = StringUtils.EMPTY;
         if (StringUtils.isNotBlank(aging)) {
             agingTips = MessageFormat.format(expressUtil.getAging(), aging);
         }
         switch (orderType) {
             case DIY_CUSTOM_ORDER:
-                orderSuccessVo.setTips(expressUtil.getDiyTips());
-                break;
+                return expressUtil.getDiyTips();
             case PRESALE_ORDER:
-                orderSuccessVo.setTips(expressUtil.getPreSaleDeliveryTime() + agingTips);
-                break;
+                return expressUtil.getPreSaleDeliveryTime() + agingTips;
             default:
-                orderSuccessVo.setTips(expressUtil.getDeliveryTime() + agingTips);
-                break;
+                return expressUtil.getDeliveryTime() + agingTips;
         }
-        return orderSuccessVo;
     }
 
     /**
@@ -613,12 +620,10 @@ public class OrderManager {
             goodsOrderVo.getOrderDetailVos().clear();
             for (SubGoodsOrderVo subGoodsOrderVo : goodsOrderVo.getSubGoodsOrderVos()) {
                 // 将子订单的时效重置为父订单更新后的时效
-                SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
-                simpleGoodsOrderVo.setOrderId(subGoodsOrderVo.getId());
-                simpleGoodsOrderVo.setOrderType(subGoodsOrderVo.getOrderType());
-                OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
-                if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
+                Integer orderType = subGoodsOrderVo.getOrderType();
+                String agingTips = getAgingTips(orderType, aging);
+                if (orderType != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                    subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + agingTips);
                 }
                 List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
                 List<OrderDetailVoDto> orderDetailVoDtos = baseMapper.mapAsList(subOrderDetailVos, OrderDetailVoDto.class);
@@ -626,13 +631,10 @@ public class OrderManager {
                 subGoodsOrderVo.setSubOrderDetailVos(baseMapper.mapAsList(orderDetailVoDtos,SubOrderDetailVo.class));
             }
         }else {
-            SimpleGoodsOrderVo simpleGoodsOrderVo = new SimpleGoodsOrderVo();
-            simpleGoodsOrderVo.setOrderId(goodsOrderVo.getId());
-            simpleGoodsOrderVo.setOrderType(goodsOrderVo.getOrderType());
-            simpleGoodsOrderVo.setSplitNum(goodsOrderVo.getSplitNum());
-            OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
-            if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
-                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
+            Integer orderType = goodsOrderVo.getOrderType();
+            String agingTips = getAgingTips(orderType, aging);
+            if (orderType != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + agingTips);
             }
             List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
             List<OrderDetailVoDto> orderDetailVoDtos = baseMapper.mapAsList(orderDetailVos, OrderDetailVoDto.class);
