@@ -16,8 +16,6 @@
         <avatar.version>branch-mall-1.8.65-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor-util.version>1.5.91-RELEASE</thor-util.version>
-        <transformers.version>1.0.13.11-RELEASE</transformers.version>
-        <transformers-proto.version>1.0.33-RELEASE</transformers-proto.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
@@ -27,22 +25,6 @@
     <dependencies>
 
         <!-- 爱学习 -->
-        <dependency>
-            <groupId>com.aixuexi</groupId>
-            <artifactId>transformers</artifactId>
-            <version>${transformers.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.aixuexi</groupId>
-                    <artifactId>thor-util</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.aixuexi</groupId>
-            <artifactId>transformers-proto</artifactId>
-            <version>${transformers-proto.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
