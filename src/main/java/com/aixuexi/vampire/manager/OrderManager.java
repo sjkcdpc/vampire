@@ -18,6 +18,7 @@ import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
+import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
@@ -358,51 +359,52 @@ public class OrderManager {
 
     /**
      * 计算运费
-     *
-     * @param provinceId     省ID
-     * @param weight         商品重量
-     * @param expressVoLists 物流信息
+     * @param freightVo
+     * @param provinceId
+     * @param areaId
      */
-    private void calcFreight(Integer provinceId,Integer areaId, double weight, List<ConfirmExpressVo> expressVoLists, int goodsPieces) {
-        logger.info("calcFreight --> provinceId : {}, weight : {}, expressLists : {}", provinceId, weight, expressVoLists);
-        Map<String,Integer> expressMap = new HashMap<>();
-        for (ConfirmExpressVo confirmExpressVo : expressVoLists) {
-            expressMap.put(confirmExpressVo.getCode(),provinceId);
-            if(confirmExpressVo.getCode().equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)){
-                expressMap.put(confirmExpressVo.getCode(),areaId);
+    private void calcFreight(FreightVo freightVo, Integer provinceId, Integer areaId) {
+        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
+        List<ExpressType> expressTypes = expressTypeResponse.getBody();
+        Map<String, Integer> expressMap = new HashMap<>();
+        for (ExpressType expressType : expressTypes) {
+            String code = expressType.getCode();
+            expressMap.put(code, provinceId);
+            if (OrderConstant.LogisticsMode.EXPRESS_DBWL.equals(code)) {
+                expressMap.put(code, areaId);
             }
         }
-        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
+        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, freightVo.getGoodsWeight(), freightVo.getGoodsPieces());
         List<ExpressFreightVo> expressFreightVos = apiResponse.getBody();
         Map<String,ExpressFreightVo> expressFreightVoMap = expressFreightVos.stream().collect(Collectors.toMap(ExpressFreightVo::getExpressCode, e -> e, (k1, k2) -> k1));
-        for (ConfirmExpressVo confirmExpressVo:expressVoLists) {
+        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes, ConfirmExpressVo.class);
+        for (ConfirmExpressVo confirmExpressVo : confirmExpressVos) {
             ExpressFreightVo expressFreightVo = expressFreightVoMap.get(confirmExpressVo.getCode());
             confirmExpressVo.setFirstFreight(expressFreightVo.getFirstFreight());
             confirmExpressVo.setBeyondPrice(expressFreightVo.getBeyondPrice());
             confirmExpressVo.setTotalBeyondWeight(expressFreightVo.getTotalBeyondWeight());
             confirmExpressVo.setTotalFreight(expressFreightVo.getTotalFreight());
             confirmExpressVo.setRemark(expressFreightVo.getRemark());
-            String aging = MessageFormat.format(expressUtil.getAging(),expressFreightVo.getAging());
+            String aging = MessageFormat.format(expressUtil.getAging(), expressFreightVo.getAging());
             confirmExpressVo.setAging(aging);
         }
+        freightVo.setExpressTypes(confirmExpressVos);
     }
 
     /**
      * 修改商品数量，选择部分商品，重新选择收货人，重新计算运费。
      *
-     * @param userId       用户ID
-     * @param insId        机构ID
-     * @param provinceId   省ID
-     * @param goodsTypeIds 商品类型ID
+     * @param reqFreightVo
      * @return
      */
-    public FreightVo reloadFreight(Integer userId, Integer insId, Integer provinceId,Integer areaId, List<Integer> goodsTypeIds) {
+    public FreightVo reloadFreight(ReqFreightVo reqFreightVo) {
         FreightVo freightVo = new FreightVo();
         int goodsPieces = 0; // 商品总件数
         double weight = 0; // 重量
         double goodsAmount = 0; // 总金额
+        List<Integer> goodsTypeIds = reqFreightVo.getGoodsTypeIds();
         if (CollectionUtils.isNotEmpty(goodsTypeIds)) {
-            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryConfirmGoodsVo(userId, goodsTypeIds);
+            ApiResponse<List<ConfirmGoodsVo>> apiResponse = goodsServiceFacade.queryConfirmGoodsVo(reqFreightVo.getUserId(), goodsTypeIds);
             List<ConfirmGoodsVo> confirmGoodsVos = apiResponse.getBody();
             if (CollectionUtils.isNotEmpty(confirmGoodsVos)) {
                 GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos);
@@ -411,20 +413,16 @@ public class OrderManager {
                 goodsPieces = goodsFreightSubtotalBo.getGoodsPieces();
             }
         }
-        ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        List<ExpressType> expressTypes = expressTypeResponse.getBody();
-        List<ConfirmExpressVo> confirmExpressVos = baseMapper.mapAsList(expressTypes,ConfirmExpressVo.class);
-        // 计算邮费
-        calcFreight(provinceId,areaId, weight, confirmExpressVos, goodsPieces);
-        // set
         freightVo.setGoodsPieces(goodsPieces);
         freightVo.setGoodsWeight(weight);
         freightVo.setGoodsAmount(goodsAmount);
-        freightVo.setExpressTypes(confirmExpressVos);
+        // 计算邮费
+        calcFreight(freightVo,reqFreightVo.getProvinceId(),reqFreightVo.getAreaId());
         // 账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
-        Long remain = rr.getUsableRemain();
-        freightVo.setBalance(Double.valueOf(remain) / 10000);
+        Integer insitutionId = reqFreightVo.getInsitutionId();
+        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insitutionId);
+        freightVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()),10000D));
+        freightVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()),10000D));
         return freightVo;
     }
 

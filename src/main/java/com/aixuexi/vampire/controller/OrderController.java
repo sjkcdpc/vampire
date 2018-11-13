@@ -16,8 +16,8 @@ import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
+import com.gaosi.api.vulcan.vo.ReqFreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,24 +71,18 @@ public class OrderController {
 
     /**
      * 计算运费
-     * @param provinceId 省id
-     * @param areaId 区id（前端有时不传，查不出原因）
-     * @param goodsTypeIds 商品类型id
+     * @param reqFreightVo
      * @return
      */
     @RequestMapping(value = "/freight", method = RequestMethod.GET)
-    public ResultData freight(@RequestParam Integer provinceId, @RequestParam(required = false) Integer areaId,
-                              Integer[] goodsTypeIds) {
-        if (provinceId == null || areaId == null) {
+    public ResultData freight(ReqFreightVo reqFreightVo) {
+        if (reqFreightVo.getProvinceId() == null || reqFreightVo.getAreaId() == null) {
             return ResultData.failed("参数不能为空");
         }
-        ResultData resultData = new ResultData();
-        Integer userId = UserHandleUtil.getUserId();
-        Integer insId = UserHandleUtil.getInsId();
-        List<Integer> goodsTypeIdList = (goodsTypeIds == null) ? null : Lists.newArrayList(goodsTypeIds);
-        FreightVo freightVo = orderManager.reloadFreight(userId, insId, provinceId,areaId, goodsTypeIdList);
-        resultData.setBody(freightVo);
-        return resultData;
+        reqFreightVo.setUserId(UserHandleUtil.getUserId());
+        reqFreightVo.setInsitutionId(UserHandleUtil.getInsId());
+        FreightVo freightVo = orderManager.reloadFreight(reqFreightVo);
+        return ResultData.successed(freightVo);
     }
 
     /**
