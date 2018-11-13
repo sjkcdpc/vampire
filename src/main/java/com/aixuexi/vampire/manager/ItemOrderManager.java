@@ -17,7 +17,6 @@ import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -143,9 +143,7 @@ public class ItemOrderManager {
     public Map<Integer, MallItemSalesNumVo> querySalesNum(List<Integer> mallItemIds){
         ApiResponse<List<MallItemSalesNumVo>> apiResponse = itemOrderServiceFacade.querySalesNumByMallItemIds(mallItemIds);
         List<MallItemSalesNumVo> mallItemSalesNumVos = apiResponse.getBody();
-        Map<Integer, MallItemSalesNumVo> salesNumVoMap = CollectionCommonUtil.toMapByList(mallItemSalesNumVos,
-                "getMallItemId", Integer.class);
-        return salesNumVoMap;
+        return mallItemSalesNumVos.stream().collect(Collectors.toMap(MallItemSalesNumVo::getMallItemId, p -> p, (k1, k2) -> k1));
     }
 
 }

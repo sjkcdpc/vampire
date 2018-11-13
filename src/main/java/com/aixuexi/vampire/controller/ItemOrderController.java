@@ -27,7 +27,6 @@ import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.model.MallItem;
 import com.gaosi.api.vulcan.model.MallSku;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.util.MallCategoryUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.dto.FieldErrorMsg;
@@ -51,6 +50,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.aixuexi.vampire.util.Constants.SPECIAL_FIELD_TYPE;
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
@@ -208,7 +208,7 @@ public class ItemOrderController {
             //已报名数量查询
             ApiResponse<List<ItemOrderStatisVo>> itemOrderStatisVoResponse = itemOrderServiceFacade.getCountByItemId(Lists.newArrayList(itemId));
             List<ItemOrderStatisVo> itemOrderStatisVos = itemOrderStatisVoResponse.getBody();
-            Map<Integer, ItemOrderStatisVo> map = CollectionCommonUtil.toMapByList(itemOrderStatisVos, "getItemId", Integer.class);
+            Map<Integer, ItemOrderStatisVo> map = itemOrderStatisVos.stream().collect(Collectors.toMap(ItemOrderStatisVo::getItemId, p -> p, (k1, k2) -> k1));
             int signedUpNum = map.get(itemId).getSignedTotal();
             //计算剩余数量
             int remain = mallItemNailVo.getSignUpNum() - signedUpNum;
@@ -314,8 +314,8 @@ public class ItemOrderController {
             // 特殊字段类型的默认值
             com.aixuexi.thor.response.ApiResponse<List<FieldConfVo>> fieldConfVoResponse = fieldConfServiceFacade.queryByFieldCodes(fieldCodes);
             List<FieldConfVo> fieldConfVos = fieldConfVoResponse.getBody();
-            Map<String, FieldConfVo> fieldConfVoMap = CollectionCommonUtil.toMapByList(fieldConfVos, "getFieldCode", String.class);
-            Map<String, TalentTemplateVo> talentTemplateVoMap = CollectionCommonUtil.toMapByList(talentTemplateVos, "getFieldCode", String.class);
+            Map<String, FieldConfVo> fieldConfVoMap = fieldConfVos.stream().collect(Collectors.toMap(FieldConfVo::getFieldCode, p -> p, (k1, k2) -> k1));
+            Map<String, TalentTemplateVo> talentTemplateVoMap = talentTemplateVos.stream().collect(Collectors.toMap(TalentTemplateVo::getFieldCode, p -> p, (k1, k2) -> k1));
             for (String fieldCode : fieldCodes) {
                 TalentTemplateVo templateVo = talentTemplateVoMap.get(fieldCode);
                 List<FieldConfValue> fieldConfValues = fieldConfVoMap.get(fieldCode).getFieldConfValues();

@@ -14,7 +14,6 @@ import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.turing.service.InstitutionService;
 import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.ConfirmOrderVo;
 import com.gaosi.api.vulcan.vo.FreightVo;
 import com.gaosi.api.warcraft.mq.TaskProducerApi;
@@ -28,6 +27,7 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -170,7 +170,8 @@ public class OrderController {
     private void checkParams4Submit(SubmitGoodsOrderVo submitGoodsOrderVo) {
         Assert.notEmpty(submitGoodsOrderVo.getGoodsTypeIds(), "所选商品不能为空");
         ApiResponse<List<ExpressType>> expressTypeResponse = expressServiceFacade.queryAllExpressType();
-        Map<String, ExpressType> expressTypeMap = CollectionCommonUtil.toMapByList(expressTypeResponse.getBody(), "getCode", String.class);
+        List<ExpressType> expressTypeList = expressTypeResponse.getBody();
+        Map<String, ExpressType> expressTypeMap = expressTypeList.stream().collect(Collectors.toMap(ExpressType::getCode, p -> p, (k1, k2) -> k1));
         Assert.isTrue(expressTypeMap.containsKey(submitGoodsOrderVo.getExpress()), "配送方式参数错误");
         Assert.isTrue(expressTypeMap.get(submitGoodsOrderVo.getExpress()).getEnable(), "该配送方式停止承运,暂不接单");
         Institution institution = institutionService.getInsInfoById(submitGoodsOrderVo.getInsId());

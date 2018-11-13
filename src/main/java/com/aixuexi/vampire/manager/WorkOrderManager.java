@@ -17,7 +17,6 @@ import com.gaosi.api.vulcan.facade.MallSkuServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsType;
 import com.gaosi.api.vulcan.model.MallItemPic;
 import com.gaosi.api.vulcan.model.MallSkuPic;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.MallSkuVo;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
@@ -27,6 +26,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author liuxinyun
@@ -65,7 +65,7 @@ public class WorkOrderManager {
     public void dealRefundDealRecords(List<WorkOrderDealRecordVo> workOrderDealRecordVos) {
         if(CollectionUtils.isNotEmpty(workOrderDealRecordVos)) {
             // 批量查询用户信息
-            Set<Integer> userIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderDealRecordVos, "getUserId", Integer.class);
+            Set<Integer> userIds = workOrderDealRecordVos.stream().map(WorkOrderDealRecordVo::getUserId).collect(Collectors.toSet());
             Map<Integer, UserBo> userBoMap = queryUserInfo(userIds);
             for (WorkOrderDealRecordVo workOrderDealRecordVo : workOrderDealRecordVos) {
                 if (workOrderDealRecordVo.getUserId() == -1) {
@@ -91,12 +91,13 @@ public class WorkOrderManager {
      * @param workOrderRefundDetailVos
      */
     public void dealWorkOrderRefundDetailVo(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
-        List<Integer> mallSkuIds = CollectionCommonUtil.getFieldListByObjectList(workOrderRefundDetailVos, "getMallSkuId", Integer.class);
+        List<Integer> mallSkuIds = workOrderRefundDetailVos.stream().map(WorkOrderRefundDetailVo::getMallSkuId).collect(Collectors.toList());
         QueryMallSkuVoDto queryMallSkuVoDto = new QueryMallSkuVoDto();
         queryMallSkuVoDto.setIds(mallSkuIds);
         queryMallSkuVoDto.setNeedPic(true);
         ApiResponse<List<MallSkuVo>> apiResponse = mallSkuServiceFacade.queryMallSkuVoBySkuIds(queryMallSkuVoDto);
-        Map<Integer, MallSkuVo> mallSkuVoMap = CollectionCommonUtil.toMapByList(apiResponse.getBody(), "getId", Integer.class);
+        List<MallSkuVo> mallSkuVoList = apiResponse.getBody();
+        Map<Integer, MallSkuVo> mallSkuVoMap = mallSkuVoList.stream().collect(Collectors.toMap(MallSkuVo::getId, m -> m, (k1, k2) -> k1));
         for (WorkOrderRefundDetailVo workOrderRefundDetailVo : workOrderRefundDetailVos) {
             Integer mallSkuId = workOrderRefundDetailVo.getMallSkuId();
             MallSkuVo mallSkuVo = mallSkuVoMap.get(mallSkuId);
@@ -130,7 +131,7 @@ public class WorkOrderManager {
     private Map<Integer, UserBo> queryUserInfo(Set<Integer> userIds){
         ApiResponse<List<UserBo>> operatorResponse = newUserService.findByIdsWithoutRolename(Lists.newArrayList(userIds));
         List<UserBo> userBoList = operatorResponse.getBody();
-        return CollectionCommonUtil.toMapByList(userBoList, "getId", Integer.class);
+        return userBoList.stream().collect(Collectors.toMap(UserBo::getId, u -> u, (k1, k2) -> k1));
     }
 
     /**

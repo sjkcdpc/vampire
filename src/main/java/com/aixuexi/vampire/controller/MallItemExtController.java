@@ -12,8 +12,6 @@ import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
@@ -21,7 +19,6 @@ import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.model.TalentFilterCondition;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.facade.TemplateServiceFacade;
 import com.gaosi.api.workorder.vo.TemplateFieldVo;
@@ -41,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.aixuexi.vampire.util.Constants.RCZX_TEMPLATE_CODE;
 
@@ -286,8 +284,7 @@ public class MallItemExtController {
      */
     private void dealMallItemTalentVo(List<MallItemTalentVo> mallItemTalentVos) {
         if(CollectionUtils.isNotEmpty(mallItemTalentVos)) {
-            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemTalentVos,
-                    "getMallItemId", Integer.class);
+            List<Integer> mallItemIds = mallItemTalentVos.stream().map(MallItemTalentVo::getMallItemId).collect(Collectors.toList());
             Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
             for (MallItemTalentVo mallItemTalentVo : mallItemTalentVos) {
                 mallItemTalentVo.setSalesNum(salesNumVoMap.get(mallItemTalentVo.getMallItemId()).getNum());
@@ -302,8 +299,7 @@ public class MallItemExtController {
      */
     private void dealMallItemNailVo(List<MallItemNailVo> mallItemNailVos) {
         if (CollectionUtils.isNotEmpty(mallItemNailVos)) {
-            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(mallItemNailVos,
-                    "getMallItemId", Integer.class);
+            List<Integer> mallItemIds = mallItemNailVos.stream().map(MallItemNailVo::getMallItemId).collect(Collectors.toList());
             Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
             for (MallItemNailVo mno : mallItemNailVos) {
                 Integer mallItemId = mno.getMallItemId();

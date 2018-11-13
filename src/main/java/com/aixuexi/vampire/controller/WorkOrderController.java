@@ -26,7 +26,6 @@ import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.facade.GoodsTypeServiceFacade;
 import com.gaosi.api.vulcan.model.GoodsType;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Interval;
@@ -36,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.gaosi.api.revolver.constant.WorkOrderConstant.RefundStatus.*;
 
@@ -207,10 +207,10 @@ public class WorkOrderController {
      * @return
      */
     private Map<Integer, GoodsType> queryGoodsTypes(List<WorkOrderRefundDetailVo> workOrderRefundDetailVos){
-        Set<Integer> mallSkuIds = CollectionCommonUtil.getFieldSetByObjectList(workOrderRefundDetailVos,
-                "getMallSkuId", Integer.class);
+        Set<Integer> mallSkuIds = workOrderRefundDetailVos.stream().map(WorkOrderRefundDetailVo::getMallSkuId).collect(Collectors.toSet());
         ApiResponse<List<GoodsType>> goodsTypeResponse = goodsTypeServiceFacade.queryByMallSkuIds(Lists.newArrayList(mallSkuIds), null);
-        return CollectionCommonUtil.toMapByList(goodsTypeResponse.getBody(), "getMallSkuId", Integer.class);
+        List<GoodsType> goodsTypeList = goodsTypeResponse.getBody();
+        return goodsTypeList.stream().collect(Collectors.toMap(GoodsType::getMallSkuId, g -> g, (k1, k2) -> k1));
     }
 
     /**

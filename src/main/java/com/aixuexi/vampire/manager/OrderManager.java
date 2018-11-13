@@ -27,7 +27,6 @@ import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.dto.QueryMallSkuVoDto;
 import com.gaosi.api.vulcan.facade.*;
 import com.gaosi.api.vulcan.model.*;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,6 +42,7 @@ import javax.annotation.Resource;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
 import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
@@ -290,9 +290,9 @@ public class OrderManager {
      * @param orderDetailVos
      */
     private void handlePeriod(List<OrderDetailVo> orderDetailVos) {
-        List<Integer> goodsIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(orderDetailVos, "getGoodsId", Integer.class));
+        List<Integer> goodsIds = orderDetailVos.stream().map(OrderDetailVo::getGoodsId).distinct().collect(Collectors.toList());
         List<GoodsPeriod> goodsPeriodList = goodsPeriodServiceFacade.findByGoodsId(goodsIds).getBody();
-        Map<Integer, List<GoodsPeriod>> goodsPeriodMap = CollectionCommonUtil.groupByList(goodsPeriodList, "getGoodsId", Integer.class);
+        Map<Integer, List<GoodsPeriod>> goodsPeriodMap = goodsPeriodList.stream().collect(Collectors.groupingBy(GoodsPeriod::getGoodsId));
 
         DateTime now = new DateTime();
         DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("MM月dd日");
@@ -341,7 +341,7 @@ public class OrderManager {
         if (CollectionUtils.isNotEmpty(consignees)) {
             List<ConsigneeVo> consigneeVos = baseMapper.mapAsList(consignees, ConsigneeVo.class);
             // 区ids
-            Set<Integer> areaIds = CollectionCommonUtil.getFieldSetByObjectList(consigneeVos, "getAreaId", Integer.class);
+            Set<Integer> areaIds = consigneeVos.stream().map(ConsigneeVo::getAreaId).collect(Collectors.toSet());
             Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(Lists.newArrayList(areaIds));
             for (ConsigneeVo consigneeVo : consigneeVos) {
                 AddressDTO addressDTO = addressDTOMap.get(consigneeVo.getAreaId());
@@ -374,7 +374,7 @@ public class OrderManager {
         }
         ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap, weight, goodsPieces);
         List<ExpressFreightVo> expressFreightVos = apiResponse.getBody();
-        Map<String,ExpressFreightVo> expressFreightVoMap = CollectionCommonUtil.toMapByList(expressFreightVos,"getExpressCode",String.class);
+        Map<String,ExpressFreightVo> expressFreightVoMap = expressFreightVos.stream().collect(Collectors.toMap(ExpressFreightVo::getExpressCode, e -> e, (k1, k2) -> k1));
         for (ConfirmExpressVo confirmExpressVo:expressVoLists) {
             ExpressFreightVo expressFreightVo = expressFreightVoMap.get(confirmExpressVo.getCode());
             confirmExpressVo.setFirstFreight(expressFreightVo.getFirstFreight());
@@ -546,7 +546,7 @@ public class OrderManager {
      */
     private Map<String, ExpressPrice> queryExpressPriceMap(List<GoodsOrderVo> goodsOrderVos) {
         // 区ID集合
-        List<Integer> areaIds = CollectionCommonUtil.getFieldListByObjectList(goodsOrderVos, "getAreaId", Integer.class);
+        List<Integer> areaIds = goodsOrderVos.stream().map(GoodsOrderVo::getAreaId).collect(Collectors.toList());
         Map<Integer, AddressDTO> addressDTOMap = basicDataManager.getAddressByAreaIds(areaIds);
         // 查询快递时效的条件
         List<QueryExpressPriceDto> queryExpressPriceDtoList = new ArrayList<>();
@@ -568,8 +568,10 @@ public class OrderManager {
         // 获取快递时效
         ApiResponse<List<ExpressPrice>> apiResponse = expressServiceFacade.queryExpressPriceList(queryExpressPriceDtoList);
         List<ExpressPrice> expressPriceList = apiResponse.getBody();
-        return CollectionCommonUtil.toUnionKeyMapByList(expressPriceList, Lists.newArrayList("getExpressId", "getDestAreaId"));
+        return expressPriceList.stream().collect(Collectors.toMap(ExpressPrice::getExpressIdAndDestAreaId, e -> e, (k1, k2) -> k1));
     }
+
+
 
     /**
      * 获取商品信息
@@ -580,14 +582,14 @@ public class OrderManager {
         List<Integer> mallSkuIds = new ArrayList<>();
         for (GoodsOrderVo goodsOrderVo : goodsOrderVos) {
             List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
-            mallSkuIds.addAll(CollectionCommonUtil.getFieldListByObjectList(orderDetailVos, "getMallSkuId", Integer.class));
+            mallSkuIds.addAll(orderDetailVos.stream().map(OrderDetailVo::getMallSkuId).collect(Collectors.toSet()));
         }
         QueryMallSkuVoDto queryMallSkuVoDto = new QueryMallSkuVoDto();
         queryMallSkuVoDto.setIds(mallSkuIds);
         queryMallSkuVoDto.setNeedPic(true);
         ApiResponse<List<MallSkuVo>> apiResponse = mallSkuServiceFacade.queryMallSkuVoBySkuIds(queryMallSkuVoDto);
         List<MallSkuVo> mallSkuVos = apiResponse.getBody();
-        return CollectionCommonUtil.toMapByList(mallSkuVos, "getId", Integer.class);
+        return mallSkuVos.stream().collect(Collectors.toMap(MallSkuVo::getId, m -> m, (k1, k2) -> k1));
     }
 
     /**
@@ -686,32 +688,32 @@ public class OrderManager {
                 itemOrderDetailsTotal.addAll(itemOrderVo.getItemOrderDetails());
             }
         }
-        List<Integer> mallItemIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderDetailsTotal, "getItemId", Integer.class));
-        List<Integer> mallSkuIds = new ArrayList<>(CollectionCommonUtil.getFieldSetByObjectList(itemOrderDetails4RCZX, "getMallSkuId", Integer.class));
+        List<Integer> mallItemIds = itemOrderDetailsTotal.stream().map(ItemOrderDetailVo::getItemId).distinct().collect(Collectors.toList());
+        List<Integer> mallSkuIds = itemOrderDetails4RCZX.stream().map(ItemOrderDetailVo::getMallSkuId).distinct().collect(Collectors.toList());
         // 查询商品图片
         ApiResponse<List<MallItemPic>> mallItemPicResponse = mallItemPicServiceFacade.getMallItemPicByMallItemIds(mallItemIds);
         List<MallItemPic> mallItemPics = mallItemPicResponse.getBody();
-        Map<Integer, List<MallItemPic>> mallItemPicMap = CollectionCommonUtil.groupByList(mallItemPics, "getMallItemId", Integer.class);
+        Map<Integer, List<MallItemPic>> mallItemPicMap = mallItemPics.stream().collect(Collectors.groupingBy(MallItemPic::getMallItemId));
         // 查询商品SKU图片
         Map<Integer, List<MallSkuPic>> mallSkuPicMap = new HashMap<>();
         if(CollectionUtils.isNotEmpty(mallSkuIds)) {
             ApiResponse<List<MallSkuPic>> mallSkuPicResponse = mallSkuPicServiceFacade.queryMallSkuPicByMallSkuIds(mallSkuIds);
             List<MallSkuPic> mallSkuPics = mallSkuPicResponse.getBody();
-            mallSkuPicMap = CollectionCommonUtil.groupByList(mallSkuPics, "getMallSkuId", Integer.class);
+            mallSkuPicMap = mallSkuPics.stream().collect(Collectors.groupingBy(MallSkuPic::getMallSkuId));
         }
         // 查询人才中心SKU信息
         Map<Integer, MallSkuExtTalent> mallSkuExtTalentMap = new HashMap<>();
         if(CollectionUtils.isNotEmpty(mallSkuIds)){
             ApiResponse<List<MallSkuExtTalent>> mallSkuExtTalentsResponse = mallSkuExtTalentServiceFacade.queryMallSkuExtTalentByMallSkuIds(mallSkuIds);
             List<MallSkuExtTalent> mallSkuExtTalents = mallSkuExtTalentsResponse.getBody();
-            mallSkuExtTalentMap = CollectionCommonUtil.toMapByList(mallSkuExtTalents, "getMallSkuId", Integer.class);
+            mallSkuExtTalentMap = mallSkuExtTalents.stream().collect(Collectors.toMap(MallSkuExtTalent::getMallSkuId, m -> m, (k1, k2) -> k1));
         }
         // 查询校长培训商品信息
         Map<Integer, MallItemExtTrain> mallItemExtTrainMap = new HashMap<>();
         if(existNailOrder) {
             ApiResponse<List<MallItemExtTrain>> mallItemExtTrainResponse = mallItemExtServiceFacade.queryMallItemExtTrainByMallItemIds(mallItemIds);
             List<MallItemExtTrain> mallItemExtTrains = mallItemExtTrainResponse.getBody();
-            mallItemExtTrainMap = CollectionCommonUtil.toMapByList(mallItemExtTrains, "getMallItemId", Integer.class);
+            mallItemExtTrainMap = mallItemExtTrains.stream().collect(Collectors.toMap(MallItemExtTrain::getMallItemId, m -> m, (k1, k2) -> k1));
         }
         MallSkuExtTalent mallSkuExtTalent;
         // 校长培训报名时间格式化

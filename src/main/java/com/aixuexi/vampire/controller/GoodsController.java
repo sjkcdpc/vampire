@@ -21,7 +21,6 @@ import com.gaosi.api.vulcan.facade.GoodsServiceFacade;
 import com.gaosi.api.vulcan.model.Goods;
 import com.gaosi.api.vulcan.model.GoodsFilterCondition;
 import com.gaosi.api.vulcan.model.GoodsType;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,6 +34,7 @@ import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by zhaowenlei on 17/5/22.
@@ -99,8 +99,7 @@ public class GoodsController {
         List<CommonConditionVo> subjects = goodsManager.querySubjectCondition(goodsFilterCondition.getSubjectIds());
         // 查询学科详情
         List<SubjectProductBo> subjectProductList = goodsManager.querySubjectProduct(goodsFilterCondition.getSubjectProductIds());
-        Map<Integer, List<SubjectProductBo>> subjectProductBoMap = CollectionCommonUtil.groupByList(
-                subjectProductList, "getSubjectId", Integer.class);
+        Map<Integer, List<SubjectProductBo>> subjectProductBoMap = subjectProductList.stream().collect(Collectors.groupingBy(SubjectProductBo::getSubjectId));
         // 将学科筛选条件作为科目筛选条件的子条件
         for (CommonConditionVo subject : subjects) {
             if(subjectProductBoMap.containsKey(subject.getId())) {
@@ -240,10 +239,8 @@ public class GoodsController {
         Set<Integer> examAreaIds = new HashSet<>();
         for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            bookVersionIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
-                    "getBookVersion", Integer.class));
-            examAreaIds.addAll(CollectionCommonUtil.getFieldSetByObjectList(relationGoods,
-                    "getExamAreaId", Integer.class));
+            bookVersionIds.addAll(relationGoods.stream().map(RelationGoodsVo::getBookVersion).collect(Collectors.toSet()));
+            examAreaIds.addAll(relationGoods.stream().map(RelationGoodsVo::getExamAreaId).collect(Collectors.toSet()));
         }
         //排除非教材版本ID和非考区ID
         bookVersionIds.remove(0);
@@ -280,7 +277,7 @@ public class GoodsController {
         for (GoodsVo goodsVo : goodsVoList) {
             List<GoodsTypeVo> goodsTypeVos = goodsVo.getGoodsGrades();
             if (CollectionUtils.isNotEmpty(goodsTypeVos)) {
-                barCodeList.addAll(CollectionCommonUtil.getFieldSetByObjectList(goodsTypeVos, "getBarCode", String.class));
+                barCodeList.addAll(goodsTypeVos.stream().map(GoodsTypeVo::getBarCode).collect(Collectors.toSet()));
             }
         }
         if (CollectionUtils.isNotEmpty(barCodeList)) {
@@ -333,7 +330,7 @@ public class GoodsController {
      */
     private void loadGoodsSalesNum(List<GoodsVo> goodsVos) {
         if(CollectionUtils.isNotEmpty(goodsVos)) {
-            List<Integer> mallItemIds = CollectionCommonUtil.getFieldListByObjectList(goodsVos, "getMallItemId", Integer.class);
+            List<Integer> mallItemIds = goodsVos.stream().map(GoodsVo::getMallItemId).collect(Collectors.toList());
             Map<Integer, MallItemSalesNumVo> salesNumVoMap = itemOrderManager.querySalesNum(mallItemIds);
             for (GoodsVo goodsVo : goodsVos) {
                 goodsVo.setSalesNum(salesNumVoMap.get(goodsVo.getMallItemId()).getNum());

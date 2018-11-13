@@ -10,7 +10,6 @@ import com.gaosi.api.common.basedao.PageParam;
 import com.gaosi.api.common.basedao.SortTypeEnum;
 import com.gaosi.api.common.to.ApiResponse;
 import com.gaosi.api.vulcan.constant.GoodsConstant;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.AreaVo;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -22,6 +21,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Created by ruanyanjie on 2018/6/1.
@@ -129,7 +129,7 @@ public class CacheManager {
                             // 查询科目详情
                             ApiResponse<List<SubjectBo>> subjectResponse = subjectApi.getByIds(Lists.newArrayList(subjectIds));
                             List<SubjectBo> subjectBos = subjectResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(subjectBos, "getId", Integer.class);
+                            return subjectBos.stream().collect(Collectors.toMap(SubjectBo::getId, p -> p, (k1, k2) -> k1));
                         }
                     });
 
@@ -150,7 +150,7 @@ public class CacheManager {
                         public Map<Integer, SubjectProductBo> loadAll(Iterable<? extends Integer> subjectProductIds) {
                             // 查询学科详情
                             List<SubjectProductBo> subjectProductBos = subjectProductApi.findSubjectProductList(Lists.newArrayList(subjectProductIds));
-                            return CollectionCommonUtil.toMapByList(subjectProductBos, "getId", Integer.class);
+                            return subjectProductBos.stream().collect(Collectors.toMap(SubjectProductBo::getId, p -> p, (k1, k2) -> k1));
                         }
                     });
 
@@ -172,7 +172,7 @@ public class CacheManager {
                             // 查询体系详情
                             ApiResponse<List<SchemeBo>> schemeResponse = schemeApi.getByIds(Lists.newArrayList(schmeIds));
                             List<SchemeBo> schemeBos = schemeResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(schemeBos, "getId", Integer.class);
+                            return schemeBos.stream().collect(Collectors.toMap(SchemeBo::getId, p -> p, (k1, k2) -> k1));
                         }
                     });
 
@@ -208,7 +208,7 @@ public class CacheManager {
                         public Map<Integer, BookVersionBo> loadAll(Iterable<? extends Integer> bookVersionIds) {
                             ApiResponse<List<BookVersionBo>> bookVersionResponse = bookVersionApi.findByBookVersionIds(Lists.newArrayList(bookVersionIds));
                             List<BookVersionBo> bookVersionBos = bookVersionResponse.getBody();
-                            return CollectionCommonUtil.toMapByList(bookVersionBos, "getId", Integer.class);
+                            return bookVersionBos.stream().collect(Collectors.toMap(BookVersionBo::getId, p -> p, (k1, k2) -> k1));
                         }
                     });
 
@@ -228,7 +228,7 @@ public class CacheManager {
                         @Override
                         public Map<Integer, ExamAreaBo> loadAll(Iterable<? extends Integer> examAreaIds) {
                             List<ExamAreaBo> examAreaBos = examAreaApi.queryByIds(Lists.newArrayList(examAreaIds));
-                            return CollectionCommonUtil.toMapByList(examAreaBos, "getId", Integer.class);
+                            return examAreaBos.stream().collect(Collectors.toMap(ExamAreaBo::getId, p -> p, (k1, k2) -> k1));
                         }
                     });
 

@@ -4,7 +4,6 @@ import com.aixuexi.thor.except.ExceptionCode;
 import com.aixuexi.vampire.util.BaseMapper;
 import com.gaosi.api.basicdata.model.bo.*;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
-import com.gaosi.api.vulcan.util.CollectionCommonUtil;
 import com.gaosi.api.vulcan.vo.CommonConditionVo;
 import com.google.common.collect.ImmutableCollection;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +15,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * Created by ruanyanjie on 2018/1/19.
@@ -123,15 +123,9 @@ public class GoodsManager {
             ImmutableCollection<SchemeBo> schemeBos = cacheManager.getCacheScheme().getAll(schmeIds).values();
             List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
             // 体系按ID排序
-            Collections.sort(schemeBoList, new Comparator<SchemeBo>() {
-                @Override
-                public int compare(SchemeBo o1, SchemeBo o2) {
-                    return o1.getId().compareTo(o2.getId());
-                }
-            });
+            schemeBoList.sort(Comparator.comparing(SchemeBo::getId));
             // 排好序的学科ID
-            List<Integer> subjectProductIds = CollectionCommonUtil.getFieldListByObjectList(
-                    subjectProducts, "getId", Integer.class);
+            List<Integer> subjectProductIds = subjectProducts.stream().map(CommonConditionVo::getId).collect(Collectors.toList());
             // 把体系按照排序好的学科ID分类
             Map<Integer,List<SchemeBo>> schemeBoMap = new HashMap<>();
             for (Integer subjectProductId : subjectProductIds) {
@@ -171,12 +165,7 @@ public class GoodsManager {
             for (DictionaryBo dictionaryBo : dictionaryList) {
                 resetPeriodOrder(dictionaryBo);
             }
-            Collections.sort(dictionaryList, new Comparator<DictionaryBo>() {
-                @Override
-                public int compare(DictionaryBo o1, DictionaryBo o2) {
-                    return o1.getOrderIndex().compareTo(o2.getOrderIndex());
-                }
-            });
+            dictionaryList.sort(Comparator.comparing(DictionaryBo::getOrderIndex));
             List<CommonConditionVo> periods = baseMapper.mapAsList(dictionaryList,CommonConditionVo.class);
             periods.add(0,addAllCondition());
             return periods;
@@ -196,12 +185,7 @@ public class GoodsManager {
             ImmutableCollection<BookVersionBo> bookVersionBos = cacheManager.getCacheBookVersion().getAll(bookVersionIds).values();
             List<BookVersionBo> bookVersionBoList = new ArrayList<>(bookVersionBos);
             // 教材版本按照orderIndex排序
-            Collections.sort(bookVersionBoList, new Comparator<BookVersionBo>() {
-                @Override
-                public int compare(BookVersionBo o1, BookVersionBo o2) {
-                    return o1.getId().compareTo(o2.getId());
-                }
-            });
+            bookVersionBoList.sort(Comparator.comparing(BookVersionBo::getId));
             List<CommonConditionVo> bookVersions = baseMapper.mapAsList(bookVersionBoList,CommonConditionVo.class);
             bookVersions.add(0,addAllCondition());
             return bookVersions;
@@ -221,12 +205,7 @@ public class GoodsManager {
             ImmutableCollection<ExamAreaBo> examAreaBos = cacheManager.getCacheExamArea().getAll(examAreaIds).values();
             List<ExamAreaBo> examAreaBoList = new ArrayList<>(examAreaBos);
             // 考区版本按照orderIndex排序
-            Collections.sort(examAreaBoList, new Comparator<ExamAreaBo>() {
-                @Override
-                public int compare(ExamAreaBo o1, ExamAreaBo o2) {
-                    return o1.getId().compareTo(o2.getId());
-                }
-            });
+            examAreaBoList.sort(Comparator.comparing(ExamAreaBo::getId));
             List<CommonConditionVo> examAreas = baseMapper.mapAsList(examAreaBoList,CommonConditionVo.class);
             examAreas.add(0,addAllCondition());
             return examAreas;
@@ -244,8 +223,7 @@ public class GoodsManager {
     public List<SchemeBo> queryScheme(List<Integer> schemeIds){
         try {
             ImmutableCollection<SchemeBo> schemeBos = cacheManager.getCacheScheme().getAll(schemeIds).values();
-            List<SchemeBo> schemeBoList = new ArrayList<>(schemeBos);
-            return schemeBoList;
+            return new ArrayList<>(schemeBos);
         } catch (Exception e) {
             logger.error("查询体系异常 schmeIds : {} ", schemeIds);
             throw new BusinessException(ExceptionCode.UNKNOWN,"查询体系异常");
