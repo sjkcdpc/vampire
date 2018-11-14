@@ -45,6 +45,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.gaosi.api.revolver.constant.OrderConstant.FINANCE_EXCHANGE_RATE;
 import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
 import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
 import static com.gaosi.api.vulcan.constant.MallItemConstant.Category.JCSD;
@@ -421,8 +422,8 @@ public class OrderManager {
         // 账号余额
         Integer insitutionId = reqFreightVo.getInsitutionId();
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insitutionId);
-        freightVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()),10000D));
-        freightVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()),10000D));
+        freightVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()),FINANCE_EXCHANGE_RATE));
+        freightVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()),FINANCE_EXCHANGE_RATE));
         return freightVo;
     }
 

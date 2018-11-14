@@ -17,6 +17,7 @@ import com.gaosi.api.revolver.dto.QueryOrderDto;
 import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ItemOrder;
+import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.util.ConstantsUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.model.po.Institution;
@@ -53,6 +54,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.aixuexi.vampire.util.Constants.SPECIAL_FIELD_TYPE;
+import static com.gaosi.api.revolver.constant.OrderConstant.FINANCE_EXCHANGE_RATE;
 import static com.gaosi.api.revolver.constant.OrderConstant.SEPARATOR;
 import static com.gaosi.api.xmen.model.TalentOperatorRecords.ORDER_TRACK_TYPE;
 
@@ -466,19 +468,28 @@ public class ItemOrderController {
     }
 
     /**
-     * 我的订单列表点支付需要
+     * 支付确认查询订单金额，账户余额
      *
      * @return
      */
     @RequestMapping(value = "/getAmount", method = RequestMethod.GET)
-    public ResultData getAmount(@RequestParam String orderId) {
+    public ResultData getAmount(@RequestParam String orderId,@RequestParam Integer categoryId) {
+        // 消费金额
+        Double consumeCount;
+        if(MallItemConstant.Category.JCZB.getId().equals(categoryId)){
+            ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.getGoodsOrderById(orderId);
+            GoodsOrderVo goodsOrderVo = apiResponse.getBody();
+            consumeCount = goodsOrderVo.getPayAmount();
+        }else{
+            ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
+            consumeCount= itemOrder.getConsumeCount();
+        }
         //查询当前机构账号余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(UserHandleUtil.getInsId());
-        ItemOrder itemOrder = itemOrderManager.getOrderByOrderId(orderId);
         AmountVo amountVo = new AmountVo();
-        Double remainAmount = rr.getUsableRemain().doubleValue() / 10000;
-        amountVo.setRemainAmount(remainAmount);
-        amountVo.setConsumeCount(itemOrder.getConsumeCount());
+        amountVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()),FINANCE_EXCHANGE_RATE));
+        amountVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()),FINANCE_EXCHANGE_RATE));
+        amountVo.setConsumeCount(consumeCount);
         return ResultData.successed(amountVo);
     }
 

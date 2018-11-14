@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.gaosi.api.revolver.constant.OrderConstant.FINANCE_EXCHANGE_RATE;
+
 
 /**
  * @Description:商品订单管理，供controller使用
@@ -111,7 +113,7 @@ public class ItemOrderManager {
         for (ItemOrderDetailVo itemOrderDetailVo : itemOrderDetailVos) {
             consumeCount = AmountUtil.multiply(itemOrderDetailVo.getItemPrice(),itemOrderDetailVo.getItemCount());
         }
-        Double totalCount = AmountUtil.multiply(consumeCount , 10000D);
+        Double totalCount = AmountUtil.multiply(consumeCount , FINANCE_EXCHANGE_RATE);
         // 检查账户余额
         financialAccountManager.checkRemainMoney(rr,totalCount.longValue());
         ItemOrder itemOrder = baseMapper.map(itemOrderVo,ItemOrder.class);
