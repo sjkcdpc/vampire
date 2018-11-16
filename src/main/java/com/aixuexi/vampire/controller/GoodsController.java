@@ -239,8 +239,10 @@ public class GoodsController {
         Set<Integer> examAreaIds = new HashSet<>();
         for (GoodsVo goodsVo : list) {
             List<RelationGoodsVo> relationGoods = goodsVo.getRelationGoods();
-            bookVersionIds.addAll(relationGoods.stream().map(RelationGoodsVo::getBookVersion).collect(Collectors.toSet()));
-            examAreaIds.addAll(relationGoods.stream().map(RelationGoodsVo::getExamAreaId).collect(Collectors.toSet()));
+            if(CollectionUtils.isNotEmpty(relationGoods)) {
+                bookVersionIds.addAll(relationGoods.stream().map(RelationGoodsVo::getBookVersion).collect(Collectors.toSet()));
+                examAreaIds.addAll(relationGoods.stream().map(RelationGoodsVo::getExamAreaId).collect(Collectors.toSet()));
+            }
         }
         //排除非教材版本ID和非考区ID
         bookVersionIds.remove(0);
