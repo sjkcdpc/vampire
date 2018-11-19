@@ -9,7 +9,7 @@ import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.OrderDetailVoDto;

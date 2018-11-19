@@ -352,7 +352,8 @@ public class ItemOrderController {
             itemOrder.setOrderId(orderId);
             itemOrder.setStatus(OrderConstant.OrderStatus.ON_THE_WAY.getValue());
             // 订单支付
-            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            ApiResponse<OrderSuccessVo> apiResponse = itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            OrderSuccessVo orderSuccessVo = apiResponse.getBody();
             // 支付成功，再创建工单
             // 订单创建人ID
             Integer creatorId = itemOrderVo.getUserId();
@@ -376,14 +377,15 @@ public class ItemOrderController {
                 FieldErrorMsg fieldErrorMsg = workOrderRes.getFieldErrorMsg();
                 logger.error("工单模板修改，字段校验失败，错误信息{}，订单号{}", fieldErrorMsg.getMsg(), orderId);
             }
-            return ResultData.successed(orderId);
+            return ResultData.successed(orderSuccessVo);
         }else {
             ItemOrder itemOrder = new ItemOrder();
             itemOrder.setOrderId(orderId);
             itemOrder.setStatus(OrderConstant.OrderStatus.COMPLETED.getValue());
             // 订单支付
-            itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
-            return ResultData.successed(orderId);
+            ApiResponse<OrderSuccessVo> apiResponse = itemOrderServiceFacade.payItemOrder(itemOrder, token, insId, userId);
+            OrderSuccessVo orderSuccessVo = apiResponse.getBody();
+            return ResultData.successed(orderSuccessVo);
         }
 
     }
