@@ -1,15 +1,8 @@
 package com.aixuexi.vampire.manager;
 
 import com.aixuexi.thor.except.ExceptionCode;
-import com.aixuexi.thor.util.Functions;
-import com.aixuexi.vampire.util.UserHandleUtil;
-import com.gaosi.api.axxBank.model.BusinessResult;
-import com.gaosi.api.axxBank.model.CostProxyParams;
 import com.gaosi.api.axxBank.model.RemainResult;
-import com.gaosi.api.axxBank.service.ChangeCostProxyHandler;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
-import com.gaosi.api.revolver.constant.PayTypeConstant;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.vulcan.bean.common.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

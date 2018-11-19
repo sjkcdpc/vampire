@@ -29,7 +29,7 @@ public class StorageController {
     /**
      * 15分钟
      */
-    private static long expiredTime = 15 * 60 * 1000L;
+    private static final long EXPIRED_TIME = 15 * 60 * 1000L;
 
     /**
      * 存储：获取授权信息
@@ -38,7 +38,7 @@ public class StorageController {
      */
     @RequestMapping(value = "/signature", method = RequestMethod.GET)
     public ResultData getSignature() {
-        Date expired = new Date(System.currentTimeMillis() + expiredTime);
+        Date expired = new Date(System.currentTimeMillis() + EXPIRED_TIME);
         StorageResponse<String> signatureResponse = StorageAuthorizationUtil.getSignature(accessKey, secretKey, expired);
         String signature = signatureResponse.getBody();
 
