@@ -4,7 +4,7 @@ import com.aixuexi.thor.response.ResultData;
 import com.aixuexi.vampire.manager.OrderManager;
 import com.aixuexi.vampire.util.UserHandleUtil;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.independenceDay.vo.OrderSuccessVo;
+import com.gaosi.api.revolver.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.dto.CancelOrderDto;
 import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
