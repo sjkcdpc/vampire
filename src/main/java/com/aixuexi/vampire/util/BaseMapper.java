@@ -50,6 +50,7 @@ public class BaseMapper extends ConfigurableMapper {
                     public void mapAtoB(ConfirmGoodsVo confirmGoodsVo, OrderDetailVo orderDetailVo, MappingContext context) {
                         orderDetailVo.setName(confirmGoodsVo.getGoodsName());
                         orderDetailVo.setGoodTypeId(confirmGoodsVo.getGoodsTypeId());
+                        orderDetailVo.setMallSkuName(confirmGoodsVo.getGoodsTypeName());
                     }
                 })
                 .register();
