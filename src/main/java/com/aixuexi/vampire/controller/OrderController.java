@@ -138,7 +138,10 @@ public class OrderController {
         }
         ApiResponse<CancelOrderDto> apiResponse = orderServiceFacade.queryOrder4Cancel(orderId);
         CancelOrderDto cancelOrderDto = apiResponse.getBody();
-        return ResultData.successed(cancelOrderDto);
+        Map<String, Object> result = new HashMap<>();
+        result.put("aidou", cancelOrderDto.getRefundAidou());
+        result.put("rmb", cancelOrderDto.getRefundRmb());
+        return ResultData.successed(result);
     }
 
     /**
