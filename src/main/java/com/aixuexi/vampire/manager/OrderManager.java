@@ -419,11 +419,6 @@ public class OrderManager {
         freightVo.setGoodsAmount(goodsAmount);
         // 计算邮费
         calcFreight(freightVo,reqFreightVo.getProvinceId(),reqFreightVo.getAreaId());
-        // 账号余额
-        Integer insitutionId = reqFreightVo.getInsitutionId();
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(insitutionId);
-        freightVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()),FINANCE_EXCHANGE_RATE));
-        freightVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()),FINANCE_EXCHANGE_RATE));
         return freightVo;
     }
 
