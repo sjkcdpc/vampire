@@ -12,8 +12,6 @@ import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.basicdata.model.bo.DictionaryBo;
 import com.gaosi.api.basicdata.model.bo.SubjectProductBo;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.facade.ItemOrderServiceFacade;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.MallItemSalesNumVo;
 import com.gaosi.api.vulcan.bean.common.Assert;
 import com.gaosi.api.vulcan.bean.common.QueryCriteria;
@@ -139,7 +137,7 @@ public class MallItemExtController {
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
-        List<Integer> categoryIds = MallCategoryUtil.queryAllIdsByTheSomeTopLevel(MallItemConstant.Category.DZFW.getId());
+        List<Integer> categoryIds = MallCategoryUtil.queryAllIdsBySameTopLevel(MallItemConstant.Category.DZFW.getId());
         queryCriteria.setCategoryIds(categoryIds);
         ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria, UserHandleUtil.getInsId());
         return ResultData.successed(apiResponse.getBody());
