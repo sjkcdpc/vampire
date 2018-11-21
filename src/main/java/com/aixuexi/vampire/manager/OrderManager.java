@@ -176,11 +176,6 @@ public class OrderManager {
     public OrderSuccessVo submit(SubmitGoodsOrderVo submitGoodsOrderVo) {
         // 创建订单对象
         GoodsOrderVo goodsOrderVo = createGoodsOrder(submitGoodsOrderVo);
-        // 支付金额 = 商品金额 + 邮费
-        Double amount = (goodsOrderVo.getConsumeAmount() + goodsOrderVo.getFreight()) * 10000;
-        // 账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(submitGoodsOrderVo.getInsId());
-        financialAccountManager.checkRemainMoney(rr, amount.longValue());
         // 创建订单
         ApiResponse<GoodsOrderVo> apiResponse = orderServiceFacade.createOrder(goodsOrderVo, submitGoodsOrderVo.getToken());
         GoodsOrderVo createOrderResult = apiResponse.getBody();
@@ -215,12 +210,14 @@ public class OrderManager {
         List<ConfirmGoodsVo> confirmGoodsVos = goodsVosResponse.getBody();
         validateGoods(confirmGoodsVos);
         GoodsFreightSubtotalBo goodsFreightSubtotalBo = getGoodsFreightSubtotalBo(confirmGoodsVos);
+        // 商品信息合计
+        goodsOrderVo.setConsumeAmount(goodsFreightSubtotalBo.getGoodsAmount());
+        goodsOrderVo.setGoodsPieces(goodsFreightSubtotalBo.getGoodsPieces());
+        goodsOrderVo.setGoodsWeight(goodsFreightSubtotalBo.getWeight());
         // 订单详情
         List<OrderDetailVo> orderDetailVos = baseMapper.mapAsList(confirmGoodsVos,OrderDetailVo.class);
         handlePeriod(orderDetailVos);
         goodsOrderVo.setOrderDetailVos(orderDetailVos);
-        // 商品总金额
-        goodsOrderVo.setConsumeAmount(goodsFreightSubtotalBo.getGoodsAmount());
         // 机构信息
         goodsOrderVo.setInstitutionId(submitGoodsOrderVo.getInsId());
         Institution institution = submitGoodsOrderVo.getInstitution();
@@ -248,20 +245,6 @@ public class OrderManager {
         AddressDTO address = addressDTOMap.get(areaId);
         goodsOrderVo.setAddress(address);
         goodsOrderVo.setConsigneeAddress(getConsigneeAddress(address,consignee));
-        // 计算运费
-        Integer provinceId = address.getProvinceId();
-        Map<String, Integer> expressMap = new HashMap<>();
-        if (express.equals(OrderConstant.LogisticsMode.EXPRESS_DBWL)) {
-            expressMap.put(express, areaId);
-        } else {
-            expressMap.put(express, provinceId);
-        }
-        ApiResponse<List<ExpressFreightVo>> apiResponse = expressServiceFacade.calFreight(expressMap,
-                goodsFreightSubtotalBo.getWeight(), goodsFreightSubtotalBo.getGoodsPieces());
-        ExpressFreightVo expressFreightVo = apiResponse.getBody().get(0);
-        goodsOrderVo.setFreight(expressFreightVo.getTotalFreight());
-        // 订单提交成功时，快递时效提示
-        goodsOrderVo.setAging(expressFreightVo.getAging());
         return goodsOrderVo;
     }
 
