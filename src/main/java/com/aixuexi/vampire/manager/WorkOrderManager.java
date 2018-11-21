@@ -109,16 +109,18 @@ public class WorkOrderManager {
             workOrderRefundDetailVo.setSkuCode(mallSkuVo.getCode());
             Integer categoryId = mallSkuVo.getCategoryId();
             // 商品图片
-            if(categoryId.equals(MallItemConstant.Category.JCSD.getId())){
+            if(MallItemConstant.Category.JCSD.getId().equals(categoryId)){
                 List<MallSkuPic> mallSkuPics = mallSkuVo.getMallSkuPics();
                 if(CollectionUtils.isNotEmpty(mallSkuPics)){
                     workOrderRefundDetailVo.setPicUrl(mallSkuPics.get(0).getPicUrl());
                 }
+                workOrderRefundDetailVo.setGift(true);
             }else{
                 List<MallItemPic> mallItemPics = mallSkuVo.getMallItemPics();
                 if(CollectionUtils.isNotEmpty(mallItemPics)) {
                     workOrderRefundDetailVo.setPicUrl(mallItemPics.get(0).getPicUrl());
                 }
+                workOrderRefundDetailVo.setGift(false);
             }
         }
     }
