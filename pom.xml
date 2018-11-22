@@ -15,7 +15,7 @@
         <spring-version>4.3.4.RELEASE</spring-version>
         <avatar.version>branch-mall-1.8.65-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor-util.version>1.5.91-RELEASE</thor-util.version>
+        <thor-util.version>1.6.4-RELEASE</thor-util.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
