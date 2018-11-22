@@ -1,9 +1,24 @@
 package com.aixuexi.vampire.util;
 
+import com.baidu.disconf.client.common.annotations.DisconfFile;
+import com.baidu.disconf.client.common.annotations.DisconfFileItem;
+import com.baidu.disconf.client.common.annotations.DisconfUpdateService;
+import com.baidu.disconf.client.common.update.IDisconfUpdate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 /**
  * Created by gaoxinzhong on 2017/5/16.
  */
-public class ExpressUtil {
+@Component("expressUtil")
+@Scope("singleton")
+@DisconfFile(filename = "config.properties")
+@DisconfUpdateService(classes = { ExpressUtil.class })
+public class ExpressUtil implements IDisconfUpdate {
+
+    private final Logger logger = LoggerFactory.getLogger(ExpressUtil.class);
 
     /**
      * 是否走发网
@@ -30,51 +45,50 @@ public class ExpressUtil {
      */
     private String preSaleDeliveryTime;
 
+    @DisconfFileItem(name = "syncToWms", associateField = "syncToWms")
     public Boolean getSyncToWms() {
         return syncToWms;
     }
 
-    public void setSyncToWms(Boolean syncToWms) {
-        this.syncToWms = syncToWms;
-    }
-
+    @DisconfFileItem(name = "splitTips", associateField = "splitTips")
     public String getSplitTips() {
         return splitTips;
     }
 
-    public void setSplitTips(String splitTips) {
-        this.splitTips = splitTips;
-    }
-
+    @DisconfFileItem(name = "aging", associateField = "aging")
     public String getAging() {
         return aging;
     }
 
-    public void setAging(String aging) {
-        this.aging = aging;
-    }
-
+    @DisconfFileItem(name = "diyTips", associateField = "diyTips")
     public String getDiyTips() {
         return diyTips;
     }
 
-    public void setDiyTips(String diyTips) {
-        this.diyTips = diyTips;
-    }
-
+    @DisconfFileItem(name = "deliveryTime", associateField = "deliveryTime")
     public String getDeliveryTime() {
         return deliveryTime;
     }
 
-    public void setDeliveryTime(String deliveryTime) {
-        this.deliveryTime = deliveryTime;
-    }
-
+    @DisconfFileItem(name = "preSaleDeliveryTime", associateField = "preSaleDeliveryTime")
     public String getPreSaleDeliveryTime() {
         return preSaleDeliveryTime;
     }
 
-    public void setPreSaleDeliveryTime(String preSaleDeliveryTime) {
-        this.preSaleDeliveryTime = preSaleDeliveryTime;
+    @Override
+    public String toString() {
+        return "ExpressUtil{" +
+                "syncToWms=" + syncToWms +
+                ", splitTips='" + splitTips + '\'' +
+                ", aging='" + aging + '\'' +
+                ", diyTips='" + diyTips + '\'' +
+                ", deliveryTime='" + deliveryTime + '\'' +
+                ", preSaleDeliveryTime='" + preSaleDeliveryTime + '\'' +
+                '}';
+    }
+
+    @Override
+    public void reload() throws Exception {
+        logger.info(toString());
     }
 }
