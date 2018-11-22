@@ -6,6 +6,7 @@ import com.baidu.disconf.client.common.annotations.DisconfUpdateService;
 import com.baidu.disconf.client.common.update.IDisconfUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -23,26 +24,32 @@ public class ExpressUtil implements IDisconfUpdate {
     /**
      * 是否走发网
      */
+    @Value("syncToWms")
     private Boolean syncToWms;
     /**
      * 拆单提示
      */
+    @Value("splitTips")
     private String splitTips;
     /**
      * 时效
      */
+    @Value("aging")
     private String aging;
     /**
      * DIY提示
      */
+    @Value("diyTips")
     private String diyTips;
     /**
      * 发货时间
      */
+    @Value("deliveryTime")
     private String deliveryTime;
     /**
      * 预售发货时间
      */
+    @Value("preSaleDeliveryTime")
     private String preSaleDeliveryTime;
 
     @DisconfFileItem(name = "syncToWms", associateField = "syncToWms")
