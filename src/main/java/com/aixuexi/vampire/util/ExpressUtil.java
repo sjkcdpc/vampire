@@ -20,12 +20,6 @@ import org.springframework.stereotype.Component;
 public class ExpressUtil implements IDisconfUpdate {
 
     private final Logger logger = LoggerFactory.getLogger(ExpressUtil.class);
-
-    /**
-     * 是否走发网
-     */
-    @Value("syncToWms")
-    private Boolean syncToWms;
     /**
      * 拆单提示
      */
@@ -51,11 +45,6 @@ public class ExpressUtil implements IDisconfUpdate {
      */
     @Value("preSaleDeliveryTime")
     private String preSaleDeliveryTime;
-
-    @DisconfFileItem(name = "syncToWms", associateField = "syncToWms")
-    public Boolean getSyncToWms() {
-        return syncToWms;
-    }
 
     @DisconfFileItem(name = "splitTips", associateField = "splitTips")
     public String getSplitTips() {
@@ -85,8 +74,7 @@ public class ExpressUtil implements IDisconfUpdate {
     @Override
     public String toString() {
         return "ExpressUtil{" +
-                "syncToWms=" + syncToWms +
-                ", splitTips='" + splitTips + '\'' +
+                "splitTips='" + splitTips + '\'' +
                 ", aging='" + aging + '\'' +
                 ", diyTips='" + diyTips + '\'' +
                 ", deliveryTime='" + deliveryTime + '\'' +

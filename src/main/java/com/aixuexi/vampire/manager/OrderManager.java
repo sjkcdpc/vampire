@@ -223,7 +223,7 @@ public class OrderManager {
         Institution institution = submitGoodsOrderVo.getInstitution();
         goodsOrderVo.setInstitutionName(institution.getName());
         goodsOrderVo.setSyncToWms(true);
-        if (InstitutionTypeEnum.TEST.getType() == institution.getInstitutionType() || !expressUtil.getSyncToWms()) {
+        if (InstitutionTypeEnum.TEST.getType() == institution.getInstitutionType()) {
             // 测试机构或者关闭同步开关 则不同步到WMS
             goodsOrderVo.setSyncToWms(false);
         }
