@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.gaosi.api.revolver.constant.OrderConstant.FINANCE_EXCHANGE_RATE;
 
 
 /**
@@ -105,22 +104,15 @@ public class ItemOrderManager {
      * @return
      */
     public String submit(ItemOrderVo itemOrderVo) {
-        //查询当前机构账号余额
-        RemainResult rr = financialAccountManager.getAccountInfoByInsId(itemOrderVo.getInstitutionId());
-        List<ItemOrderDetailVo> itemOrderDetailVos = itemOrderVo.getItemOrderDetails();
         // 计算订单总金额
+        List<ItemOrderDetailVo> itemOrderDetailVos = itemOrderVo.getItemOrderDetails();
         Double consumeCount = 0D;
         for (ItemOrderDetailVo itemOrderDetailVo : itemOrderDetailVos) {
-            consumeCount = AmountUtil.multiply(itemOrderDetailVo.getItemPrice(),itemOrderDetailVo.getItemCount());
+            consumeCount = AmountUtil.multiply(itemOrderDetailVo.getItemPrice(), itemOrderDetailVo.getItemCount());
         }
-        Double totalCount = AmountUtil.multiply(consumeCount , FINANCE_EXCHANGE_RATE);
-        // 检查账户余额
-        financialAccountManager.checkRemainMoney(rr,totalCount.longValue());
-        ItemOrder itemOrder = baseMapper.map(itemOrderVo,ItemOrder.class);
-        itemOrder.setConsumeCount(consumeCount);
-        // 订单详情
-        List<ItemOrderDetail> itemOrderDetails = baseMapper.mapAsList(itemOrderDetailVos,ItemOrderDetail.class);
-        // 创建订单
+        itemOrderVo.setConsumeCount(consumeCount);
+        ItemOrder itemOrder = baseMapper.map(itemOrderVo, ItemOrder.class);
+        List<ItemOrderDetail> itemOrderDetails = baseMapper.mapAsList(itemOrderDetailVos, ItemOrderDetail.class);
         ApiResponse<String> apiResponse = itemOrderServiceFacade.createOrder(itemOrder, itemOrderDetails);
         return apiResponse.getBody();
     }
