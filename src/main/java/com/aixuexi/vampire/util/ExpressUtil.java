@@ -46,6 +46,26 @@ public class ExpressUtil implements IDisconfUpdate {
     @Value("preSaleDeliveryTime")
     private String preSaleDeliveryTime;
 
+    public void setSplitTips(String splitTips) {
+        this.splitTips = splitTips;
+    }
+
+    public void setAging(String aging) {
+        this.aging = aging;
+    }
+
+    public void setDiyTips(String diyTips) {
+        this.diyTips = diyTips;
+    }
+
+    public void setDeliveryTime(String deliveryTime) {
+        this.deliveryTime = deliveryTime;
+    }
+
+    public void setPreSaleDeliveryTime(String preSaleDeliveryTime) {
+        this.preSaleDeliveryTime = preSaleDeliveryTime;
+    }
+
     @DisconfFileItem(name = "splitTips", associateField = "splitTips")
     public String getSplitTips() {
         return splitTips;
