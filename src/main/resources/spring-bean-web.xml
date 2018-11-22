@@ -50,8 +50,8 @@
           init-method="init" destroy-method="destroy">
     </bean>
 
-    <!-- 使用托管方式的disconf配置(无代码侵入, 配置更改不会自动reload)-->
-    <bean id="configproperties_no_reloadable_disconf"
+    <!-- 使用托管方式的disconf配置(无代码侵入, 配置更改会自动reload)-->
+    <bean id="configproperties_disconf"
           class="com.baidu.disconf.client.addons.properties.ReloadablePropertiesFactoryBean">
         <property name="locations">
             <list>
@@ -60,13 +60,13 @@
         </property>
     </bean>
 
-    <bean id="propertyConfigurerForManageWeb"
-          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <bean id="propertyConfigurer"
+          class="com.baidu.disconf.client.addons.properties.ReloadingPropertyPlaceholderConfigurer">
         <property name="ignoreResourceNotFound" value="false"/>
         <property name="ignoreUnresolvablePlaceholders" value="true"/>
         <property name="propertiesArray">
             <list>
-                <ref bean="configproperties_no_reloadable_disconf"/>
+                <ref bean="configproperties_disconf"/>
             </list>
         </property>
     </bean>
