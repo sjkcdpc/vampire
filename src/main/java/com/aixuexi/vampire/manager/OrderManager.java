@@ -142,8 +142,8 @@ public class OrderManager {
         confirmOrderVo.setGoodsWeight(goodsFreightSubtotalBo.getWeight());
         // 账户余额
         RemainResult rr = financialAccountManager.getAccountInfoByInsId(insId);
-        confirmOrderVo.setAidouUsableRemain(Double.valueOf(rr.getAidouUsableRemain()) / 10000);
-        confirmOrderVo.setRmbUsableRemain(Double.valueOf(rr.getRmbUsableRemain()) / 10000);
+        confirmOrderVo.setAidouUsableRemain(AmountUtil.divide(Double.valueOf(rr.getAidouUsableRemain()), FINANCE_EXCHANGE_RATE));
+        confirmOrderVo.setRmbUsableRemain(AmountUtil.divide(Double.valueOf(rr.getRmbUsableRemain()), FINANCE_EXCHANGE_RATE));
         // 获取token
         confirmOrderVo.setToken(financialAccountService.getTokenForFinancial());
         return confirmOrderVo;
