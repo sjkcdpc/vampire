@@ -439,7 +439,10 @@ public class OrderManager {
      * @return
      */
     private OrderSuccessVo getTips(GoodsOrderVo goodsOrderVo) {
-        OrderSuccessVo orderSuccessVo = baseMapper.map(goodsOrderVo,OrderSuccessVo.class);
+        OrderSuccessVo orderSuccessVo = new OrderSuccessVo();
+        orderSuccessVo.setOrderId(goodsOrderVo.getId());
+        orderSuccessVo.setCostAidou(goodsOrderVo.getCostAidou());
+        orderSuccessVo.setCostRmb(goodsOrderVo.getCostRmb());
         Integer splitNum = goodsOrderVo.getSplitNum();
         if (splitNum != null && splitNum > 1) {
             orderSuccessVo.setSplitTips(MessageFormat.format(expressUtil.getSplitTips(), splitNum));
