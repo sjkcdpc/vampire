@@ -13,9 +13,9 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>mall-cover-custom-SNAPSHOT</avatar.version>
+        <avatar.version>mall-1.9.11-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor-util.version>mall-cover-custom-1.6.5-RELEASE</thor-util.version>
+        <thor-util.version>mall-1.6.8-RELEASE</thor-util.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
