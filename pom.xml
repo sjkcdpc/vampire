@@ -15,7 +15,7 @@
         <spring-version>4.3.4.RELEASE</spring-version>
         <avatar.version>branch-axxBank-1by1-0.0.1-SNAPSHOT</avatar.version>
         <common.util.version>1.0.92</common.util.version>
-        <thor-util.version>1.5.91-RELEASE</thor-util.version>
+        <thor-util.version>mall-1.6.8-RELEASE</thor-util.version>
         <orika.version>1.5.1</orika.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>

@@ -19,6 +19,7 @@ import com.gaosi.api.vulcan.constant.GoodsTypePriceConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.facade.MallItemExtServiceFacade;
 import com.gaosi.api.vulcan.model.TalentFilterCondition;
+import com.gaosi.api.vulcan.util.MallCategoryUtil;
 import com.gaosi.api.vulcan.vo.*;
 import com.gaosi.api.workorder.facade.TemplateServiceFacade;
 import com.gaosi.api.workorder.vo.TemplateFieldVo;
@@ -136,7 +137,8 @@ public class MallItemExtController {
         queryCriteria.setPageNum(pageNum);
         queryCriteria.setPageSize(pageSize);
         queryCriteria.setGoodsStatus(MallItemConstant.ShelvesStatus.ON);
-        queryCriteria.setCategoryId(MallItemConstant.Category.DZFW.getId());
+        List<Integer> categoryIds = MallCategoryUtil.queryAllIdsBySameTopLevel(MallItemConstant.Category.DZFW.getId());
+        queryCriteria.setCategoryIds(categoryIds);
         ApiResponse<Page<MallItemCustomServiceVo>> apiResponse = mallItemExtServiceFacade.queryMallItemList4DZFW(queryCriteria, UserHandleUtil.getInsId());
         return ResultData.successed(apiResponse.getBody());
     }
