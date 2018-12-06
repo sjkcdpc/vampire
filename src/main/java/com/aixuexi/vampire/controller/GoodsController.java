@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -72,8 +71,7 @@ public class GoodsController {
      * @return
      */
     @RequestMapping(value = "/getByGoodsName",method = RequestMethod.GET)
-    public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum,
-                                      @RequestParam Integer pageSize) throws UnsupportedEncodingException {
+    public ResultData queryByGoodName(@RequestParam String goodName, @RequestParam Integer pageNum, @RequestParam Integer pageSize) {
         ReqGoodsConditionVo conditionVo = new ReqGoodsConditionVo();
         conditionVo.setInstitutionId(UserHandleUtil.getInsId());
         conditionVo.setPageNum(pageNum);
