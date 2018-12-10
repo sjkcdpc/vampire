@@ -18,7 +18,6 @@ import com.gaosi.api.revolver.facade.ExpressServiceFacade;
 import com.gaosi.api.revolver.facade.OrderServiceFacade;
 import com.gaosi.api.revolver.model.ExpressPrice;
 import com.gaosi.api.revolver.model.ExpressType;
-import com.gaosi.api.revolver.util.AmountUtil;
 import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
@@ -45,8 +44,7 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
-import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.*;
 import static com.gaosi.api.vulcan.constant.MallItemConstant.Category.JCSD;
 
 /**
@@ -618,7 +616,7 @@ public class OrderManager {
                 simpleGoodsOrderVo.setOrderId(subGoodsOrderVo.getId());
                 simpleGoodsOrderVo.setOrderType(subGoodsOrderVo.getOrderType());
                 OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
-                if (subGoodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                if (!subGoodsOrderVo.getOrderType().equals(DIY_CUSTOM_ORDER) && !subGoodsOrderVo.getOrderType().equals(FMDZ_ORDER)){
                     subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
                 }
                 List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
@@ -632,7 +630,7 @@ public class OrderManager {
             simpleGoodsOrderVo.setOrderType(goodsOrderVo.getOrderType());
             simpleGoodsOrderVo.setSplitNum(goodsOrderVo.getSplitNum());
             OrderSuccessVo orderSuccessVo = getTips(simpleGoodsOrderVo, aging);
-            if (goodsOrderVo.getOrderType() != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+            if (!goodsOrderVo.getOrderType().equals(DIY_CUSTOM_ORDER) && !goodsOrderVo.getOrderType().equals(FMDZ_ORDER)){
                 goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + orderSuccessVo.getTips());
             }
             List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
