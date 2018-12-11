@@ -475,6 +475,7 @@ public class OrderManager {
         }
         switch (orderType) {
             case DIY_CUSTOM_ORDER:
+            case FMDZ_ORDER:
                 orderSuccessVo.setTips(expressUtil.getDiyTips());
                 break;
             case PRESALE_ORDER:
