@@ -442,7 +442,7 @@ public class OrderManager {
             Integer num = confirmGoodsVo.getNum();
             // 数量*单价
             confirmGoodsVo.setTotal(num * confirmGoodsVo.getPrice());
-            if (confirmGoodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
+            if (confirmGoodsVo.getStatus() == MallItemConstant.ShelvesStatus.ON) { // 上架
                 // 数量*单重量
                 weight += num * confirmGoodsVo.getWeight();
                 goodsAmount += confirmGoodsVo.getTotal();
@@ -503,7 +503,7 @@ public class OrderManager {
             // 商品全称（商品+型号名称）
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
             Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
-            Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
+            Assert.isTrue(confirmGoodsVo.getStatus() == MallItemConstant.ShelvesStatus.ON, "存在已下架商品");
             Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
             if (confirmGoodsVo.getPreSale()) {
                 containsPreSale = true;
