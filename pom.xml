@@ -13,7 +13,7 @@
 
     <properties>
         <spring-version>4.3.4.RELEASE</spring-version>
-        <avatar.version>mall_little_fixed-SNAPSHOT</avatar.version>
+        <avatar.version>mall_1.9.43-RELEASE</avatar.version>
         <common.util.version>1.0.92</common.util.version>
         <thor-util.version>mall-1.6.8-RELEASE</thor-util.version>
         <orika.version>1.5.1</orika.version>
