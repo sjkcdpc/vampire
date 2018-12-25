@@ -9,7 +9,6 @@ import com.gaosi.api.axxBank.model.RemainResult;
 import com.gaosi.api.axxBank.service.FinancialAccountService;
 import com.gaosi.api.basicdata.model.dto.AddressDTO;
 import com.gaosi.api.common.to.ApiResponse;
-import com.gaosi.api.revolver.vo.OrderSuccessVo;
 import com.gaosi.api.revolver.constant.ExpressConstant;
 import com.gaosi.api.revolver.constant.OrderConstant;
 import com.gaosi.api.revolver.dto.OrderDetailVoDto;
@@ -23,7 +22,6 @@ import com.gaosi.api.revolver.vo.*;
 import com.gaosi.api.turing.constant.InstitutionTypeEnum;
 import com.gaosi.api.turing.model.po.Institution;
 import com.gaosi.api.vulcan.bean.common.Assert;
-import com.gaosi.api.vulcan.constant.GoodsConstant;
 import com.gaosi.api.vulcan.constant.MallItemConstant;
 import com.gaosi.api.vulcan.dto.QueryMallSkuVoDto;
 import com.gaosi.api.vulcan.facade.*;
@@ -46,8 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.gaosi.api.revolver.constant.OrderConstant.FINANCE_EXCHANGE_RATE;
-import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.DIY_CUSTOM_ORDER;
-import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.PRESALE_ORDER;
+import static com.gaosi.api.revolver.constant.OrderConstant.OrderType.*;
 import static com.gaosi.api.vulcan.constant.MallItemConstant.Category.JCSD;
 
 /**
@@ -420,7 +417,7 @@ public class OrderManager {
             Integer num = confirmGoodsVo.getNum();
             // 数量*单价
             confirmGoodsVo.setTotal(num * confirmGoodsVo.getPrice());
-            if (confirmGoodsVo.getStatus() == GoodsConstant.Status.ON) { // 上架
+            if (confirmGoodsVo.getStatus() == MallItemConstant.ShelvesStatus.ON) { // 上架
                 // 数量*单重量
                 weight += num * confirmGoodsVo.getWeight();
                 goodsAmount += confirmGoodsVo.getTotal();
@@ -467,6 +464,7 @@ public class OrderManager {
         }
         switch (orderType) {
             case DIY_CUSTOM_ORDER:
+            case FMDZ_ORDER:
                 return expressUtil.getDiyTips();
             case PRESALE_ORDER:
                 return expressUtil.getPreSaleDeliveryTime() + agingTips;
@@ -490,7 +488,7 @@ public class OrderManager {
             // 商品全称（商品+型号名称）
             String goodsFullName = confirmGoodsVo.getGoodsName() + "-" + confirmGoodsVo.getGoodsTypeName();
             Assert.isTrue(StringUtils.isNotBlank(confirmGoodsVo.getBarCode()), goodsFullName + "条形码为空");
-            Assert.isTrue(confirmGoodsVo.getStatus() != GoodsConstant.Status.OFF, "存在已下架商品");
+            Assert.isTrue(confirmGoodsVo.getStatus() == MallItemConstant.ShelvesStatus.ON, "存在已下架商品");
             Assert.isTrue(confirmGoodsVo.getWeight() >= 0, goodsFullName + "重量有误");
             if (confirmGoodsVo.getPreSale()) {
                 containsPreSale = true;
@@ -604,7 +602,7 @@ public class OrderManager {
                 // 将子订单的时效重置为父订单更新后的时效
                 Integer orderType = subGoodsOrderVo.getOrderType();
                 String agingTips = getAgingTips(orderType, aging);
-                if (orderType != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+                if (!orderType.equals(DIY_CUSTOM_ORDER) && !orderType.equals(FMDZ_ORDER)){
                     subGoodsOrderVo.setWarehouseTips(subGoodsOrderVo.getWarehouseTips() + agingTips);
                 }
                 List<SubOrderDetailVo> subOrderDetailVos = subGoodsOrderVo.getSubOrderDetailVos();
@@ -615,7 +613,7 @@ public class OrderManager {
         }else {
             Integer orderType = goodsOrderVo.getOrderType();
             String agingTips = getAgingTips(orderType, aging);
-            if (orderType != OrderConstant.OrderType.DIY_CUSTOM_ORDER){
+            if (!orderType.equals(DIY_CUSTOM_ORDER) && !orderType.equals(FMDZ_ORDER)){
                 goodsOrderVo.setWarehouseTips(goodsOrderVo.getWarehouseTips() + agingTips);
             }
             List<OrderDetailVo> orderDetailVos = goodsOrderVo.getOrderDetailVos();
