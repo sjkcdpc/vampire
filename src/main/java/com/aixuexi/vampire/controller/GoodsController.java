@@ -319,7 +319,8 @@ public class GoodsController {
     private String getArrivalMsg(Integer arrivalTime) {
         Date date = new Date();
         SimpleDateFormat formater = new SimpleDateFormat("yyyy年MM月dd日");
-        String result = "预计" + formater.format(new Date(date.getTime() + arrivalTime * 24 * 60 * 60 * 1000L)) + "到货";
+        long millisecondsPerDay = 24L * 3600 * 1000;
+        String result = "预计" + formater.format(new Date(date.getTime() + arrivalTime * millisecondsPerDay)) + "到货";
         String target = new SimpleDateFormat("yyyy年").format(date);
         return result.replace(target, "");
     }
